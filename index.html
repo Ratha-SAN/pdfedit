@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Khmer PDF Editor</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header id="topbar">
+  <div class="brand">Khmer PDF Editor</div>
+  <nav id="mode-tabs" hidden>
+    <button id="tab-edit" class="tab active">Edit</button>
+    <button id="tab-pages" class="tab">Pages</button>
+  </nav>
+  <div id="toolbar" hidden>
+    <span id="edit-tools">
+      <button id="btn-add-text" title="Add a text box (click a page to place)">+ Text</button>
+      <button id="btn-add-image" title="Insert an image (click a page to place)">+ Image</button>
+      <button id="btn-add-signature" title="Draw or upload a signature">+ Signature</button>
+      <button id="btn-ocr" title="Recognize text on a page with Khmer OCR">Recognize text</button>
+    </span>
+    <span id="pages-tools" hidden>
+      <button id="btn-append-pdf" title="Append pages from another PDF">+ Append PDF</button>
+      <button id="btn-remove-pages" title="Remove selected pages" disabled>Remove selected</button>
+    </span>
+    <button id="btn-export" class="primary" title="Download the modified PDF">Save PDF</button>
+  </div>
+</header>
+
+<main id="main">
+  <div id="dropzone">
+    <div class="dz-inner">
+      <p class="dz-title">Drop a PDF here</p>
+      <p class="dz-sub">or</p>
+      <button id="btn-pick">Choose a PDF file</button>
+    </div>
+  </div>
+  <div id="hint-bar" hidden></div>
+  <div id="edit-view" hidden></div>
+  <div id="pages-view" hidden></div>
+</main>
+
+<input type="file" id="file-input" accept="application/pdf,.pdf" hidden>
+<input type="file" id="append-input" accept="application/pdf,.pdf" hidden>
+<input type="file" id="image-input" accept="image/png,image/jpeg" hidden>
+<input type="file" id="sig-upload-input" accept="image/png" hidden>
+
+<div id="sig-modal" class="modal" hidden>
+  <div class="modal-box">
+    <div class="modal-head">
+      <span>Signature</span>
+      <button class="modal-close" data-close="sig-modal">&times;</button>
+    </div>
+    <canvas id="sig-canvas" width="500" height="200"></canvas>
+    <div class="modal-actions">
+      <button id="sig-clear">Clear</button>
+      <button id="sig-upload">Upload PNG instead</button>
+      <button id="sig-use" class="primary">Use signature</button>
+    </div>
+  </div>
+</div>
+
+<div id="ocr-modal" class="modal" hidden>
+  <div class="modal-box">
+    <div class="modal-head">
+      <span>Recognized text (Khmer)</span>
+      <button class="modal-close" data-close="ocr-modal">&times;</button>
+    </div>
+    <div id="ocr-progress" hidden><div id="ocr-progress-bar"></div><span id="ocr-progress-label">Starting…</span></div>
+    <textarea id="ocr-output" spellcheck="false" placeholder="Recognized text will appear here."></textarea>
+    <div class="modal-actions">
+      <button id="ocr-copy">Copy text</button>
+    </div>
+  </div>
+</div>
+
+<div id="busy" hidden><div class="spinner"></div><span id="busy-label">Working…</span></div>
+
+<script src="vendor/pdf.min.js"></script>
+<script src="vendor/pdf-lib.min.js"></script>
+<script src="vendor/tesseract.min.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
