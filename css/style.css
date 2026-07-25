@@ -43,7 +43,7 @@ body.lang-km { font-family: 'Noto Sans Khmer', system-ui, -apple-system, 'Segoe 
 }
 #mode-tabs .tab:first-child, #lang-toggle .tab:first-child { border-radius: 6px 0 0 6px; }
 #mode-tabs .tab:last-child, #lang-toggle .tab:last-child { border-radius: 0 6px 6px 0; margin-left: -1px; }
-#mode-tabs .tab.active, #lang-toggle .tab.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+#mode-tabs .tab.active, #lang-toggle .tab.active { background: #2563eb; color: #fff; border-color: #2563eb; font-weight: 600; }
 
 #toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
