@@ -8,6 +8,11 @@
   src: url('../fonts/noto-sans-khmer-khmer-700-normal.woff2') format('woff2');
   font-weight: 700;
 }
+@font-face {
+  font-family: 'Noto Serif Khmer';
+  src: url('../fonts/noto-serif-khmer-khmer-400-normal.woff2') format('woff2');
+  font-weight: 400;
+}
 
 :root {
   --bg: #e8eaed;
@@ -243,6 +248,7 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   min-width: 20px;
   min-height: 1em;
   line-height: 1.6;
+  user-select: text;
 }
 .item-toolbar {
   position: absolute;
@@ -260,6 +266,7 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
 }
 .item.selected .item-toolbar { display: flex; }
 .item-toolbar input[type=number] { width: 54px; font: inherit; padding: 2px 4px; }
+.item-toolbar select { font: inherit; font-size: 12px; padding: 2px 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); color: var(--text); }
 .item-toolbar input[type=color] { width: 28px; height: 24px; padding: 0; border: 1px solid var(--border); }
 
 /* Transient rectangle shown while dragging out an OCR area selection --

@@ -1,3 +1,20 @@
+// Every stack pairs a bundled Khmer webfont (so Khmer glyphs always render
+// correctly regardless of choice, the app's core guarantee) with universal
+// Latin fonts already present on virtually every OS, so no extra Latin font
+// files need to be bundled.
+export const FONT_STACKS = {
+  sans: `'Noto Sans Khmer', Arial, Helvetica, sans-serif`,
+  serif: `'Noto Serif Khmer', 'Times New Roman', Georgia, serif`,
+  mono: `'Noto Sans Khmer', 'Courier New', monospace`,
+};
+// Family name to preload via document.fonts.load() for each stack, so
+// canvas text measurement/rasterization is correct on first use.
+export const FONT_FAMILY_NAME = {
+  sans: 'Noto Sans Khmer',
+  serif: 'Noto Serif Khmer',
+  mono: 'Noto Sans Khmer',
+};
+
 export const state = {
   sources: [],   // { bytes: Uint8Array, pdfjs: PDFDocumentProxy, name }
   pages: [],     // { id, srcIndex, srcPageNum, vw, vh, items: [] }

@@ -1,4 +1,4 @@
-import { state, showBusy, hideBusy } from './state.js';
+import { state, showBusy, hideBusy, FONT_STACKS, FONT_FAMILY_NAME } from './state.js';
 import { t } from './i18n.js';
 
 const { PDFDocument, degrees, rgb, BlendMode } = PDFLib;
@@ -125,13 +125,14 @@ function mapViewportRect(outPage, vx, vy, w, h) {
 }
 
 const TEXT_SUPERSAMPLE = 3;
-const TEXT_FONT_STACK = '"Noto Sans Khmer", "Khmer OS", system-ui, sans-serif';
 const LINE_HEIGHT = 1.6; // keep in sync with .text-content line-height in style.css
 
 export async function rasterizeText(item) {
   const SS = TEXT_SUPERSAMPLE;
-  await document.fonts.load(`400 ${item.fontSize * SS}px "Noto Sans Khmer"`, 'ស្ត្រីខ្មែរ');
-  const fontStr = `400 ${item.fontSize * SS}px ${TEXT_FONT_STACK}`;
+  const family = FONT_FAMILY_NAME[item.fontFamily] || FONT_FAMILY_NAME.sans;
+  const stack = FONT_STACKS[item.fontFamily] || FONT_STACKS.sans;
+  await document.fonts.load(`400 ${item.fontSize * SS}px "${family}"`, 'ស្ត្រីខ្មែរ');
+  const fontStr = `400 ${item.fontSize * SS}px ${stack}`;
   const lines = item.text.split('\n');
   const canvas = document.createElement('canvas');
   let ctx = canvas.getContext('2d');

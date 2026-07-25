@@ -14,8 +14,9 @@ support. No backend, no accounts — documents never leave your machine.
 - **Save PDF** — downloads the modified document.
 - **Khmer text** renders correctly (subscript consonants, vowel reordering)
   in both the editor and the exported PDF.
-- **Recognize text (OCR)** — optional Khmer OCR of the current page using
-  tesseract.js with the `khm` traineddata; output is selectable/copyable text.
+- **Recognize text (OCR)** — recognize the current page or a dragged-out
+  area of it, in Khmer, English, or both, using tesseract.js; output is
+  selectable/copyable text.
 
 ## Running
 
@@ -60,8 +61,8 @@ untouched and stays selectable.
 |---|---|
 | Rendering / thumbnails | [pdf.js](https://mozilla.github.io/pdf.js/) 3.11 |
 | Writing the output PDF | [pdf-lib](https://pdf-lib.js.org/) 1.17 |
-| Khmer OCR | [tesseract.js](https://tesseract.projectnaptha.com/) 5.1 + `khm` traineddata (tessdata_fast) |
-| Khmer font | Noto Sans Khmer (OFL) |
+| OCR | [tesseract.js](https://tesseract.projectnaptha.com/) 5.1 + `khm`/`eng` traineddata (tessdata_fast) |
+| Fonts | Noto Sans Khmer, Noto Serif Khmer (OFL) |
 
 ## Known limitations
 

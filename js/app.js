@@ -170,5 +170,6 @@ initPagesMode();
 initOcr();
 initViewControls();
 
-// Pre-warm the Khmer font so canvas measurement is correct on first use
+// Pre-warm the Khmer fonts so canvas measurement is correct on first use
 document.fonts.load('400 16px "Noto Sans Khmer"', 'ស្ត្រីខ្មែរ');
+document.fonts.load('400 16px "Noto Serif Khmer"', 'ស្ត្រីខ្មែរ');
