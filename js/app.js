@@ -127,12 +127,48 @@ $('#btn-add-highlight').addEventListener('click', () => {
   );
 });
 
-$('#btn-ocr').addEventListener('click', () => {
+/* ---------- recognize (OCR) menu ---------- */
+
+const ocrMenu = $('#ocr-menu');
+const recognizeBtn = $('#btn-recognize');
+
+// Positioned fixed and measured on open rather than anchored inside the
+// toolbar: on narrow screens the toolbar is an overflow-x scroller, which
+// would clip an absolutely-positioned child.
+function openOcrMenu() {
+  const r = recognizeBtn.getBoundingClientRect();
+  ocrMenu.hidden = false;
+  const mw = ocrMenu.offsetWidth;
+  ocrMenu.style.top = `${r.bottom + 6}px`;
+  ocrMenu.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - mw - 8))}px`;
+  recognizeBtn.setAttribute('aria-expanded', 'true');
+}
+
+function closeOcrMenu() {
+  ocrMenu.hidden = true;
+  recognizeBtn.setAttribute('aria-expanded', 'false');
+}
+
+recognizeBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (ocrMenu.hidden) openOcrMenu(); else closeOcrMenu();
+});
+
+// Clicking a language radio should keep the menu open (so the choice and the
+// action can be made in one visit); clicking an action closes it.
+ocrMenu.addEventListener('click', (e) => e.stopPropagation());
+document.addEventListener('click', () => { if (!ocrMenu.hidden) closeOcrMenu(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !ocrMenu.hidden) closeOcrMenu(); });
+window.addEventListener('resize', () => { if (!ocrMenu.hidden) closeOcrMenu(); });
+
+$('#mi-ocr-page').addEventListener('click', () => {
+  closeOcrMenu();
   const page = currentPage();
   if (page) recognizePage(page);
 });
 
-$('#btn-ocr-area').addEventListener('click', () => {
+$('#mi-ocr-area').addEventListener('click', () => {
+  closeOcrMenu();
   if (state.tool && state.tool.type === 'ocr-area') armTool(null);
   else armTool({ type: 'ocr-area' }, t('ocrAreaHint'));
 });
@@ -170,6 +206,7 @@ initPagesMode();
 initOcr();
 initViewControls();
 
-// Pre-warm the Khmer fonts so canvas measurement is correct on first use
+// Pre-warm the default font so canvas measurement is correct on first use.
+// The rest load on demand (font-display: swap) rather than pulling ~850KB of
+// webfonts up front; the picker re-measures once a chosen face has loaded.
 document.fonts.load('400 16px "Noto Sans Khmer"', 'ស្ត្រីខ្មែរ');
-document.fonts.load('400 16px "Noto Serif Khmer"', 'ស្ត្រីខ្មែរ');

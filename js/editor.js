@@ -1,4 +1,4 @@
-import { state, newId, $, setHint, FONT_STACKS } from './state.js';
+import { state, newId, $, setHint, FONT_STACKS, FONT_FAMILY_NAME, KHMER_FONTS, LATIN_FONTS, DEFAULT_FONT, normalizeFontId } from './state.js';
 import { t } from './i18n.js';
 import { recognizeArea } from './ocr.js';
 
@@ -149,7 +149,7 @@ export function armTool(tool, hint) {
     if (tool.type === 'stamp' && tool.kind === 'image') $('#btn-add-image').classList.add('tool-armed');
     if (tool.type === 'stamp' && tool.kind === 'signature') $('#btn-add-signature').classList.add('tool-armed');
     if (tool.type === 'highlight') $('#btn-add-highlight').classList.add('tool-armed');
-    if (tool.type === 'ocr-area') $('#btn-ocr-area').classList.add('tool-armed');
+    if (tool.type === 'ocr-area') $('#btn-recognize').classList.add('tool-armed');
   }
   updatePlacingCursor();
 }
@@ -177,7 +177,7 @@ function onPagePointerDown(e, page, wrap) {
   const y = (e.clientY - rect.top) / scale;
   let item;
   if (state.tool.type === 'text') {
-    item = { id: newId(), type: 'text', x, y, text: '', fontSize: 16, color: '#000000', fontFamily: 'sans' };
+    item = { id: newId(), type: 'text', x, y, text: '', fontSize: 16, color: '#000000', fontFamily: state.lastFont || DEFAULT_FONT };
   } else {
     const t = state.tool;
     let w = Math.min(t.natW * 0.75, page.vw * 0.5);
@@ -302,6 +302,14 @@ function stopTextEdit(tc) {
 
 /* ---------- item DOM ---------- */
 
+// Two labelled groups so the (long) list stays navigable, with each option
+// previewed in its own face.
+function fontOptionsHtml() {
+  const opt = (f) => `<option value="${f.id}" style="font-family:${FONT_STACKS[f.id]}">${f.label}</option>`;
+  return `<optgroup label="${t('fontGroupKhmer')}">${KHMER_FONTS.map(opt).join('')}</optgroup>` +
+         `<optgroup label="${t('fontGroupLatin')}">${LATIN_FONTS.map(opt).join('')}</optgroup>`;
+}
+
 function buildItemEl(item, page, wrap) {
   const scale = pageScale(page);
   const el = document.createElement('div');
@@ -309,7 +317,7 @@ function buildItemEl(item, page, wrap) {
   el.dataset.itemId = item.id;
 
   if (item.type === 'text') {
-    if (!item.fontFamily) item.fontFamily = 'sans';
+    item.fontFamily = normalizeFontId(item.fontFamily);
     const tc = document.createElement('div');
     tc.className = 'text-content';
     tc.contentEditable = 'false';
@@ -329,11 +337,7 @@ function buildItemEl(item, page, wrap) {
     const tb = document.createElement('div');
     tb.className = 'item-toolbar';
     tb.innerHTML = `<label>${t('itemSizeLabel')} <input type="number" min="6" max="120" step="1" value="${item.fontSize}"></label>
-      <select title="${t('itemFontTitle')}">
-        <option value="sans">${t('fontSans')}</option>
-        <option value="serif">${t('fontSerif')}</option>
-        <option value="mono">${t('fontMono')}</option>
-      </select>
+      <select title="${t('itemFontTitle')}">${fontOptionsHtml()}</select>
       <input type="color" value="${item.color}" title="${t('itemTextColorTitle')}">`;
     const sizeInput = tb.querySelector('input[type=number]');
     sizeInput.addEventListener('input', () => {
@@ -343,10 +347,19 @@ function buildItemEl(item, page, wrap) {
     });
     const fontSelect = tb.querySelector('select');
     fontSelect.value = item.fontFamily;
-    fontSelect.addEventListener('change', () => {
+    fontSelect.addEventListener('change', async () => {
       item.fontFamily = fontSelect.value;
+      // Remember the choice so the next text box starts with the same font.
+      state.lastFont = item.fontFamily;
       tc.style.fontFamily = FONT_STACKS[item.fontFamily];
+      // A newly-picked webfont may not be loaded yet; re-measure once it is,
+      // otherwise the stored w/h (used for export placement) reflects the
+      // fallback font's metrics rather than the chosen one's.
       syncTextSize(item, el, scale);
+      try {
+        await document.fonts.load(`400 ${item.fontSize * scale}px "${FONT_FAMILY_NAME[item.fontFamily]}"`, tc.innerText || 'A');
+        syncTextSize(item, el, scale);
+      } catch {}
     });
     const colorInput = tb.querySelector('input[type=color]');
     colorInput.addEventListener('input', () => {
@@ -470,9 +483,11 @@ export function refreshEditI18n() {
   });
   document.querySelectorAll('.item .item-toolbar select').forEach((select) => {
     select.title = t('itemFontTitle');
-    select.querySelector('option[value=sans]').textContent = t('fontSans');
-    select.querySelector('option[value=serif]').textContent = t('fontSerif');
-    select.querySelector('option[value=mono]').textContent = t('fontMono');
+    // Font names themselves are proper nouns and stay as-is; only the two
+    // group headings are translated.
+    const groups = select.querySelectorAll('optgroup');
+    if (groups[0]) groups[0].label = t('fontGroupKhmer');
+    if (groups[1]) groups[1].label = t('fontGroupLatin');
   });
   document.querySelectorAll('.item .item-del').forEach((el) => { el.title = t('itemDeleteTitle'); });
   document.querySelectorAll('.item .item-resize').forEach((el) => { el.title = t('itemResizeTitle'); });

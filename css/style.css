@@ -1,18 +1,36 @@
-@font-face {
-  font-family: 'Noto Sans Khmer';
-  src: url('../fonts/noto-sans-khmer-khmer-400-normal.woff2') format('woff2');
-  font-weight: 400;
-}
-@font-face {
-  font-family: 'Noto Sans Khmer';
-  src: url('../fonts/noto-sans-khmer-khmer-700-normal.woff2') format('woff2');
-  font-weight: 700;
-}
-@font-face {
-  font-family: 'Noto Serif Khmer';
-  src: url('../fonts/noto-serif-khmer-khmer-400-normal.woff2') format('woff2');
-  font-weight: 400;
-}
+/* Bundled webfonts. Every Khmer face guarantees correct Khmer shaping;
+   Latin faces are paired with a Khmer fallback in FONT_STACKS (state.js)
+   so Khmer text still renders no matter which font is chosen. */
+@font-face { font-family: 'Angkor'; src: url('../fonts/angkor-khmer-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Battambang'; src: url('../fonts/battambang-khmer-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Bayon'; src: url('../fonts/bayon-khmer-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Bokor'; src: url('../fonts/bokor-khmer-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Content'; src: url('../fonts/content-khmer-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Hanuman'; src: url('../fonts/hanuman-khmer-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url('../fonts/inter-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Kantumruy Pro'; src: url('../fonts/kantumruy-pro-khmer-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Koulen'; src: url('../fonts/koulen-khmer-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Lato'; src: url('../fonts/lato-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Merriweather'; src: url('../fonts/merriweather-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('../fonts/montserrat-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Moul'; src: url('../fonts/moul-khmer-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Nokora'; src: url('../fonts/nokora-khmer-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Noto Sans Khmer'; src: url('../fonts/noto-sans-khmer-khmer-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Noto Serif Khmer'; src: url('../fonts/noto-serif-khmer-khmer-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Nunito'; src: url('../fonts/nunito-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Open Sans'; src: url('../fonts/open-sans-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Oswald'; src: url('../fonts/oswald-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Playfair Display'; src: url('../fonts/playfair-display-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Poppins'; src: url('../fonts/poppins-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Preahvihear'; src: url('../fonts/preahvihear-khmer-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Raleway'; src: url('../fonts/raleway-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Roboto'; src: url('../fonts/roboto-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Roboto Mono'; src: url('../fonts/roboto-mono-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Siemreap'; src: url('../fonts/siemreap-khmer-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Source Sans 3'; src: url('../fonts/source-sans-3-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Suwannaphum'; src: url('../fonts/suwannaphum-khmer-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Taprom'; src: url('../fonts/taprom-khmer-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Noto Sans Khmer'; src: url('../fonts/noto-sans-khmer-khmer-700-normal.woff2') format('woff2'); font-weight: 700; font-display: swap; }
 
 :root {
   --bg: #e8eaed;
@@ -421,4 +439,53 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
 
   .dz-inner { padding: 32px 20px; }
   .dz-title { font-size: 18px; }
+}
+
+/* ---------- Recognize (OCR) dropdown menu ---------- */
+#btn-recognize .caret { opacity: 0.6; font-size: 11px; }
+#ocr-menu {
+  position: fixed;
+  z-index: 90;
+  min-width: 230px;
+  max-width: min(300px, calc(100vw - 16px));
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px;
+  box-shadow: 0 6px 20px var(--shadow);
+}
+#ocr-menu .menu-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  padding: 6px 8px 4px;
+}
+#ocr-menu .menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  padding: 8px;
+}
+#ocr-menu .menu-item:hover { background: var(--surface-alt); }
+#ocr-menu .menu-sep { height: 1px; background: var(--border); margin: 6px 4px; }
+#ocr-menu .menu-radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+#ocr-menu .menu-radio:hover { background: var(--surface-alt); }
+#ocr-menu .menu-radio input { margin: 0; flex-shrink: 0; }
+#ocr-menu .menu-note {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 6px 8px 2px;
+  line-height: 1.4;
 }

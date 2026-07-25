@@ -1,4 +1,4 @@
-import { state, showBusy, hideBusy, FONT_STACKS, FONT_FAMILY_NAME } from './state.js';
+import { state, showBusy, hideBusy, FONT_STACKS, FONT_FAMILY_NAME, normalizeFontId } from './state.js';
 import { t } from './i18n.js';
 
 const { PDFDocument, degrees, rgb, BlendMode } = PDFLib;
@@ -129,8 +129,9 @@ const LINE_HEIGHT = 1.6; // keep in sync with .text-content line-height in style
 
 export async function rasterizeText(item) {
   const SS = TEXT_SUPERSAMPLE;
-  const family = FONT_FAMILY_NAME[item.fontFamily] || FONT_FAMILY_NAME.sans;
-  const stack = FONT_STACKS[item.fontFamily] || FONT_STACKS.sans;
+  const fontId = normalizeFontId(item.fontFamily);
+  const family = FONT_FAMILY_NAME[fontId];
+  const stack = FONT_STACKS[fontId];
   await document.fonts.load(`400 ${item.fontSize * SS}px "${family}"`, 'ស្ត្រីខ្មែរ');
   const fontStr = `400 ${item.fontSize * SS}px ${stack}`;
   const lines = item.text.split('\n');
