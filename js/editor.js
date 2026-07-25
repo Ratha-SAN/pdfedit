@@ -92,6 +92,23 @@ export function initViewControls() {
   $('#zoom-level').addEventListener('click', () => setZoom(1));
   $('#page-prev').addEventListener('click', () => stepPage(-1));
   $('#page-next').addEventListener('click', () => stepPage(1));
+
+  // A two-page spread doesn't fit usefully on a phone-width screen; disable
+  // the option there and fall back to continuous if it was active when the
+  // window narrows (e.g. a tablet rotated to portrait).
+  const narrowQuery = window.matchMedia('(max-width: 640px)');
+  const doubleOption = $('#view-mode option[value="double"]');
+  const applyNarrowConstraint = () => {
+    doubleOption.disabled = narrowQuery.matches;
+    if (narrowQuery.matches && state.viewMode === 'double') {
+      state.viewMode = 'continuous';
+      state.pageIndex = 0;
+      $('#view-mode').value = 'continuous';
+      renderEditView();
+    }
+  };
+  narrowQuery.addEventListener('change', applyNarrowConstraint);
+  applyNarrowConstraint();
 }
 
 function setZoom(z) {

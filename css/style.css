@@ -117,7 +117,7 @@ button.tool-armed { background: #fde68a; border-color: #d4a017; }
 }
 #edit-view.view-double .page-wrap { margin: 0; }
 .page-wrap canvas.page-canvas { display: block; }
-.page-wrap.placing { cursor: crosshair; }
+.page-wrap.placing { cursor: crosshair; touch-action: none; }
 .page-num {
   position: absolute;
   top: 4px;
@@ -140,6 +140,7 @@ button.tool-armed { background: #fde68a; border-color: #d4a017; }
   position: absolute;
   cursor: move;
   border: 1px dashed transparent;
+  touch-action: none;
 }
 .item:hover, .item.selected { border-color: #2563eb; }
 .item .item-del {
@@ -219,9 +220,11 @@ button.tool-armed { background: #fde68a; border-color: #d4a017; }
   padding: 6px 6px 24px;
   cursor: grab;
   user-select: none;
+  touch-action: none;
 }
 .thumb.selected { border-color: #2563eb; background: #eff6ff; }
 .thumb.drag-over { outline: 3px solid #2563eb; }
+.thumb.dragging { opacity: 0.5; }
 .thumb canvas { display: block; pointer-events: none; }
 .thumb .thumb-label {
   position: absolute;
@@ -306,3 +309,37 @@ button.tool-armed { background: #fde68a; border-color: #d4a017; }
   animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- Narrow screens ---------- */
+@media (max-width: 640px) {
+  /* Stack into rows (title, tabs, toolbar) instead of one wide flex row.
+     This also bounds #toolbar's width to the viewport -- as a plain flex
+     child of a wrapping row it would otherwise grow to its full intrinsic
+     content width and overflow the page sideways instead of scrolling
+     internally. */
+  #topbar { flex-direction: column; align-items: stretch; gap: 8px; padding: 8px 12px; }
+
+  /* A wall of buttons wrapping into many short rows eats most of the
+     screen on a phone; scroll the toolbar horizontally as one row instead. */
+  #toolbar { width: 100%; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+  #view-tools, #edit-tools, #pages-tools, #toolbar > button { flex-shrink: 0; }
+
+  /* Same off-screen clipping bug the double-page label had: on a phone the
+     page fills nearly the full width, leaving no left margin for the
+     label. Anchor it inside the page instead, in every view mode. */
+  .page-num {
+    left: 6px;
+    background: rgba(255,255,255,0.85);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+
+  /* Slightly larger touch targets for the small per-item controls. */
+  .item .item-del { width: 28px; height: 28px; line-height: 25px; top: -14px; right: -14px; font-size: 16px; }
+  .item .item-resize { width: 22px; height: 22px; right: -11px; bottom: -11px; }
+  .item-toolbar input[type=color] { width: 36px; height: 32px; }
+  .item-toolbar input[type=number] { width: 60px; padding: 5px 4px; }
+
+  .dz-inner { padding: 32px 20px; }
+  .dz-title { font-size: 18px; }
+}

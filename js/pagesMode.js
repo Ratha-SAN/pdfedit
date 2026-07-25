@@ -3,6 +3,7 @@ import { state, $, showBusy, hideBusy, addSource } from './state.js';
 const THUMB_WIDTH = 150;
 const selected = new Set();
 let dragIndex = null;
+let touchDragIndex = null;
 
 export async function renderPagesView() {
   const view = $('#pages-view');
@@ -14,6 +15,7 @@ export async function renderPagesView() {
     thumb.className = 'thumb';
     thumb.draggable = true;
     thumb.dataset.index = idx;
+    thumb.dataset.pageId = page.id;
 
     const canvas = document.createElement('canvas');
     thumb.appendChild(canvas);
@@ -34,6 +36,7 @@ export async function renderPagesView() {
     label.textContent = `Page ${idx + 1}`;
     thumb.appendChild(label);
 
+    // Mouse: native HTML5 drag-and-drop.
     thumb.addEventListener('dragstart', () => { dragIndex = idx; });
     thumb.addEventListener('dragover', (e) => {
       e.preventDefault();
@@ -47,6 +50,35 @@ export async function renderPagesView() {
       const [moved] = state.pages.splice(dragIndex, 1);
       state.pages.splice(idx, 0, moved);
       dragIndex = null;
+      renderPagesView();
+    });
+
+    // Touch/pen: HTML5 drag-and-drop isn't usable on touchscreens (iOS
+    // Safari doesn't fire it at all for `draggable`), so reorder via
+    // pointer events instead. Mouse is left to the native DnD above.
+    thumb.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' || e.target.closest('.thumb-check')) return;
+      touchDragIndex = idx;
+      thumb.classList.add('dragging');
+      try { thumb.setPointerCapture(e.pointerId); } catch {}
+    });
+    thumb.addEventListener('pointermove', (e) => {
+      if (touchDragIndex === null || e.pointerType === 'mouse') return;
+      document.querySelectorAll('.thumb.drag-over').forEach((t) => t.classList.remove('drag-over'));
+      const target = document.elementFromPoint(e.clientX, e.clientY)?.closest('.thumb');
+      if (target && target !== thumb) target.classList.add('drag-over');
+    });
+    thumb.addEventListener('pointerup', (e) => {
+      if (touchDragIndex === null || e.pointerType === 'mouse') return;
+      thumb.classList.remove('dragging');
+      document.querySelectorAll('.thumb.drag-over').forEach((t) => t.classList.remove('drag-over'));
+      const target = document.elementFromPoint(e.clientX, e.clientY)?.closest('.thumb');
+      const dropIndex = target ? Number(target.dataset.index) : null;
+      const fromIndex = touchDragIndex;
+      touchDragIndex = null;
+      if (dropIndex === null || dropIndex === fromIndex) return;
+      const [moved] = state.pages.splice(fromIndex, 1);
+      state.pages.splice(dropIndex, 0, moved);
       renderPagesView();
     });
 
