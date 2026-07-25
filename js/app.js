@@ -1,10 +1,13 @@
 import { state, $, showBusy, hideBusy, setHint, addSource } from './state.js';
-import { renderEditView, armTool, initSignatureModal, openSignatureModal, initViewControls, currentPage, fileToDataUrl, loadImage, deselectAll } from './editor.js';
-import { renderPagesView, initPagesMode } from './pagesMode.js';
+import { renderEditView, armTool, initSignatureModal, openSignatureModal, initViewControls, currentPage, fileToDataUrl, loadImage, deselectAll, refreshEditI18n } from './editor.js';
+import { renderPagesView, initPagesMode, refreshPagesI18n } from './pagesMode.js';
 import { exportPdf, printPdf } from './exporter.js';
 import { recognizePage, initOcr } from './ocr.js';
+import { t, initLang } from './i18n.js';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('vendor/pdf.worker.min.js', location.href).href;
+
+initLang();
 
 /* ---------- upload ---------- */
 
@@ -19,7 +22,7 @@ fileInput.addEventListener('change', (e) => {
 });
 
 $('#btn-upload').addEventListener('click', () => {
-  if (state.pages.length && !confirm('Open a different PDF? This replaces the current document; any unsaved edits will be lost.')) return;
+  if (state.pages.length && !confirm(t('confirmReplace'))) return;
   fileInput.click();
 });
 
@@ -41,7 +44,7 @@ dropzone.addEventListener('drop', (e) => {
 });
 
 async function openFirstPdf(file) {
-  showBusy('Loading PDF…');
+  showBusy(t('loadingPdf'));
   try {
     state.sources = [];
     const pages = await addSource(file);
@@ -52,7 +55,7 @@ async function openFirstPdf(file) {
     $('#toolbar').hidden = false;
     await setMode('edit');
   } catch (err) {
-    alert('Could not read that PDF: ' + (err && err.message ? err.message : err));
+    alert(t('couldNotReadPdf', { err: err && err.message ? err.message : err }));
   } finally {
     hideBusy();
   }
@@ -77,11 +80,20 @@ async function setMode(mode) {
 $('#tab-edit').addEventListener('click', () => setMode('edit'));
 $('#tab-pages').addEventListener('click', () => setMode('pages'));
 
+// Item toolbars, thumbnail labels, and the remove-selected button embed
+// translated text generated at render time. Patch it in place rather than
+// re-rendering the current view, which would rebuild every canvas and drop
+// the current selection or an in-progress text edit.
+document.addEventListener('langchange', () => {
+  refreshEditI18n();
+  refreshPagesI18n();
+});
+
 /* ---------- edit tools ---------- */
 
 $('#btn-add-text').addEventListener('click', () => {
   if (state.tool && state.tool.type === 'text') armTool(null);
-  else armTool({ type: 'text' }, 'Click anywhere on a page to place a text box. Type Khmer or English, drag to move, use the corner handle to resize.');
+  else armTool({ type: 'text' }, t('textToolHint'));
 });
 
 $('#btn-add-image').addEventListener('click', () => $('#image-input').click());
@@ -93,7 +105,7 @@ $('#image-input').addEventListener('change', async (e) => {
   const img = await loadImage(dataUrl);
   armTool(
     { type: 'stamp', kind: 'image', dataUrl, natW: img.naturalWidth, natH: img.naturalHeight },
-    'Click on a page to place the image.'
+    t('imageToolHint')
   );
 });
 
@@ -101,7 +113,7 @@ $('#btn-add-signature').addEventListener('click', openSignatureModal);
 initSignatureModal((sig) => {
   armTool(
     { type: 'stamp', kind: 'signature', dataUrl: sig.dataUrl, natW: sig.natW, natH: sig.natH },
-    'Click on a page to place the signature.'
+    t('signatureToolHint')
   );
 });
 
@@ -109,7 +121,7 @@ $('#btn-add-highlight').addEventListener('click', () => {
   if (state.tool && state.tool.type === 'highlight') armTool(null);
   else armTool(
     { type: 'highlight', color: '#ffff00' },
-    'Drag across a page to highlight (or click for a default size). Change the color afterward from the highlight’s own toolbar.'
+    t('highlightToolHint')
   );
 });
 
@@ -124,7 +136,7 @@ $('#btn-export').addEventListener('click', async () => {
     await exportPdf();
   } catch (err) {
     hideBusy();
-    alert('Export failed: ' + (err && err.message ? err.message : err));
+    alert(t('exportFailed', { err: err && err.message ? err.message : err }));
   }
 });
 
@@ -134,7 +146,7 @@ $('#btn-print').addEventListener('click', async () => {
     await printPdf();
   } catch (err) {
     hideBusy();
-    alert('Print failed: ' + (err && err.message ? err.message : err));
+    alert(t('printFailed', { err: err && err.message ? err.message : err }));
   }
 });
 

@@ -1,4 +1,5 @@
 import { state, $, showBusy, hideBusy, addSource } from './state.js';
+import { t } from './i18n.js';
 
 const THUMB_WIDTH = 150;
 const selected = new Set();
@@ -23,7 +24,7 @@ export async function renderPagesView() {
     const check = document.createElement('input');
     check.type = 'checkbox';
     check.className = 'thumb-check';
-    check.title = 'Select page';
+    check.title = t('selectPageTitle');
     check.addEventListener('change', () => {
       if (check.checked) selected.add(page.id); else selected.delete(page.id);
       thumb.classList.toggle('selected', check.checked);
@@ -33,7 +34,7 @@ export async function renderPagesView() {
 
     const label = document.createElement('div');
     label.className = 'thumb-label';
-    label.textContent = `Page ${idx + 1}`;
+    label.textContent = `${t('page')} ${idx + 1}`;
     thumb.appendChild(label);
 
     // Mouse: native HTML5 drag-and-drop.
@@ -100,7 +101,19 @@ async function renderThumb(page, canvas) {
 function updateRemoveButton() {
   const btn = $('#btn-remove-pages');
   btn.disabled = selected.size === 0 || selected.size >= state.pages.length;
-  btn.textContent = selected.size ? `Remove selected (${selected.size})` : 'Remove selected';
+  btn.textContent = selected.size ? t('removeSelectedCount', { n: selected.size }) : t('removeSelected');
+}
+
+// Patches translated labels on already-rendered thumbnails in place, rather
+// than re-rendering the grid (which would drop the current selection).
+export function refreshPagesI18n() {
+  document.querySelectorAll('.thumb').forEach((thumb) => {
+    const label = thumb.querySelector('.thumb-label');
+    if (label) label.textContent = `${t('page')} ${Number(thumb.dataset.index) + 1}`;
+    const check = thumb.querySelector('.thumb-check');
+    if (check) check.title = t('selectPageTitle');
+  });
+  updateRemoveButton();
 }
 
 export function initPagesMode() {
@@ -115,13 +128,13 @@ export function initPagesMode() {
     const file = e.target.files[0];
     e.target.value = '';
     if (!file) return;
-    showBusy('Loading PDF…');
+    showBusy(t('loadingPdf'));
     try {
       const pages = await addSource(file);
       state.pages.push(...pages);
       await renderPagesView();
     } catch (err) {
-      alert('Could not read that PDF: ' + err.message);
+      alert(t('couldNotReadPdf', { err: err.message }));
     } finally {
       hideBusy();
     }
