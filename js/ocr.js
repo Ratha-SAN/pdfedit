@@ -2,19 +2,40 @@ import { state, $ } from './state.js';
 import { t, translateOcrStatus } from './i18n.js';
 
 let workerPromise = null;
+let workerLang = null;
 
-function getWorker(onProgress) {
+const OCR_LANG_KEY = { khm: 'ocrLangKhmer', eng: 'ocrLangEnglish', 'khm+eng': 'ocrLangBoth' };
+
+function ocrLangLabel(lang) {
+  return t(OCR_LANG_KEY[lang] || 'ocrLangKhmer');
+}
+
+// Creates the worker once (loading the wasm core is the expensive part),
+// then reuses it across languages via reinitialize() -- which only needs
+// to (re)load the requested traineddata file(s), not the whole core. The
+// logger callback is fixed at creation time (this build's worker has no
+// setLogger), but that's fine: every call's callback just re-queries the
+// same fixed #ocr-progress DOM elements, so reusing the first one works
+// identically to a fresh one would.
+async function getWorker(lang, onProgress) {
   if (!workerPromise) {
     const base = new URL('.', location.href).href;
-    workerPromise = Tesseract.createWorker('khm', 1, {
+    workerPromise = Tesseract.createWorker(lang, 1, {
       workerPath: base + 'vendor/tesseract-worker.min.js',
       corePath: base + 'vendor',
       langPath: base + 'tessdata',
       gzip: true,
       logger: (m) => onProgress && onProgress(m),
     });
+    workerLang = lang;
+    return workerPromise;
   }
-  return workerPromise;
+  const worker = await workerPromise;
+  if (workerLang !== lang) {
+    await worker.reinitialize(lang);
+    workerLang = lang;
+  }
+  return worker;
 }
 
 export async function recognizePage(page) {
@@ -26,11 +47,13 @@ export async function recognizeArea(page, rect) {
 }
 
 async function runRecognition(getCanvas) {
+  const lang = $('#ocr-lang').value;
   const modal = $('#ocr-modal');
   const progress = $('#ocr-progress');
   const bar = $('#ocr-progress-bar');
   const label = $('#ocr-progress-label');
   const output = $('#ocr-output');
+  $('#ocr-modal-title').textContent = t('ocrModalTitle', { lang: ocrLangLabel(lang) });
   output.value = '';
   progress.hidden = false;
   bar.style.inset = '0 100% 0 0';
@@ -47,7 +70,7 @@ async function runRecognition(getCanvas) {
   };
 
   try {
-    const worker = await getWorker(onProgress);
+    const worker = await getWorker(lang, onProgress);
     const canvas = await getCanvas();
     label.textContent = t('ocrRecognizingStart');
     const { data } = await worker.recognize(canvas);

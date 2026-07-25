@@ -1,4 +1,4 @@
-import { state, newId, $, setHint } from './state.js';
+import { state, newId, $, setHint, FONT_STACKS } from './state.js';
 import { t } from './i18n.js';
 import { recognizeArea } from './ocr.js';
 
@@ -177,7 +177,7 @@ function onPagePointerDown(e, page, wrap) {
   const y = (e.clientY - rect.top) / scale;
   let item;
   if (state.tool.type === 'text') {
-    item = { id: newId(), type: 'text', x, y, text: '', fontSize: 16, color: '#000000' };
+    item = { id: newId(), type: 'text', x, y, text: '', fontSize: 16, color: '#000000', fontFamily: 'sans' };
   } else {
     const t = state.tool;
     let w = Math.min(t.natW * 0.75, page.vw * 0.5);
@@ -309,12 +309,14 @@ function buildItemEl(item, page, wrap) {
   el.dataset.itemId = item.id;
 
   if (item.type === 'text') {
+    if (!item.fontFamily) item.fontFamily = 'sans';
     const tc = document.createElement('div');
     tc.className = 'text-content';
     tc.contentEditable = 'false';
     tc.innerText = item.text;
     tc.style.fontSize = item.fontSize * scale + 'px';
     tc.style.color = item.color;
+    tc.style.fontFamily = FONT_STACKS[item.fontFamily];
     tc.addEventListener('input', () => {
       item.text = tc.innerText.replace(/\n$/, '');
       syncTextSize(item, el, scale);
@@ -327,11 +329,23 @@ function buildItemEl(item, page, wrap) {
     const tb = document.createElement('div');
     tb.className = 'item-toolbar';
     tb.innerHTML = `<label>${t('itemSizeLabel')} <input type="number" min="6" max="120" step="1" value="${item.fontSize}"></label>
+      <select title="${t('itemFontTitle')}">
+        <option value="sans">${t('fontSans')}</option>
+        <option value="serif">${t('fontSerif')}</option>
+        <option value="mono">${t('fontMono')}</option>
+      </select>
       <input type="color" value="${item.color}" title="${t('itemTextColorTitle')}">`;
     const sizeInput = tb.querySelector('input[type=number]');
     sizeInput.addEventListener('input', () => {
       item.fontSize = Math.max(6, Math.min(120, Number(sizeInput.value) || 16));
       tc.style.fontSize = item.fontSize * scale + 'px';
+      syncTextSize(item, el, scale);
+    });
+    const fontSelect = tb.querySelector('select');
+    fontSelect.value = item.fontFamily;
+    fontSelect.addEventListener('change', () => {
+      item.fontFamily = fontSelect.value;
+      tc.style.fontFamily = FONT_STACKS[item.fontFamily];
       syncTextSize(item, el, scale);
     });
     const colorInput = tb.querySelector('input[type=color]');
@@ -390,6 +404,44 @@ function buildItemEl(item, page, wrap) {
     const tc = el.querySelector('.text-content');
     if (tc && tc.isContentEditable) { e.stopPropagation(); return; }
     e.stopPropagation();
+
+    if (item.type === 'text' && e.pointerType === 'mouse' && el.classList.contains('selected')) {
+      // Already selected (this is at least the second mouse interaction
+      // with it): let the browser's own mousedown-drag select the text,
+      // like any ordinary text, instead of moving the box again.
+      startTextEdit(tc);
+      return;
+    }
+
+    if (item.type === 'text' && e.pointerType !== 'mouse') {
+      // Touch/pen: a quick tap-drag still repositions the box (unchanged
+      // behavior); holding still starts text selection instead, mirroring
+      // how native mobile text fields use long-press to select.
+      e.preventDefault();
+      selectItem(el);
+      const startX = e.clientX, startY = e.clientY;
+      const timer = setTimeout(() => {
+        cleanup();
+        startTextEdit(tc);
+        if (navigator.vibrate) navigator.vibrate(10);
+      }, 450);
+      const onMove = (ev) => {
+        if (Math.hypot(ev.clientX - startX, ev.clientY - startY) > 8) {
+          clearTimeout(timer);
+          cleanup();
+          startDrag(e, item, page, el);
+        }
+      };
+      const onUp = () => { clearTimeout(timer); cleanup(); };
+      const cleanup = () => {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+      };
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+      return;
+    }
+
     e.preventDefault();
     selectItem(el);
     startDrag(e, item, page, el);
@@ -415,6 +467,12 @@ export function refreshEditI18n() {
   document.querySelectorAll('.item .item-toolbar input[type=color]').forEach((input) => {
     const isHighlight = input.closest('.item').classList.contains('item-highlight');
     input.title = isHighlight ? t('itemHighlightColorTitle') : t('itemTextColorTitle');
+  });
+  document.querySelectorAll('.item .item-toolbar select').forEach((select) => {
+    select.title = t('itemFontTitle');
+    select.querySelector('option[value=sans]').textContent = t('fontSans');
+    select.querySelector('option[value=serif]').textContent = t('fontSerif');
+    select.querySelector('option[value=mono]').textContent = t('fontMono');
   });
   document.querySelectorAll('.item .item-del').forEach((el) => { el.title = t('itemDeleteTitle'); });
   document.querySelectorAll('.item .item-resize').forEach((el) => { el.title = t('itemResizeTitle'); });

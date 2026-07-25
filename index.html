@@ -46,6 +46,11 @@
       <button id="btn-add-image" data-i18n="btnAddImage" data-i18n-title="btnAddImageTitle" title="Insert an image (click a page to place)">+ Image</button>
       <button id="btn-add-signature" data-i18n="btnAddSignature" data-i18n-title="btnAddSignatureTitle" title="Draw or upload a signature">+ Signature</button>
       <button id="btn-add-highlight" data-i18n="btnAddHighlight" data-i18n-title="btnAddHighlightTitle" title="Highlight part of a page (drag to draw)">+ Highlight</button>
+      <select id="ocr-lang" data-i18n-title="ocrLangTitle" title="OCR language">
+        <option value="khm" data-i18n="ocrLangKhmer">Khmer</option>
+        <option value="eng" data-i18n="ocrLangEnglish">English</option>
+        <option value="khm+eng" data-i18n="ocrLangBoth">Khmer + English</option>
+      </select>
       <button id="btn-ocr" data-i18n="btnOcr" data-i18n-title="btnOcrTitle" title="Recognize text on the current page with Khmer OCR">Recognize page</button>
       <button id="btn-ocr-area" data-i18n="btnOcrArea" data-i18n-title="btnOcrAreaTitle" title="Recognize text in a selected area (drag to select)">Recognize area</button>
     </span>
@@ -94,7 +99,7 @@
 <div id="ocr-modal" class="modal" hidden>
   <div class="modal-box">
     <div class="modal-head">
-      <span data-i18n="ocrModalTitle">Recognized text (Khmer)</span>
+      <span id="ocr-modal-title" data-i18n="ocrModalTitle">Recognized text (Khmer)</span>
       <button class="modal-close" data-close="ocr-modal">&times;</button>
     </div>
     <div id="ocr-progress" hidden><div id="ocr-progress-bar"></div><span id="ocr-progress-label">Starting…</span></div>
