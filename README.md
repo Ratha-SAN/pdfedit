@@ -8,7 +8,11 @@ support. No backend, no accounts — documents never leave your machine.
 - **Upload** a PDF by drag-and-drop or file picker.
 - **Edit mode** — add text boxes (Khmer or English), insert PNG/JPEG images,
   and place a signature (drawn on a canvas or uploaded as PNG) anywhere on any
-  page. Drag to move, corner handle to resize, × to delete.
+  page. Drag to move, corner handle to resize, × to delete, and an **Edit**
+  button (or double-click / long-press) to type into a text box in place.
+- **Left sidebar** — tools live in collapsible sections (File, View, Insert,
+  Recognize text, Pages) rather than one long toolbar row; on phones the
+  sidebar stacks above the document instead of taking width.
 - **Pages mode** — thumbnail grid of all pages: select, drag to reorder,
   remove pages, and append pages from a second PDF.
 - **Multiple documents** — every file you open gets its own tab; opening a
@@ -22,7 +26,8 @@ support. No backend, no accounts — documents never leave your machine.
 - **Recognize text (OCR)** — one *Recognize text* menu picks both the scope
   (whole page, or drag out an area) and the language (Auto = Khmer+English,
   Khmer, English, or Math). Output is selectable/copyable text; Math mode adds
-  a rendered-formula preview and editable LaTeX.
+  a rendered-formula preview and editable LaTeX, and reconstructs **stacked
+  fractions** as `\frac{}{}`.
 
 ## Running
 
@@ -88,6 +93,13 @@ loads in ~0.4s. Thumbnails in Pages mode are lazy for the same reason.
 - OCR quality depends on scan quality; the fast traineddata occasionally
   confuses similar Khmer signs. OCR output is provided as copyable text, not
   embedded back into the PDF.
+- **No better math model is available client-side.** npm publishes no
+  LaTeX/math OCR model; the one plausible package (`react-latex-ocr-editor`)
+  is an HTTP client for a pix2tex/Mathpix *server*, which would break the
+  offline, nothing-leaves-your-machine guarantee. `onnxruntime-web` exists, but
+  pix2tex-class weights (~100MB+) are not on npm and would be a heavy download
+  for every user. Math support is therefore Tesseract plus geometric
+  reconstruction, described next.
 - **Math OCR is structurally good but character-wise unreliable on scripts.**
   Math mode rebuilds two-dimensional layout from per-symbol geometry, so
   baseline formulas and fractions come out exact (`(x + y) / 2 = 5` becomes

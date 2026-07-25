@@ -211,13 +211,13 @@ function stepPage(dir) {
 export function armTool(tool, hint) {
   state.tool = tool;
   setHint(hint || null);
-  document.querySelectorAll('#edit-tools button').forEach((b) => b.classList.remove('tool-armed'));
+  document.querySelectorAll('#edit-tools button, #ocr-tools button').forEach((b) => b.classList.remove('tool-armed'));
   if (tool) {
     if (tool.type === 'text') $('#btn-add-text').classList.add('tool-armed');
     if (tool.type === 'stamp' && tool.kind === 'image') $('#btn-add-image').classList.add('tool-armed');
     if (tool.type === 'stamp' && tool.kind === 'signature') $('#btn-add-signature').classList.add('tool-armed');
     if (tool.type === 'highlight') $('#btn-add-highlight').classList.add('tool-armed');
-    if (tool.type === 'ocr-area') $('#btn-recognize').classList.add('tool-armed');
+    if (tool.type === 'ocr-area') $('#mi-ocr-area').classList.add('tool-armed');
   }
   updatePlacingCursor();
 }
@@ -405,6 +405,7 @@ function buildItemEl(item, page, wrap) {
     const tb = document.createElement('div');
     tb.className = 'item-toolbar';
     tb.innerHTML = `<label>${t('itemSizeLabel')} <input type="number" min="6" max="120" step="1" value="${item.fontSize}"></label>
+      <button class="item-edit" title="${t('itemEditTitle')}" aria-pressed="false">${t('itemEditLabel')}</button>
       <select title="${t('itemFontTitle')}">${fontOptionsHtml()}</select>
       <input type="color" value="${item.color}" title="${t('itemTextColorTitle')}">`;
     const sizeInput = tb.querySelector('input[type=number]');
@@ -413,6 +414,20 @@ function buildItemEl(item, page, wrap) {
       tc.style.fontSize = item.fontSize * scale + 'px';
       syncTextSize(item, el, scale);
     });
+    const editBtn = tb.querySelector('.item-edit');
+    const syncEditBtn = () => {
+      const on = tc.isContentEditable;
+      editBtn.classList.toggle('editing', on);
+      editBtn.setAttribute('aria-pressed', String(on));
+    };
+    editBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (tc.isContentEditable) stopTextEdit(tc); else startTextEdit(tc);
+      syncEditBtn();
+    });
+    tc.addEventListener('focus', syncEditBtn);
+    tc.addEventListener('blur', () => requestAnimationFrame(syncEditBtn));
+
     const fontSelect = tb.querySelector('select');
     fontSelect.value = item.fontFamily;
     fontSelect.addEventListener('change', async () => {
@@ -556,6 +571,10 @@ export function refreshEditI18n() {
     const groups = select.querySelectorAll('optgroup');
     if (groups[0]) groups[0].label = t('fontGroupKhmer');
     if (groups[1]) groups[1].label = t('fontGroupLatin');
+  });
+  document.querySelectorAll('.item .item-edit').forEach((el) => {
+    el.title = t('itemEditTitle');
+    el.textContent = t('itemEditLabel');
   });
   document.querySelectorAll('.item .item-del').forEach((el) => { el.title = t('itemDeleteTitle'); });
   document.querySelectorAll('.item .item-resize').forEach((el) => { el.title = t('itemResizeTitle'); });
