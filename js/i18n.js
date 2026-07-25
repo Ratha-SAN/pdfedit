@@ -37,6 +37,8 @@ const translations = {
     ocrLangKhmer: 'Khmer',
     ocrLangEnglish: 'English',
     ocrLangBoth: 'Khmer + English',
+    ocrLangMath: 'Math (experimental)',
+    ocrLangMathTitle: 'Experimental: works best on simple printed equations, not handwriting',
 
     themeLightTitle: 'Light theme',
     themeDarkTitle: 'Dark theme',
@@ -134,6 +136,8 @@ const translations = {
     ocrLangKhmer: 'ខ្មែរ',
     ocrLangEnglish: 'អង់គ្លេស',
     ocrLangBoth: 'ខ្មែរ + អង់គ្លេស',
+    ocrLangMath: 'គណិតវិទ្យា (ពិសោធន៍)',
+    ocrLangMathTitle: 'ពិសោធន៍៖ ដំណើរការល្អបំផុតលើសមីការបោះពុម្ពសាមញ្ញ មិនមែនអក្សរដៃទេ',
 
     themeLightTitle: 'រចនាបថភ្លឺ',
     themeDarkTitle: 'រចនាបថងងឹត',

@@ -73,4 +73,10 @@ untouched and stays selectable.
 - OCR quality depends on scan quality; the fast traineddata occasionally
   confuses similar Khmer signs. OCR output is provided as copyable text, not
   embedded back into the PDF.
+- The "Math (experimental)" OCR language uses Tesseract's `equ` traineddata,
+  which is quite unreliable in practice — in testing it failed even on a
+  clean, simple printed equation ("x + 1 = 2") that the plain English model
+  read correctly. It's included for cases it might help with, but don't
+  expect real equation transcription; a dedicated math-OCR service would do
+  much better, at the cost of not being self-contained/offline.
 - Encrypted/password-protected PDFs are not supported.

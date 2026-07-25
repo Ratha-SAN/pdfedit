@@ -4,7 +4,7 @@ import { t, translateOcrStatus } from './i18n.js';
 let workerPromise = null;
 let workerLang = null;
 
-const OCR_LANG_KEY = { khm: 'ocrLangKhmer', eng: 'ocrLangEnglish', 'khm+eng': 'ocrLangBoth' };
+const OCR_LANG_KEY = { khm: 'ocrLangKhmer', eng: 'ocrLangEnglish', 'khm+eng': 'ocrLangBoth', equ: 'ocrLangMath' };
 
 function ocrLangLabel(lang) {
   return t(OCR_LANG_KEY[lang] || 'ocrLangKhmer');
