@@ -1,7 +1,7 @@
 import { state, $, showBusy, hideBusy, setHint, addSource } from './state.js';
-import { renderEditView, armTool, initSignatureModal, openSignatureModal, currentPage, fileToDataUrl, loadImage, deselectAll } from './editor.js';
+import { renderEditView, armTool, initSignatureModal, openSignatureModal, initViewControls, currentPage, fileToDataUrl, loadImage, deselectAll } from './editor.js';
 import { renderPagesView, initPagesMode } from './pagesMode.js';
-import { exportPdf } from './exporter.js';
+import { exportPdf, printPdf } from './exporter.js';
 import { recognizePage, initOcr } from './ocr.js';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('vendor/pdf.worker.min.js', location.href).href;
@@ -40,6 +40,7 @@ async function openFirstPdf(file) {
   try {
     const pages = await addSource(file);
     state.pages = pages;
+    state.pageIndex = 0;
     dropzone.hidden = true;
     $('#mode-tabs').hidden = false;
     $('#toolbar').hidden = false;
@@ -60,6 +61,7 @@ async function setMode(mode) {
   $('#tab-pages').classList.toggle('active', mode === 'pages');
   $('#edit-view').hidden = mode !== 'edit';
   $('#pages-view').hidden = mode !== 'pages';
+  $('#view-tools').hidden = mode !== 'edit';
   $('#edit-tools').hidden = mode !== 'edit';
   $('#pages-tools').hidden = mode !== 'pages';
   if (mode === 'edit') await renderEditView();
@@ -97,6 +99,14 @@ initSignatureModal((sig) => {
   );
 });
 
+$('#btn-add-highlight').addEventListener('click', () => {
+  if (state.tool && state.tool.type === 'highlight') armTool(null);
+  else armTool(
+    { type: 'highlight', color: '#ffff00' },
+    'Drag across a page to highlight (or click for a default size). Change the color afterward from the highlight’s own toolbar.'
+  );
+});
+
 $('#btn-ocr').addEventListener('click', () => {
   const page = currentPage();
   if (page) recognizePage(page);
@@ -112,6 +122,16 @@ $('#btn-export').addEventListener('click', async () => {
   }
 });
 
+$('#btn-print').addEventListener('click', async () => {
+  deselectAll();
+  try {
+    await printPdf();
+  } catch (err) {
+    hideBusy();
+    alert('Print failed: ' + (err && err.message ? err.message : err));
+  }
+});
+
 /* ---------- modals ---------- */
 
 document.querySelectorAll('.modal-close').forEach((btn) =>
@@ -123,6 +143,7 @@ document.querySelectorAll('.modal').forEach((m) =>
 
 initPagesMode();
 initOcr();
+initViewControls();
 
 // Pre-warm the Khmer font so canvas measurement is correct on first use
 document.fonts.load('400 16px "Noto Sans Khmer"', 'ស្ត្រីខ្មែរ');
