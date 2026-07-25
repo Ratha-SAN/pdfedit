@@ -14,9 +14,9 @@ support. No backend, no accounts — documents never leave your machine.
 - **Save PDF** — downloads the modified document.
 - **Khmer text** renders correctly (subscript consonants, vowel reordering)
   in both the editor and the exported PDF.
-- **Recognize text (OCR)** — recognize the current page or a dragged-out
-  area of it, in Khmer, English, or both, using tesseract.js; output is
-  selectable/copyable text.
+- **Recognize text (OCR)** — one *Recognize text* menu picks both the scope
+  (whole page, or drag out an area) and the language (Auto = Khmer+English,
+  Khmer, English, or Math). Output is selectable/copyable text.
 
 ## Running
 
@@ -62,7 +62,7 @@ untouched and stays selectable.
 | Rendering / thumbnails | [pdf.js](https://mozilla.github.io/pdf.js/) 3.11 |
 | Writing the output PDF | [pdf-lib](https://pdf-lib.js.org/) 1.17 |
 | OCR | [tesseract.js](https://tesseract.projectnaptha.com/) 5.1 + `khm`/`eng` traineddata (tessdata_fast) |
-| Fonts | Noto Sans Khmer, Noto Serif Khmer (OFL) |
+| Fonts | 16 Khmer + 13 Latin families from [Fontsource](https://fontsource.org/) (OFL/Apache) |
 
 ## Known limitations
 
@@ -73,10 +73,13 @@ untouched and stays selectable.
 - OCR quality depends on scan quality; the fast traineddata occasionally
   confuses similar Khmer signs. OCR output is provided as copyable text, not
   embedded back into the PDF.
-- The "Math (experimental)" OCR language uses Tesseract's `equ` traineddata,
-  which is quite unreliable in practice — in testing it failed even on a
-  clean, simple printed equation ("x + 1 = 2") that the plain English model
-  read correctly. It's included for cases it might help with, but don't
-  expect real equation transcription; a dedicated math-OCR service would do
-  much better, at the cost of not being self-contained/offline.
+- Math OCR reads formulas as **plain text, not LaTeX** — `x + 1 = 2`, not
+  `$x + 1 = 2$`. It handles printed linear equations well but has no concept
+  of two-dimensional layout, so stacked fractions, matrices, integral bounds
+  and exponents come out flattened (`a2 + b2 = c2` rather than `a² + b² = c²`).
+  Tesseract's dedicated `equ` traineddata was evaluated for this and **dropped**:
+  on a six-equation test page it produced *no output at all* (0/6) while plain
+  English scored 6/6 on the same image, so math mode is English plus a
+  math-oriented character set and page-segmentation mode. True LaTeX-grade
+  math OCR needs a purpose-built model far too large to ship client-side.
 - Encrypted/password-protected PDFs are not supported.

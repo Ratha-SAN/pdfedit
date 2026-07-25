@@ -4,10 +4,37 @@ import { t, translateOcrStatus } from './i18n.js';
 let workerPromise = null;
 let workerLang = null;
 
-const OCR_LANG_KEY = { khm: 'ocrLangKhmer', eng: 'ocrLangEnglish', 'khm+eng': 'ocrLangBoth', equ: 'ocrLangMath' };
+// Characters worth allowing in math mode. Restricting the alphabet stops the
+// engine from "correcting" isolated symbols into dictionary words, which is
+// what makes plain prose models mangle equations.
+const MATH_WHITELIST =
+  '0123456789' +
+  'abcdefghijklmnopqrstuvwxyz' +
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZ' +
+  '+-=*/^_()[]{}<>|.,;:\'"!?%$#\\ ' +
+  '√∛∫∮∑∏πθφλμσΩΔαβγδεζηικνξρτυχψω' +
+  '×÷±∓≤≥≠≈≡∝∞∂∇∈∉⊂⊃∪∩∀∃→←↔⇒⇔°′″';
 
-function ocrLangLabel(lang) {
-  return t(OCR_LANG_KEY[lang] || 'ocrLangKhmer');
+// Each mode maps to the tesseract language string plus any parameters.
+// NOTE: tesseract's own `equ` (equation) traineddata was evaluated here and
+// dropped -- on clean printed formulas it returned *no output at all* (0/6 on
+// a six-equation test page) while plain `eng` scored 6/6 on the same input.
+// Math mode is therefore `eng` with a math-oriented alphabet and a
+// single-uniform-block page segmentation, which measured best.
+const OCR_MODES = {
+  auto: { langs: 'khm+eng', labelKey: 'ocrLangAuto' },
+  khm:  { langs: 'khm',     labelKey: 'ocrLangKhmer' },
+  eng:  { langs: 'eng',     labelKey: 'ocrLangEnglish' },
+  math: {
+    langs: 'eng',
+    labelKey: 'ocrLangMath',
+    params: { tessedit_pageseg_mode: '6', tessedit_char_whitelist: MATH_WHITELIST },
+  },
+};
+
+function currentMode() {
+  const checked = document.querySelector('input[name="ocr-lang"]:checked');
+  return OCR_MODES[checked?.value] ? checked.value : 'auto';
 }
 
 // Creates the worker once (loading the wasm core is the expensive part),
@@ -17,23 +44,23 @@ function ocrLangLabel(lang) {
 // setLogger), but that's fine: every call's callback just re-queries the
 // same fixed #ocr-progress DOM elements, so reusing the first one works
 // identically to a fresh one would.
-async function getWorker(lang, onProgress) {
+async function getWorker(langs, onProgress) {
   if (!workerPromise) {
     const base = new URL('.', location.href).href;
-    workerPromise = Tesseract.createWorker(lang, 1, {
+    workerPromise = Tesseract.createWorker(langs, 1, {
       workerPath: base + 'vendor/tesseract-worker.min.js',
       corePath: base + 'vendor',
       langPath: base + 'tessdata',
       gzip: true,
       logger: (m) => onProgress && onProgress(m),
     });
-    workerLang = lang;
+    workerLang = langs;
     return workerPromise;
   }
   const worker = await workerPromise;
-  if (workerLang !== lang) {
-    await worker.reinitialize(lang);
-    workerLang = lang;
+  if (workerLang !== langs) {
+    await worker.reinitialize(langs);
+    workerLang = langs;
   }
   return worker;
 }
@@ -47,13 +74,14 @@ export async function recognizeArea(page, rect) {
 }
 
 async function runRecognition(getCanvas) {
-  const lang = $('#ocr-lang').value;
+  const modeId = currentMode();
+  const mode = OCR_MODES[modeId];
   const modal = $('#ocr-modal');
   const progress = $('#ocr-progress');
   const bar = $('#ocr-progress-bar');
   const label = $('#ocr-progress-label');
   const output = $('#ocr-output');
-  $('#ocr-modal-title').textContent = t('ocrModalTitle', { lang: ocrLangLabel(lang) });
+  $('#ocr-modal-title').textContent = t('ocrModalTitle', { lang: t(mode.labelKey) });
   output.value = '';
   progress.hidden = false;
   bar.style.inset = '0 100% 0 0';
@@ -70,7 +98,14 @@ async function runRecognition(getCanvas) {
   };
 
   try {
-    const worker = await getWorker(lang, onProgress);
+    const worker = await getWorker(mode.langs, onProgress);
+    // Parameters persist on the worker between runs, so always write the
+    // full set -- otherwise math mode's restricted alphabet would leak into
+    // the next Khmer/English run and silently mangle it.
+    await worker.setParameters({
+      tessedit_pageseg_mode: mode.params?.tessedit_pageseg_mode ?? '3',
+      tessedit_char_whitelist: mode.params?.tessedit_char_whitelist ?? '',
+    });
     const canvas = await getCanvas();
     label.textContent = t('ocrRecognizingStart');
     const { data } = await worker.recognize(canvas);

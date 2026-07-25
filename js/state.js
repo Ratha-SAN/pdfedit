@@ -1,19 +1,67 @@
-// Every stack pairs a bundled Khmer webfont (so Khmer glyphs always render
-// correctly regardless of choice, the app's core guarantee) with universal
-// Latin fonts already present on virtually every OS, so no extra Latin font
-// files need to be bundled.
-export const FONT_STACKS = {
-  sans: `'Noto Sans Khmer', Arial, Helvetica, sans-serif`,
-  serif: `'Noto Serif Khmer', 'Times New Roman', Georgia, serif`,
-  mono: `'Noto Sans Khmer', 'Courier New', monospace`,
-};
-// Family name to preload via document.fonts.load() for each stack, so
-// canvas text measurement/rasterization is correct on first use.
-export const FONT_FAMILY_NAME = {
-  sans: 'Noto Sans Khmer',
-  serif: 'Noto Serif Khmer',
-  mono: 'Noto Sans Khmer',
-};
+// Bundled font catalogue. Khmer faces shape Khmer correctly on their own;
+// Latin faces have no Khmer glyphs at all, so every Latin stack falls back
+// to Noto Sans Khmer for Khmer text. That keeps the app's core guarantee --
+// Khmer always renders correctly -- true for every font a user can pick.
+// `id` doubles as the value stored on items and must stay stable.
+export const KHMER_FONTS = [
+  { id: 'noto-sans-khmer', label: 'Noto Sans Khmer', family: 'Noto Sans Khmer' },
+  { id: 'noto-serif-khmer', label: 'Noto Serif Khmer', family: 'Noto Serif Khmer' },
+  { id: 'battambang', label: 'Battambang', family: 'Battambang' },
+  { id: 'hanuman', label: 'Hanuman', family: 'Hanuman' },
+  { id: 'kantumruy-pro', label: 'Kantumruy Pro', family: 'Kantumruy Pro' },
+  { id: 'nokora', label: 'Nokora', family: 'Nokora' },
+  { id: 'suwannaphum', label: 'Suwannaphum', family: 'Suwannaphum' },
+  { id: 'content', label: 'Content', family: 'Content' },
+  { id: 'siemreap', label: 'Siemreap', family: 'Siemreap' },
+  { id: 'koulen', label: 'Koulen', family: 'Koulen' },
+  { id: 'moul', label: 'Moul', family: 'Moul' },
+  { id: 'angkor', label: 'Angkor', family: 'Angkor' },
+  { id: 'bayon', label: 'Bayon', family: 'Bayon' },
+  { id: 'bokor', label: 'Bokor', family: 'Bokor' },
+  { id: 'preahvihear', label: 'Preahvihear', family: 'Preahvihear' },
+  { id: 'taprom', label: 'Taprom', family: 'Taprom' },
+];
+export const LATIN_FONTS = [
+  { id: 'roboto', label: 'Roboto', family: 'Roboto', generic: 'sans-serif' },
+  { id: 'open-sans', label: 'Open Sans', family: 'Open Sans', generic: 'sans-serif' },
+  { id: 'lato', label: 'Lato', family: 'Lato', generic: 'sans-serif' },
+  { id: 'inter', label: 'Inter', family: 'Inter', generic: 'sans-serif' },
+  { id: 'montserrat', label: 'Montserrat', family: 'Montserrat', generic: 'sans-serif' },
+  { id: 'poppins', label: 'Poppins', family: 'Poppins', generic: 'sans-serif' },
+  { id: 'raleway', label: 'Raleway', family: 'Raleway', generic: 'sans-serif' },
+  { id: 'nunito', label: 'Nunito', family: 'Nunito', generic: 'sans-serif' },
+  { id: 'source-sans-3', label: 'Source Sans 3', family: 'Source Sans 3', generic: 'sans-serif' },
+  { id: 'oswald', label: 'Oswald', family: 'Oswald', generic: 'sans-serif' },
+  { id: 'merriweather', label: 'Merriweather', family: 'Merriweather', generic: 'serif' },
+  { id: 'playfair-display', label: 'Playfair Display', family: 'Playfair Display', generic: 'serif' },
+  { id: 'roboto-mono', label: 'Roboto Mono', family: 'Roboto Mono', generic: 'monospace' },
+];
+
+const KHMER_FALLBACK = 'Noto Sans Khmer';
+
+export const FONT_STACKS = {};
+export const FONT_FAMILY_NAME = {};
+for (const f of KHMER_FONTS) {
+  // Khmer face first; a Latin face after it covers any Latin characters the
+  // Khmer font itself doesn't include.
+  FONT_STACKS[f.id] = `'${f.family}', Arial, Helvetica, sans-serif`;
+  FONT_FAMILY_NAME[f.id] = f.family;
+}
+for (const f of LATIN_FONTS) {
+  FONT_STACKS[f.id] = `'${f.family}', '${KHMER_FALLBACK}', ${f.generic}`;
+  FONT_FAMILY_NAME[f.id] = f.family;
+}
+
+export const DEFAULT_FONT = 'noto-sans-khmer';
+
+// Legacy ids from before the catalogue existed, so items created by an
+// earlier version keep rendering with the same font they were given.
+const LEGACY_FONT_IDS = { sans: 'noto-sans-khmer', serif: 'noto-serif-khmer', mono: 'roboto-mono' };
+export function normalizeFontId(id) {
+  if (!id) return DEFAULT_FONT;
+  if (FONT_STACKS[id]) return id;
+  return LEGACY_FONT_IDS[id] || DEFAULT_FONT;
+}
 
 export const state = {
   sources: [],   // { bytes: Uint8Array, pdfjs: PDFDocumentProxy, name }

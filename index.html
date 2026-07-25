@@ -46,14 +46,9 @@
       <button id="btn-add-image" data-i18n="btnAddImage" data-i18n-title="btnAddImageTitle" title="Insert an image (click a page to place)">+ Image</button>
       <button id="btn-add-signature" data-i18n="btnAddSignature" data-i18n-title="btnAddSignatureTitle" title="Draw or upload a signature">+ Signature</button>
       <button id="btn-add-highlight" data-i18n="btnAddHighlight" data-i18n-title="btnAddHighlightTitle" title="Highlight part of a page (drag to draw)">+ Highlight</button>
-      <select id="ocr-lang" data-i18n-title="ocrLangTitle" title="OCR language">
-        <option value="khm" data-i18n="ocrLangKhmer">Khmer</option>
-        <option value="eng" data-i18n="ocrLangEnglish">English</option>
-        <option value="khm+eng" data-i18n="ocrLangBoth">Khmer + English</option>
-        <option value="equ" data-i18n="ocrLangMath" data-i18n-title="ocrLangMathTitle" title="Experimental: works best on simple printed equations, not handwriting">Math (experimental)</option>
-      </select>
-      <button id="btn-ocr" data-i18n="btnOcr" data-i18n-title="btnOcrTitle" title="Recognize text on the current page with Khmer OCR">Recognize page</button>
-      <button id="btn-ocr-area" data-i18n="btnOcrArea" data-i18n-title="btnOcrAreaTitle" title="Recognize text in a selected area (drag to select)">Recognize area</button>
+      <button id="btn-recognize" aria-haspopup="true" aria-expanded="false" data-i18n-title="btnRecognizeTitle" title="Recognize text (OCR) — choose scope and language">
+        <span data-i18n="btnRecognize">Recognize text</span> <span class="caret">▾</span>
+      </button>
     </span>
     <span id="pages-tools" hidden>
       <button id="btn-append-pdf" data-i18n="btnAppendPdf" data-i18n-title="btnAppendPdfTitle" title="Append pages from another PDF">+ Append PDF</button>
@@ -109,6 +104,23 @@
       <button id="ocr-copy" data-i18n="ocrCopy">Copy text</button>
     </div>
   </div>
+</div>
+
+<div id="ocr-menu" hidden role="menu">
+  <div class="menu-label" data-i18n="ocrMenuScope">What to recognize</div>
+  <button class="menu-item" id="mi-ocr-page" role="menuitem">
+    <span data-i18n="ocrScopePage">Whole page</span>
+  </button>
+  <button class="menu-item" id="mi-ocr-area" role="menuitem">
+    <span data-i18n="ocrScopeArea">Select an area…</span>
+  </button>
+  <div class="menu-sep"></div>
+  <div class="menu-label" data-i18n="ocrMenuLang">Language</div>
+  <label class="menu-radio"><input type="radio" name="ocr-lang" value="auto" checked><span data-i18n="ocrLangAuto">Auto (Khmer + English)</span></label>
+  <label class="menu-radio"><input type="radio" name="ocr-lang" value="khm"><span data-i18n="ocrLangKhmer">Khmer</span></label>
+  <label class="menu-radio"><input type="radio" name="ocr-lang" value="eng"><span data-i18n="ocrLangEnglish">English</span></label>
+  <label class="menu-radio"><input type="radio" name="ocr-lang" value="math"><span data-i18n="ocrLangMath">Math / formulas</span></label>
+  <div class="menu-note" data-i18n="ocrMathNote">Math mode reads printed formulas as plain text, not LaTeX.</div>
 </div>
 
 <div id="busy" hidden><div class="spinner"></div><span id="busy-label">Working…</span></div>
