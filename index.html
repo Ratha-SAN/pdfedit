@@ -15,16 +15,35 @@
     <button id="tab-pages" class="tab">Pages</button>
   </nav>
   <div id="toolbar" hidden>
+    <span id="view-tools">
+      <select id="view-mode" title="Page view">
+        <option value="continuous">Continuous</option>
+        <option value="single">Single page</option>
+        <option value="double">Double page</option>
+      </select>
+      <span class="zoom-group">
+        <button id="zoom-out" title="Zoom out">−</button>
+        <button id="zoom-level" title="Reset zoom to 100%">100%</button>
+        <button id="zoom-in" title="Zoom in">+</button>
+      </span>
+      <span id="page-nav" hidden>
+        <button id="page-prev" title="Previous page">‹</button>
+        <span id="page-indicator">1 / 1</span>
+        <button id="page-next" title="Next page">›</button>
+      </span>
+    </span>
     <span id="edit-tools">
       <button id="btn-add-text" title="Add a text box (click a page to place)">+ Text</button>
       <button id="btn-add-image" title="Insert an image (click a page to place)">+ Image</button>
       <button id="btn-add-signature" title="Draw or upload a signature">+ Signature</button>
+      <button id="btn-add-highlight" title="Highlight part of a page (drag to draw)">+ Highlight</button>
       <button id="btn-ocr" title="Recognize text on a page with Khmer OCR">Recognize text</button>
     </span>
     <span id="pages-tools" hidden>
       <button id="btn-append-pdf" title="Append pages from another PDF">+ Append PDF</button>
       <button id="btn-remove-pages" title="Remove selected pages" disabled>Remove selected</button>
     </span>
+    <button id="btn-print" title="Print the document">Print</button>
     <button id="btn-export" class="primary" title="Download the modified PDF">Save PDF</button>
   </div>
 </header>

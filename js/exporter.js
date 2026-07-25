@@ -1,6 +1,6 @@
 import { state, showBusy, hideBusy } from './state.js';
 
-const { PDFDocument, degrees, rgb } = PDFLib;
+const { PDFDocument, degrees, rgb, BlendMode } = PDFLib;
 
 const libDocs = new Map(); // srcIndex -> PDFDocument
 
@@ -11,27 +11,84 @@ async function getLibDoc(srcIndex) {
   return libDocs.get(srcIndex);
 }
 
+async function buildPdfBytes() {
+  const out = await PDFDocument.create();
+  for (const page of state.pages) {
+    const srcDoc = await getLibDoc(page.srcIndex);
+    const [copied] = await out.copyPages(srcDoc, [page.srcPageNum - 1]);
+    const outPage = out.addPage(copied);
+    for (const item of page.items) {
+      await drawItem(out, outPage, item);
+    }
+  }
+  return out.save();
+}
+
+function outputName() {
+  return (state.sources[0]?.name || 'document.pdf').replace(/\.pdf$/i, '') + '-edited.pdf';
+}
+
 export async function exportPdf() {
   showBusy('Building PDF…');
   try {
-    const out = await PDFDocument.create();
-    for (const page of state.pages) {
-      const srcDoc = await getLibDoc(page.srcIndex);
-      const [copied] = await out.copyPages(srcDoc, [page.srcPageNum - 1]);
-      const outPage = out.addPage(copied);
-      for (const item of page.items) {
-        await drawItem(out, outPage, item);
-      }
-    }
-    const bytes = await out.save();
-    const name = (state.sources[0]?.name || 'document.pdf').replace(/\.pdf$/i, '') + '-edited.pdf';
-    download(bytes, name);
+    const bytes = await buildPdfBytes();
+    download(bytes, outputName());
   } finally {
     hideBusy();
   }
 }
 
+export async function printPdf() {
+  showBusy('Preparing to print…');
+  try {
+    const bytes = await buildPdfBytes();
+    await printBytes(bytes);
+  } finally {
+    hideBusy();
+  }
+}
+
+function printBytes(bytes) {
+  return new Promise((resolve) => {
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed; right:0; bottom:0; width:0; height:0; border:0;';
+    iframe.src = url;
+    const cleanup = () => {
+      setTimeout(() => { iframe.remove(); URL.revokeObjectURL(url); }, 60000);
+      resolve();
+    };
+    iframe.onload = () => {
+      try {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      } catch {
+        window.open(url, '_blank');
+      }
+      cleanup();
+    };
+    document.body.appendChild(iframe);
+  });
+}
+
 async function drawItem(out, outPage, item) {
+  if (item.type === 'highlight') {
+    if (!(item.w > 0 && item.h > 0)) return;
+    const placement = mapViewportRect(outPage, item.x, item.y, item.w, item.h);
+    const { r, g, b } = hexToRgb01(item.color);
+    outPage.drawRectangle({
+      x: placement.x,
+      y: placement.y,
+      width: item.w,
+      height: item.h,
+      rotate: placement.rotate,
+      color: rgb(r, g, b),
+      opacity: 0.45,
+      blendMode: BlendMode.Multiply,
+    });
+    return;
+  }
   let image, w, h;
   if (item.type === 'text') {
     if (!item.text.trim()) return;
@@ -89,6 +146,11 @@ export async function rasterizeText(item) {
   ctx.textBaseline = 'middle';
   lines.forEach((l, i) => ctx.fillText(l, SS, (i + 0.5) * lineH));
   return canvas;
+}
+
+function hexToRgb01(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return { r: ((n >> 16) & 255) / 255, g: ((n >> 8) & 255) / 255, b: (n & 255) / 255 };
 }
 
 async function dataUrlToBytes(dataUrl) {

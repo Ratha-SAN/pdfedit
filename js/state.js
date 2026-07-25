@@ -2,8 +2,11 @@ export const state = {
   sources: [],   // { bytes: Uint8Array, pdfjs: PDFDocumentProxy, name }
   pages: [],     // { id, srcIndex, srcPageNum, vw, vh, items: [] }
   mode: 'edit',
-  tool: null,    // { type: 'text' } | { type: 'stamp', kind, dataUrl, natW, natH }
+  tool: null,    // { type: 'text' } | { type: 'stamp', kind, dataUrl, natW, natH } | { type: 'highlight', color }
   nextId: 1,
+  viewMode: 'continuous', // 'continuous' | 'single' | 'double'
+  zoom: 1,                // 1 = 100%
+  pageIndex: 0,           // current page (single) / left page of spread (double)
 };
 
 export function newId() {
