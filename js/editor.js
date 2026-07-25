@@ -1,5 +1,6 @@
 import { state, newId, $, setHint } from './state.js';
 import { t } from './i18n.js';
+import { recognizeArea } from './ocr.js';
 
 const DISPLAY_WIDTH = 800;
 
@@ -148,6 +149,7 @@ export function armTool(tool, hint) {
     if (tool.type === 'stamp' && tool.kind === 'image') $('#btn-add-image').classList.add('tool-armed');
     if (tool.type === 'stamp' && tool.kind === 'signature') $('#btn-add-signature').classList.add('tool-armed');
     if (tool.type === 'highlight') $('#btn-add-highlight').classList.add('tool-armed');
+    if (tool.type === 'ocr-area') $('#btn-ocr-area').classList.add('tool-armed');
   }
   updatePlacingCursor();
 }
@@ -163,6 +165,10 @@ function onPagePointerDown(e, page, wrap) {
   e.preventDefault();
   if (state.tool.type === 'highlight') {
     startHighlightDraw(e, page, wrap);
+    return;
+  }
+  if (state.tool.type === 'ocr-area') {
+    startOcrAreaSelect(e, page, wrap);
     return;
   }
   const scale = pageScale(page);
@@ -222,6 +228,48 @@ function startHighlightDraw(e, page, wrap) {
     }
     selectItem(el);
     armTool(null);
+  };
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', up);
+}
+
+// Drag a rectangle to OCR just that area. Unlike a highlight, this is
+// ephemeral -- nothing is added to page.items or saved to the exported
+// PDF, the box only exists as visual feedback while dragging.
+function startOcrAreaSelect(e, page, wrap) {
+  const scale = pageScale(page);
+  const rect = wrap.getBoundingClientRect();
+  const startX = (e.clientX - rect.left) / scale;
+  const startY = (e.clientY - rect.top) / scale;
+  const box = document.createElement('div');
+  box.className = 'ocr-select-box';
+  wrap.appendChild(box);
+
+  let x = startX, y = startY, w = 0, h = 0;
+  const update = () => {
+    box.style.left = x * scale + 'px';
+    box.style.top = y * scale + 'px';
+    box.style.width = w * scale + 'px';
+    box.style.height = h * scale + 'px';
+  };
+  update();
+
+  const move = (ev) => {
+    const curX = Math.max(0, Math.min(page.vw, (ev.clientX - rect.left) / scale));
+    const curY = Math.max(0, Math.min(page.vh, (ev.clientY - rect.top) / scale));
+    x = Math.min(startX, curX);
+    y = Math.min(startY, curY);
+    w = Math.abs(curX - startX);
+    h = Math.abs(curY - startY);
+    update();
+  };
+  const up = () => {
+    window.removeEventListener('pointermove', move);
+    window.removeEventListener('pointerup', up);
+    box.remove();
+    armTool(null);
+    if (w < 12 || h < 12) return; // too small to be a deliberate selection
+    recognizeArea(page, { x, y, w, h });
   };
   window.addEventListener('pointermove', move);
   window.addEventListener('pointerup', up);

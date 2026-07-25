@@ -4,10 +4,12 @@ import { renderPagesView, initPagesMode, refreshPagesI18n } from './pagesMode.js
 import { exportPdf, printPdf } from './exporter.js';
 import { recognizePage, initOcr } from './ocr.js';
 import { t, initLang } from './i18n.js';
+import { initTheme } from './theme.js';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('vendor/pdf.worker.min.js', location.href).href;
 
 initLang();
+initTheme();
 
 /* ---------- upload ---------- */
 
@@ -128,6 +130,11 @@ $('#btn-add-highlight').addEventListener('click', () => {
 $('#btn-ocr').addEventListener('click', () => {
   const page = currentPage();
   if (page) recognizePage(page);
+});
+
+$('#btn-ocr-area').addEventListener('click', () => {
+  if (state.tool && state.tool.type === 'ocr-area') armTool(null);
+  else armTool({ type: 'ocr-area' }, t('ocrAreaHint'));
 });
 
 $('#btn-export').addEventListener('click', async () => {

@@ -28,8 +28,14 @@ const translations = {
     btnAddSignatureTitle: 'Draw or upload a signature',
     btnAddHighlight: '+ Highlight',
     btnAddHighlightTitle: 'Highlight part of a page (drag to draw)',
-    btnOcr: 'Recognize text',
-    btnOcrTitle: 'Recognize text on a page with Khmer OCR',
+    btnOcr: 'Recognize page',
+    btnOcrTitle: 'Recognize text on the current page with Khmer OCR',
+    btnOcrArea: 'Recognize area',
+    btnOcrAreaTitle: 'Recognize text in a selected area (drag to select)',
+    ocrAreaHint: 'Drag a rectangle around the text you want to recognize.',
+
+    themeLightTitle: 'Light theme',
+    themeDarkTitle: 'Dark theme',
 
     btnAppendPdf: '+ Append PDF',
     btnAppendPdfTitle: 'Append pages from another PDF',
@@ -111,8 +117,14 @@ const translations = {
     btnAddSignatureTitle: 'គូរ ឬផ្ទុកឡើងហត្ថលេខា',
     btnAddHighlight: '+ បន្លិចពណ៌',
     btnAddHighlightTitle: 'បន្លិចពណ៌ផ្នែកនៃទំព័រ (អូសដើម្បីគូរ)',
-    btnOcr: 'ស្គាល់អត្ថបទ',
-    btnOcrTitle: 'ស្គាល់អត្ថបទលើទំព័រដោយប្រើ OCR ខ្មែរ',
+    btnOcr: 'ស្គាល់ទំព័រ',
+    btnOcrTitle: 'ស្គាល់អត្ថបទលើទំព័របច្ចុប្បន្នដោយប្រើ OCR ខ្មែរ',
+    btnOcrArea: 'ស្គាល់តំបន់',
+    btnOcrAreaTitle: 'ស្គាល់អត្ថបទក្នុងតំបន់ដែលបានជ្រើសរើស (អូសដើម្បីជ្រើសរើស)',
+    ocrAreaHint: 'អូសដើម្បីគូរប្រអប់ជុំវិញអត្ថបទដែលអ្នកចង់ស្គាល់។',
+
+    themeLightTitle: 'រចនាបថភ្លឺ',
+    themeDarkTitle: 'រចនាបថងងឹត',
 
     btnAppendPdf: '+ បន្ថែម PDF',
     btnAppendPdfTitle: 'បន្ថែមទំព័រពីឯកសារ PDF មួយទៀត',
