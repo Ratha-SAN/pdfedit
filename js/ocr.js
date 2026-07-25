@@ -18,6 +18,14 @@ function getWorker(onProgress) {
 }
 
 export async function recognizePage(page) {
+  await runRecognition(() => renderPageForOcr(page));
+}
+
+export async function recognizeArea(page, rect) {
+  await runRecognition(() => renderAreaForOcr(page, rect));
+}
+
+async function runRecognition(getCanvas) {
   const modal = $('#ocr-modal');
   const progress = $('#ocr-progress');
   const bar = $('#ocr-progress-bar');
@@ -40,7 +48,7 @@ export async function recognizePage(page) {
 
   try {
     const worker = await getWorker(onProgress);
-    const canvas = await renderPageForOcr(page);
+    const canvas = await getCanvas();
     label.textContent = t('ocrRecognizingStart');
     const { data } = await worker.recognize(canvas);
     output.value = data.text.trim() || t('ocrNoText');
@@ -62,6 +70,25 @@ async function renderPageForOcr(page) {
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = '#fff';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  await pdfPage.render({ canvasContext: ctx, viewport: vp }).promise;
+  return canvas;
+}
+
+// rect is in the same page-space coordinates as item.x/y/w/h (pdf.js
+// viewport units at scale 1). Renders just that sub-rectangle at a
+// resolution suited to its size, rather than rendering the whole page.
+async function renderAreaForOcr(page, rect) {
+  const src = state.sources[page.srcIndex];
+  const pdfPage = await src.pdfjs.getPage(page.srcPageNum);
+  const scale = Math.min(6, Math.max(1.5, 1500 / Math.max(rect.w, 1)));
+  const vp = pdfPage.getViewport({ scale });
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(rect.w * scale));
+  canvas.height = Math.max(1, Math.round(rect.h * scale));
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.translate(-rect.x * scale, -rect.y * scale);
   await pdfPage.render({ canvasContext: ctx, viewport: vp }).promise;
   return canvas;
 }

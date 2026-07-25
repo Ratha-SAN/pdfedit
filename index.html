@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,6 +13,10 @@
   <span id="lang-toggle">
     <button id="lang-en" class="tab active">English</button>
     <button id="lang-km" class="tab">ខ្មែរ</button>
+  </span>
+  <span id="theme-toggle">
+    <button id="theme-light" class="tab" data-i18n-title="themeLightTitle" title="Light theme">☀</button>
+    <button id="theme-dark" class="tab active" data-i18n-title="themeDarkTitle" title="Dark theme">🌙</button>
   </span>
   <nav id="mode-tabs" hidden>
     <button id="tab-edit" class="tab active" data-i18n="tabEdit">Edit</button>
@@ -42,7 +46,8 @@
       <button id="btn-add-image" data-i18n="btnAddImage" data-i18n-title="btnAddImageTitle" title="Insert an image (click a page to place)">+ Image</button>
       <button id="btn-add-signature" data-i18n="btnAddSignature" data-i18n-title="btnAddSignatureTitle" title="Draw or upload a signature">+ Signature</button>
       <button id="btn-add-highlight" data-i18n="btnAddHighlight" data-i18n-title="btnAddHighlightTitle" title="Highlight part of a page (drag to draw)">+ Highlight</button>
-      <button id="btn-ocr" data-i18n="btnOcr" data-i18n-title="btnOcrTitle" title="Recognize text on a page with Khmer OCR">Recognize text</button>
+      <button id="btn-ocr" data-i18n="btnOcr" data-i18n-title="btnOcrTitle" title="Recognize text on the current page with Khmer OCR">Recognize page</button>
+      <button id="btn-ocr-area" data-i18n="btnOcrArea" data-i18n-title="btnOcrAreaTitle" title="Recognize text in a selected area (drag to select)">Recognize area</button>
     </span>
     <span id="pages-tools" hidden>
       <button id="btn-append-pdf" data-i18n="btnAppendPdf" data-i18n-title="btnAppendPdfTitle" title="Append pages from another PDF">+ Append PDF</button>

@@ -9,25 +9,78 @@
   font-weight: 700;
 }
 
+:root {
+  --bg: #e8eaed;
+  --surface: #ffffff;
+  --surface-alt: #f4f5f7;
+  --border: #c7ccd1;
+  --border-strong: #d0d4d9;
+  --text: #1f2328;
+  --text-muted: #6b7280;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-fg: #ffffff;
+  --accent-soft: #eff6ff;
+  --danger: #dc2626;
+  --hint-bg: #fef3c7;
+  --hint-border: #d4a017;
+  --armed-bg: #fde68a;
+  --armed-border: #d4a017;
+  --shadow: rgba(0, 0, 0, 0.25);
+  --shadow-soft: rgba(0, 0, 0, 0.15);
+  --overlay: rgba(0, 0, 0, 0.5);
+  --busy-overlay: rgba(255, 255, 255, 0.7);
+  --label-badge-bg: rgba(255, 255, 255, 0.85);
+}
+[data-theme='dark'] {
+  --bg: #17181c;
+  --surface: #232428;
+  --surface-alt: #2b2d33;
+  --border: #3a3d44;
+  --border-strong: #3a3d44;
+  --text: #e7e9ea;
+  --text-muted: #9aa0a6;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --accent-fg: #ffffff;
+  --accent-soft: #1e2a44;
+  --danger: #ef4444;
+  --hint-bg: #4a3b0f;
+  --hint-border: #a67c1a;
+  --armed-bg: #5c4a12;
+  --armed-border: #a67c1a;
+  --shadow: rgba(0, 0, 0, 0.6);
+  --shadow-soft: rgba(0, 0, 0, 0.4);
+  --overlay: rgba(0, 0, 0, 0.7);
+  --busy-overlay: rgba(23, 24, 28, 0.85);
+  --label-badge-bg: rgba(35, 36, 40, 0.85);
+}
+
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { margin: 0; height: 100%; }
 body {
   font: 14px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif;
-  background: #e8eaed;
-  color: #1f2328;
+  background: var(--bg);
+  color: var(--text);
   display: flex;
   flex-direction: column;
 }
 body.lang-km { font-family: 'Noto Sans Khmer', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+/* This button's own label is always "ខ្មែរ" regardless of the active UI
+   language (a language switcher conventionally names each option in its
+   own script), so it needs the Khmer font even when body.lang-km isn't
+   applied -- otherwise it renders as tofu on systems with no Khmer font
+   of their own. */
+#lang-km { font-family: 'Noto Sans Khmer', system-ui, sans-serif; }
 
 #topbar {
   display: flex;
   align-items: center;
   gap: 16px;
   padding: 8px 16px;
-  background: #fff;
-  border-bottom: 1px solid #d0d4d9;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-strong);
   position: sticky;
   top: 0;
   z-index: 50;
@@ -35,20 +88,21 @@ body.lang-km { font-family: 'Noto Sans Khmer', system-ui, -apple-system, 'Segoe 
 }
 .brand { font-weight: 700; font-size: 16px; }
 
-#mode-tabs .tab, #lang-toggle .tab {
-  border: 1px solid #c7ccd1;
-  background: #f4f5f7;
+#mode-tabs .tab, #lang-toggle .tab, #theme-toggle .tab {
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  color: var(--text);
   padding: 6px 14px;
   cursor: pointer;
 }
-#mode-tabs .tab:first-child, #lang-toggle .tab:first-child { border-radius: 6px 0 0 6px; }
-#mode-tabs .tab:last-child, #lang-toggle .tab:last-child { border-radius: 0 6px 6px 0; margin-left: -1px; }
-#mode-tabs .tab.active, #lang-toggle .tab.active { background: #2563eb; color: #fff; border-color: #2563eb; font-weight: 600; }
+#mode-tabs .tab:first-child, #lang-toggle .tab:first-child, #theme-toggle .tab:first-child { border-radius: 6px 0 0 6px; }
+#mode-tabs .tab:last-child, #lang-toggle .tab:last-child, #theme-toggle .tab:last-child { border-radius: 0 6px 6px 0; margin-left: -1px; }
+#mode-tabs .tab.active, #lang-toggle .tab.active, #theme-toggle .tab.active { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; }
 
 #toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
-#view-tools { display: flex; gap: 8px; align-items: center; padding-right: 8px; border-right: 1px solid #d0d4d9; }
-#view-mode { font: inherit; padding: 6px 8px; border: 1px solid #c7ccd1; border-radius: 6px; background: #fff; }
+#view-tools { display: flex; gap: 8px; align-items: center; padding-right: 8px; border-right: 1px solid var(--border-strong); }
+#view-mode { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); }
 .zoom-group { display: flex; align-items: center; }
 .zoom-group button { padding: 6px 10px; }
 .zoom-group button:first-child { border-radius: 6px 0 0 6px; }
@@ -56,20 +110,21 @@ body.lang-km { font-family: 'Noto Sans Khmer', system-ui, -apple-system, 'Segoe 
 .zoom-group button:not(:first-child) { border-left: none; margin-left: 0; }
 #zoom-level { min-width: 52px; }
 #page-nav { display: flex; align-items: center; gap: 6px; }
-#page-indicator { font-variant-numeric: tabular-nums; color: #4b5563; min-width: 64px; text-align: center; }
+#page-indicator { font-variant-numeric: tabular-nums; color: var(--text-muted); min-width: 64px; text-align: center; }
 button {
   font: inherit;
   padding: 6px 12px;
-  border: 1px solid #c7ccd1;
+  border: 1px solid var(--border);
   border-radius: 6px;
-  background: #fff;
+  background: var(--surface);
+  color: var(--text);
   cursor: pointer;
 }
-button:hover:not(:disabled) { background: #f0f3f6; }
+button:hover:not(:disabled) { background: var(--surface-alt); }
 button:disabled { opacity: 0.5; cursor: default; }
-button.primary { background: #2563eb; border-color: #2563eb; color: #fff; }
-button.primary:hover:not(:disabled) { background: #1d4ed8; }
-button.tool-armed { background: #fde68a; border-color: #d4a017; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+button.primary:hover:not(:disabled) { background: var(--accent-hover); }
+button.tool-armed { background: var(--armed-bg); border-color: var(--armed-border); }
 
 #main { flex: 1; overflow: auto; }
 
@@ -80,23 +135,23 @@ button.tool-armed { background: #fde68a; border-color: #d4a017; }
   align-items: center;
   justify-content: center;
 }
-#dropzone.dragover .dz-inner { border-color: #2563eb; background: #eff6ff; }
+#dropzone.dragover .dz-inner { border-color: var(--accent); background: var(--accent-soft); }
 .dz-inner {
-  border: 2px dashed #9aa2ab;
+  border: 2px dashed var(--text-muted);
   border-radius: 12px;
   padding: 60px 80px;
   text-align: center;
-  background: #fff;
+  background: var(--surface);
 }
 .dz-title { font-size: 20px; font-weight: 600; margin: 0 0 8px; }
-.dz-sub { color: #6b7280; margin: 0 0 12px; }
+.dz-sub { color: var(--text-muted); margin: 0 0 12px; }
 
 #hint-bar {
   position: sticky;
   top: 0;
   z-index: 40;
-  background: #fef3c7;
-  border-bottom: 1px solid #d4a017;
+  background: var(--hint-bg);
+  border-bottom: 1px solid var(--hint-border);
   padding: 6px 16px;
   text-align: center;
 }
@@ -106,8 +161,10 @@ button.tool-armed { background: #fde68a; border-color: #d4a017; }
 .page-wrap {
   position: relative;
   margin: 0 auto 24px;
+  /* Always white, regardless of theme: this represents the actual page
+     background of the document being edited, not app chrome. */
   background: #fff;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.25);
+  box-shadow: 0 1px 6px var(--shadow);
 }
 #edit-view.view-double {
   display: flex;
@@ -123,7 +180,7 @@ button.tool-armed { background: #fde68a; border-color: #d4a017; }
   position: absolute;
   top: 4px;
   left: -44px;
-  color: #6b7280;
+  color: var(--text-muted);
   font-size: 12px;
 }
 /* The left-margin position above assumes a single centered column; in
@@ -131,7 +188,7 @@ button.tool-armed { background: #fde68a; border-color: #d4a017; }
    which clips the label off-screen. Anchor it inside the page instead. */
 #edit-view.view-double .page-num {
   left: 6px;
-  background: rgba(255,255,255,0.85);
+  background: var(--label-badge-bg);
   padding: 1px 6px;
   border-radius: 4px;
 }
@@ -143,7 +200,7 @@ button.tool-armed { background: #fde68a; border-color: #d4a017; }
   border: 1px dashed transparent;
   touch-action: none;
 }
-.item:hover, .item.selected { border-color: #2563eb; }
+.item:hover, .item.selected { border-color: var(--accent); }
 .item .item-del {
   position: absolute;
   top: -12px;
@@ -153,7 +210,7 @@ button.tool-armed { background: #fde68a; border-color: #d4a017; }
   line-height: 19px;
   padding: 0;
   border-radius: 50%;
-  background: #dc2626;
+  background: var(--danger);
   color: #fff;
   border: none;
   font-size: 14px;
@@ -165,7 +222,7 @@ button.tool-armed { background: #fde68a; border-color: #d4a017; }
   bottom: -7px;
   width: 14px;
   height: 14px;
-  background: #2563eb;
+  background: var(--accent);
   border-radius: 50%;
   cursor: nwse-resize;
   display: none;
@@ -193,17 +250,27 @@ button.tool-armed { background: #fde68a; border-color: #d4a017; }
   left: 0;
   display: none;
   gap: 4px;
-  background: #fff;
-  border: 1px solid #c7ccd1;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 6px;
   padding: 3px 6px;
   align-items: center;
   white-space: nowrap;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 6px var(--shadow-soft);
 }
 .item.selected .item-toolbar { display: flex; }
 .item-toolbar input[type=number] { width: 54px; font: inherit; padding: 2px 4px; }
-.item-toolbar input[type=color] { width: 28px; height: 24px; padding: 0; border: 1px solid #c7ccd1; }
+.item-toolbar input[type=color] { width: 28px; height: 24px; padding: 0; border: 1px solid var(--border); }
+
+/* Transient rectangle shown while dragging out an OCR area selection --
+   not a saved item, just visual feedback during the drag. */
+.ocr-select-box {
+  position: absolute;
+  border: 2px dashed #2563eb;
+  background: rgba(37, 99, 235, 0.12);
+  pointer-events: none;
+  z-index: 5;
+}
 
 /* ---------- Pages view ---------- */
 #pages-view {
@@ -215,16 +282,17 @@ button.tool-armed { background: #fde68a; border-color: #d4a017; }
 }
 .thumb {
   position: relative;
+  /* Always white, same reasoning as .page-wrap above. */
   background: #fff;
-  border: 2px solid #d0d4d9;
+  border: 2px solid var(--border-strong);
   border-radius: 6px;
   padding: 6px 6px 24px;
   cursor: grab;
   user-select: none;
   touch-action: none;
 }
-.thumb.selected { border-color: #2563eb; background: #eff6ff; }
-.thumb.drag-over { outline: 3px solid #2563eb; }
+.thumb.selected { border-color: var(--accent); background: var(--accent-soft); }
+.thumb.drag-over { outline: 3px solid var(--accent); }
 .thumb.dragging { opacity: 0.5; }
 .thumb canvas { display: block; pointer-events: none; }
 .thumb .thumb-label {
@@ -234,7 +302,7 @@ button.tool-armed { background: #fde68a; border-color: #d4a017; }
   right: 0;
   text-align: center;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-muted);
 }
 .thumb .thumb-check {
   position: absolute;
@@ -248,14 +316,15 @@ button.tool-armed { background: #fde68a; border-color: #d4a017; }
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: var(--overlay);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 100;
 }
 .modal-box {
-  background: #fff;
+  background: var(--surface);
+  color: var(--text);
   border-radius: 10px;
   padding: 16px;
   max-width: min(640px, 92vw);
@@ -268,10 +337,10 @@ button.tool-armed { background: #fde68a; border-color: #d4a017; }
   font-weight: 600;
   margin-bottom: 10px;
 }
-.modal-close { border: none; background: none; font-size: 22px; padding: 0 4px; }
+.modal-close { border: none; background: none; color: var(--text); font-size: 22px; padding: 0 4px; }
 #sig-canvas {
   width: 100%;
-  border: 1px solid #c7ccd1;
+  border: 1px solid var(--border);
   border-radius: 6px;
   touch-action: none;
   background: #fff;
@@ -282,18 +351,20 @@ button.tool-armed { background: #fde68a; border-color: #d4a017; }
   height: 260px;
   font: 15px/1.8 'Noto Sans Khmer', 'Khmer OS', system-ui, sans-serif;
   padding: 8px;
-  border: 1px solid #c7ccd1;
+  border: 1px solid var(--border);
   border-radius: 6px;
   resize: vertical;
+  background: var(--surface);
+  color: var(--text);
 }
-#ocr-progress { margin-bottom: 10px; background: #eef1f4; border-radius: 6px; position: relative; height: 22px; overflow: hidden; }
-#ocr-progress-bar { position: absolute; inset: 0 100% 0 0; background: #93c5fd; transition: inset 0.2s; }
+#ocr-progress { margin-bottom: 10px; background: var(--surface-alt); border-radius: 6px; position: relative; height: 22px; overflow: hidden; }
+#ocr-progress-bar { position: absolute; inset: 0 100% 0 0; background: var(--accent); opacity: 0.55; transition: inset 0.2s; }
 #ocr-progress-label { position: relative; display: block; text-align: center; font-size: 12px; line-height: 22px; }
 
 #busy {
   position: fixed;
   inset: 0;
-  background: rgba(255,255,255,0.7);
+  background: var(--busy-overlay);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -304,8 +375,8 @@ button.tool-armed { background: #fde68a; border-color: #d4a017; }
 .spinner {
   width: 36px;
   height: 36px;
-  border: 4px solid #c7ccd1;
-  border-top-color: #2563eb;
+  border: 4px solid var(--border);
+  border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -330,7 +401,7 @@ button.tool-armed { background: #fde68a; border-color: #d4a017; }
      label. Anchor it inside the page instead, in every view mode. */
   .page-num {
     left: 6px;
-    background: rgba(255,255,255,0.85);
+    background: var(--label-badge-bg);
     padding: 1px 6px;
     border-radius: 4px;
   }
