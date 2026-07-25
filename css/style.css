@@ -125,6 +125,15 @@ button.tool-armed { background: #fde68a; border-color: #d4a017; }
   color: #6b7280;
   font-size: 12px;
 }
+/* The left-margin position above assumes a single centered column; in
+   double-page mode the left page has little to no left margin to sit in,
+   which clips the label off-screen. Anchor it inside the page instead. */
+#edit-view.view-double .page-num {
+  left: 6px;
+  background: rgba(255,255,255,0.85);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
 
 /* Overlay items */
 .item {
