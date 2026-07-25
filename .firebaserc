@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "pdfedit-19051"
-  }
+  },
+  "targets": {
+    "pdfedit-19051": {
+      "hosting": {
+        "main": [
+          "pdfedit"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
