@@ -1,5 +1,6 @@
 import { state, $ } from './state.js';
 import { t, translateOcrStatus } from './i18n.js';
+import { dataToLatexLines } from './mathlatex.js';
 
 let workerPromise = null;
 let workerLang = null;
@@ -108,8 +109,12 @@ async function runRecognition(getCanvas) {
     });
     const canvas = await getCanvas();
     label.textContent = t('ocrRecognizingStart');
-    const { data } = await worker.recognize(canvas);
+    // Ask for the structured (block/word/symbol) output too -- math mode
+    // rebuilds super/subscripts from per-symbol geometry, which the flat
+    // text string throws away.
+    const { data } = await worker.recognize(canvas, {}, { text: true, blocks: true });
     output.value = data.text.trim() || t('ocrNoText');
+    showResult(modeId, data);
   } catch (err) {
     output.value = t('ocrFailed', { err: err && err.message ? err.message : err });
   } finally {
@@ -151,7 +156,81 @@ async function renderAreaForOcr(page, rect) {
   return canvas;
 }
 
+/* ---------- result views ---------- */
+
+let latexLines = [];
+
+function renderLatexInto(el, lines) {
+  el.innerHTML = '';
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    const div = document.createElement('div');
+    div.className = 'math-line';
+    try {
+      katex.render(line, div, { throwOnError: false, displayMode: false });
+    } catch {
+      // Anything KaTeX can't parse still shows, just unrendered, so a single
+      // bad line never blanks the whole panel.
+      div.classList.add('math-raw');
+      div.textContent = line;
+    }
+    el.appendChild(div);
+  }
+  if (!el.childNodes.length) el.textContent = t('ocrNoText');
+}
+
+function setView(view) {
+  document.querySelectorAll('.ocr-view-tab').forEach((b) => b.classList.toggle('active', b.dataset.view === view));
+  const out = $('#ocr-output');
+  // The preview stays up in LaTeX view too, so edits can be seen as they're
+  // typed -- which matters because OCR frequently misreads small raised
+  // digits, and correcting them by hand is the practical workflow.
+  $('#ocr-rendered').hidden = view === 'text';
+  out.hidden = view === 'rendered';
+  if (view === 'latex') {
+    out.value = latexLines.join('\n');
+    renderLatexInto($('#ocr-rendered'), latexLines);
+  } else if (view === 'text') {
+    out.value = out.dataset.plain || '';
+  } else {
+    renderLatexInto($('#ocr-rendered'), latexLines);
+  }
+}
+
+function showResult(modeId, data) {
+  const output = $('#ocr-output');
+  output.dataset.plain = output.value;
+  const views = $('#ocr-views');
+  const rendered = $('#ocr-rendered');
+
+  // Only maths gets the rendered/LaTeX treatment; for prose the extra views
+  // would be noise.
+  if (modeId !== 'math') {
+    views.hidden = true;
+    rendered.hidden = true;
+    output.hidden = false;
+    latexLines = [];
+    return;
+  }
+
+  latexLines = dataToLatexLines(data);
+  renderLatexInto(rendered, latexLines);
+  views.hidden = false;
+  setView('rendered');
+}
+
 export function initOcr() {
+  document.querySelectorAll('.ocr-view-tab').forEach((b) =>
+    b.addEventListener('click', () => setView(b.dataset.view)));
+
+  // Live preview while editing LaTeX.
+  $('#ocr-output').addEventListener('input', () => {
+    const active = document.querySelector('.ocr-view-tab.active');
+    if (!active || active.dataset.view !== 'latex') return;
+    latexLines = $('#ocr-output').value.split('\n');
+    renderLatexInto($('#ocr-rendered'), latexLines);
+  });
+
   $('#ocr-copy').addEventListener('click', async () => {
     const output = $('#ocr-output');
     output.select();

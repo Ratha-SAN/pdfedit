@@ -489,3 +489,70 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   padding: 6px 8px 2px;
   line-height: 1.4;
 }
+
+/* ---------- OCR result views (plain text / LaTeX / rendered math) ---------- */
+#ocr-views { display: flex; gap: 4px; margin-bottom: 8px; }
+.ocr-view-tab {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--surface-alt);
+}
+.ocr-view-tab.active { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+#ocr-rendered {
+  min-height: 120px;
+  max-height: 260px;
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+}
+#ocr-rendered .math-line { padding: 6px 2px; }
+#ocr-rendered .math-line + .math-line { border-top: 1px dashed var(--border); }
+/* KaTeX ships its own colours; inherit the app's text colour instead so
+   formulas stay legible in dark mode. */
+#ocr-rendered .katex { color: var(--text); font-size: 1.15em; }
+#ocr-rendered .math-raw { color: var(--text-muted); font-size: 12px; font-style: italic; }
+
+/* ---------- Document tabs ---------- */
+#doc-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 6px 12px 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-strong);
+  overflow-x: auto;
+}
+.doc-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  max-width: 220px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  background: var(--surface-alt);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+}
+.doc-tab .doc-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.doc-tab.active { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 600; }
+.doc-tab .doc-close {
+  border: none;
+  background: none;
+  color: inherit;
+  opacity: 0.65;
+  padding: 0 2px;
+  font-size: 15px;
+  line-height: 1;
+  border-radius: 4px;
+}
+.doc-tab .doc-close:hover { opacity: 1; background: rgba(127,127,127,0.28); }

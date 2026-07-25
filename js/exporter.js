@@ -1,4 +1,4 @@
-import { state, showBusy, hideBusy, FONT_STACKS, FONT_FAMILY_NAME, normalizeFontId } from './state.js';
+import { state, $, showBusy, hideBusy, FONT_STACKS, FONT_FAMILY_NAME, normalizeFontId } from './state.js';
 import { t } from './i18n.js';
 
 const { PDFDocument, degrees, rgb, BlendMode } = PDFLib;
@@ -12,17 +12,69 @@ async function getLibDoc(srcIndex) {
   return libDocs.get(srcIndex);
 }
 
+/* Compression works by re-rasterizing each page at a chosen resolution and
+ * re-encoding it as JPEG. That is what actually shrinks a heavy scan, but it
+ * is lossy and flattens any real text into pixels, so "Original quality"
+ * stays the default and the trade-off is spelled out in the control's
+ * tooltip. Overlays are drawn afterwards at full vector/PNG quality so added
+ * text and signatures stay crisp regardless of level. */
+const COMPRESSION = {
+  none:   null,
+  low:    { dpi: 150, quality: 0.82 },
+  medium: { dpi: 110, quality: 0.68 },
+  high:   { dpi: 72,  quality: 0.55 },
+};
+
+function currentCompression() {
+  const el = $('#compress-level');
+  return COMPRESSION[el ? el.value : 'none'] || null;
+}
+
 async function buildPdfBytes() {
+  const preset = currentCompression();
   const out = await PDFDocument.create();
   for (const page of state.pages) {
-    const srcDoc = await getLibDoc(page.srcIndex);
-    const [copied] = await out.copyPages(srcDoc, [page.srcPageNum - 1]);
-    const outPage = out.addPage(copied);
+    let outPage;
+    if (preset) {
+      outPage = await addRasterizedPage(out, page, preset);
+    } else {
+      const srcDoc = await getLibDoc(page.srcIndex);
+      const [copied] = await out.copyPages(srcDoc, [page.srcPageNum - 1]);
+      outPage = out.addPage(copied);
+    }
     for (const item of page.items) {
       await drawItem(out, outPage, item);
     }
   }
-  return out.save();
+  // useObjectStreams packs the cross-reference data more tightly; harmless at
+  // any level and a small extra win on documents with many pages.
+  return out.save({ useObjectStreams: true });
+}
+
+async function addRasterizedPage(out, page, preset) {
+  const src = state.sources[page.srcIndex];
+  const pdfPage = await src.pdfjs.getPage(page.srcPageNum);
+  // PDF user-space is 72 units per inch, so target DPI / 72 is the scale.
+  const scale = preset.dpi / 72;
+  const vp = pdfPage.getViewport({ scale });
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(vp.width));
+  canvas.height = Math.max(1, Math.round(vp.height));
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  await pdfPage.render({ canvasContext: ctx, viewport: vp }).promise;
+  const jpeg = await dataUrlToBytes(canvas.toDataURL('image/jpeg', preset.quality));
+  const img = await out.embedJpg(jpeg);
+  // Keep the page's original point size so overlay coordinates, and the
+  // printed page size, are unchanged by the resolution drop.
+  const outPage = out.addPage([page.vw, page.vh]);
+  outPage.drawImage(img, { x: 0, y: 0, width: page.vw, height: page.vh });
+  // Free the bitmap now rather than waiting on GC -- a long document would
+  // otherwise hold every page's canvas at once.
+  canvas.width = 0;
+  canvas.height = 0;
+  return outPage;
 }
 
 function outputName() {
@@ -30,7 +82,7 @@ function outputName() {
 }
 
 export async function exportPdf() {
-  showBusy(t('buildingPdf'));
+  showBusy(currentCompression() ? t('compressing') : t('buildingPdf'));
   try {
     const bytes = await buildPdfBytes();
     download(bytes, outputName());

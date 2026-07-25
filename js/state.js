@@ -64,16 +64,60 @@ export function normalizeFontId(id) {
 }
 
 export const state = {
-  sources: [],   // { bytes: Uint8Array, pdfjs: PDFDocumentProxy, name }
-  pages: [],     // { id, srcIndex, srcPageNum, vw, vh, items: [] }
+  // Open documents, one per tab. Each holds its own sources/pages/scroll
+  // position so switching tabs restores exactly what you left.
+  docs: [],       // { id, name, sources, pages, pageIndex }
+  activeDocId: null,
   mode: 'edit',
   tool: null,    // { type: 'text' } | { type: 'stamp', kind, dataUrl, natW, natH } | { type: 'highlight', color }
   nextId: 1,
   viewMode: 'continuous', // 'continuous' | 'single' | 'double'
   zoom: 1,                // 1 = 100%
-  pageIndex: 0,           // current page (single) / left page of spread (double)
   lang: 'en',             // 'en' | 'km' -- interface language
+  lastFont: null,
 };
+
+export function activeDoc() {
+  return state.docs.find((d) => d.id === state.activeDocId) || null;
+}
+
+// `sources`, `pages` and `pageIndex` are exposed as accessors onto the
+// active document rather than as plain fields. Every module already reads
+// and writes state.pages/state.sources directly, so proxying them here makes
+// multi-document support work throughout without touching that code -- and
+// removes any chance of a tab's data drifting out of sync with a cached copy.
+const EMPTY = [];
+Object.defineProperties(state, {
+  sources: {
+    get: () => (activeDoc() ? activeDoc().sources : EMPTY),
+    set: (v) => { const d = activeDoc(); if (d) d.sources = v; },
+  },
+  pages: {
+    get: () => (activeDoc() ? activeDoc().pages : EMPTY),
+    set: (v) => { const d = activeDoc(); if (d) d.pages = v; },
+  },
+  pageIndex: {
+    get: () => (activeDoc() ? activeDoc().pageIndex : 0),
+    set: (v) => { const d = activeDoc(); if (d) d.pageIndex = v; },
+  },
+});
+
+export function addDoc(name) {
+  const doc = { id: newId(), name, sources: [], pages: [], pageIndex: 0 };
+  state.docs.push(doc);
+  state.activeDocId = doc.id;
+  return doc;
+}
+
+export function closeDoc(id) {
+  const i = state.docs.findIndex((d) => d.id === id);
+  if (i < 0) return;
+  state.docs.splice(i, 1);
+  if (state.activeDocId === id) {
+    const next = state.docs[i] || state.docs[i - 1] || null;
+    state.activeDocId = next ? next.id : null;
+  }
+}
 
 export function newId() {
   return state.nextId++;
@@ -101,8 +145,7 @@ export function setHint(text) {
 }
 
 export async function addSource(file) {
-  const buf = await file.arrayBuffer();
-  const bytes = new Uint8Array(buf);
+  const bytes = await fileToPdfBytes(file);
   // pdf.js transfers the buffer to its worker, so hand it a copy
   const pdfjs = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
   const srcIndex = state.sources.length;
@@ -114,4 +157,51 @@ export async function addSource(file) {
     pages.push({ id: newId(), srcIndex, srcPageNum: i, vw: vp.width, vh: vp.height, items: [] });
   }
   return pages;
+}
+
+/** True for the image types we can turn into a one-page document. */
+export function isImageFile(file) {
+  return /^image\/(png|jpeg|jpg|webp)$/i.test(file.type) || /\.(png|jpe?g|webp)$/i.test(file.name);
+}
+
+/**
+ * PDFs are used as-is; images are wrapped in a single PDF page sized to the
+ * image, so the rest of the app only ever deals with PDFs. WebP has no
+ * native PDF encoding, so it is re-encoded to PNG via a canvas first.
+ */
+export async function fileToPdfBytes(file) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  if (!isImageFile(file)) return bytes;
+
+  const { PDFDocument } = PDFLib;
+  const doc = await PDFDocument.create();
+  const isJpeg = /jpe?g/i.test(file.type) || /\.jpe?g$/i.test(file.name);
+  const isPng = /png/i.test(file.type) || /\.png$/i.test(file.name);
+  let img;
+  if (isJpeg) img = await doc.embedJpg(bytes);
+  else if (isPng) img = await doc.embedPng(bytes);
+  else img = await doc.embedPng(await reencodeToPng(file));
+  const page = doc.addPage([img.width, img.height]);
+  page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
+  return doc.save();
+}
+
+function reencodeToPng(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const im = new Image();
+    im.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = im.naturalWidth;
+      c.height = im.naturalHeight;
+      c.getContext('2d').drawImage(im, 0, 0);
+      URL.revokeObjectURL(url);
+      c.toBlob(async (b) => {
+        if (!b) return reject(new Error('image conversion failed'));
+        resolve(new Uint8Array(await b.arrayBuffer()));
+      }, 'image/png');
+    };
+    im.onerror = () => { URL.revokeObjectURL(url); reject(new Error('could not read image')); };
+    im.src = url;
+  });
 }
