@@ -1,4 +1,4 @@
-import { state, $, showBusy, hideBusy, setHint, addSource } from './state.js';
+import { state, $, showBusy, hideBusy, setHint, addSource, addDoc, closeDoc, activeDoc, isImageFile } from './state.js';
 import { renderEditView, armTool, initSignatureModal, openSignatureModal, initViewControls, currentPage, fileToDataUrl, loadImage, deselectAll, refreshEditI18n } from './editor.js';
 import { renderPagesView, initPagesMode, refreshPagesI18n } from './pagesMode.js';
 import { exportPdf, printPdf } from './exporter.js';
@@ -18,15 +18,14 @@ const fileInput = $('#file-input');
 
 $('#btn-pick').addEventListener('click', () => fileInput.click());
 fileInput.addEventListener('change', (e) => {
-  const file = e.target.files[0];
+  const files = [...e.target.files];
   e.target.value = '';
-  if (file) openFirstPdf(file);
+  openFiles(files);
 });
 
-$('#btn-upload').addEventListener('click', () => {
-  if (state.pages.length && !confirm(t('confirmReplace'))) return;
-  fileInput.click();
-});
+// Opening no longer replaces what you have open -- each file becomes its own
+// tab, so several documents can be worked on side by side.
+$('#btn-upload').addEventListener('click', () => fileInput.click());
 
 ['dragover', 'dragenter'].forEach((ev) =>
   dropzone.addEventListener(ev, (e) => {
@@ -41,25 +40,91 @@ $('#btn-upload').addEventListener('click', () => {
   })
 );
 dropzone.addEventListener('drop', (e) => {
-  const file = [...e.dataTransfer.files].find((f) => f.type === 'application/pdf' || /\.pdf$/i.test(f.name));
-  if (file) openFirstPdf(file);
+  openFiles([...e.dataTransfer.files].filter(isOpenable));
+});
+// Dropping onto the document area (not just the empty dropzone) opens too.
+$('#main').addEventListener('dragover', (e) => { if (state.docs.length) e.preventDefault(); });
+$('#main').addEventListener('drop', (e) => {
+  const files = [...e.dataTransfer.files].filter(isOpenable);
+  if (!files.length) return;
+  e.preventDefault();
+  openFiles(files);
 });
 
-async function openFirstPdf(file) {
+function isOpenable(f) {
+  return f.type === 'application/pdf' || /\.pdf$/i.test(f.name) || isImageFile(f);
+}
+
+async function openFiles(files) {
+  if (!files || !files.length) return;
   showBusy(t('loadingPdf'));
   try {
-    state.sources = [];
-    const pages = await addSource(file);
-    state.pages = pages;
-    state.pageIndex = 0;
+    for (const file of files) {
+      const doc = addDoc(file.name);
+      try {
+        doc.pages = await addSource(file);
+      } catch (err) {
+        // Drop the half-created tab so a bad file doesn't leave an empty one.
+        closeDoc(doc.id);
+        alert(t('couldNotReadPdf', { err: err && err.message ? err.message : err }));
+      }
+    }
+    if (!activeDoc()) return;
     dropzone.hidden = true;
     $('#mode-tabs').hidden = false;
     $('#toolbar').hidden = false;
+    renderDocTabs();
     await setMode('edit');
-  } catch (err) {
-    alert(t('couldNotReadPdf', { err: err && err.message ? err.message : err }));
   } finally {
     hideBusy();
+  }
+}
+
+/* ---------- document tabs ---------- */
+
+function renderDocTabs() {
+  const bar = $('#doc-tabs');
+  bar.innerHTML = '';
+  bar.hidden = state.docs.length === 0;
+  for (const doc of state.docs) {
+    const tab = document.createElement('div');
+    tab.className = 'doc-tab' + (doc.id === state.activeDocId ? ' active' : '');
+    tab.dataset.docId = doc.id;
+    tab.title = doc.name;
+
+    const name = document.createElement('span');
+    name.className = 'doc-name';
+    name.textContent = doc.name;
+    tab.appendChild(name);
+
+    const close = document.createElement('button');
+    close.className = 'doc-close';
+    close.textContent = '×';
+    close.title = t('closeDocTitle');
+    close.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (doc.pages.length && !confirm(t('confirmCloseDoc', { name: doc.name }))) return;
+      closeDoc(doc.id);
+      renderDocTabs();
+      if (!state.docs.length) {
+        dropzone.hidden = false;
+        $('#mode-tabs').hidden = true;
+        $('#toolbar').hidden = true;
+        $('#edit-view').hidden = true;
+        $('#pages-view').hidden = true;
+      } else {
+        setMode(state.mode);
+      }
+    });
+    tab.appendChild(close);
+
+    tab.addEventListener('click', () => {
+      if (doc.id === state.activeDocId) return;
+      state.activeDocId = doc.id;
+      renderDocTabs();
+      setMode(state.mode);
+    });
+    bar.appendChild(tab);
   }
 }
 

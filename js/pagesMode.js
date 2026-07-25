@@ -8,6 +8,7 @@ let touchDragIndex = null;
 
 export async function renderPagesView() {
   const view = $('#pages-view');
+  if (thumbObserver) thumbObserver.disconnect();
   view.innerHTML = '';
   selected.clear();
   updateRemoveButton();
@@ -83,9 +84,31 @@ export async function renderPagesView() {
       renderPagesView();
     });
 
+    thumb._page = page;
     view.appendChild(thumb);
-    renderThumb(page, canvas);
+    ensureThumbObserver().observe(thumb);
   });
+}
+
+/* Thumbnails are lazily rendered for the same reason pages are: a long
+   document would otherwise rasterize every thumbnail on entering Pages
+   mode. Unlike page canvases these are small, so they're kept once drawn
+   (no release path) -- the cost that mattered was the upfront burst. */
+let thumbObserver = null;
+function ensureThumbObserver() {
+  if (!thumbObserver) {
+    thumbObserver = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const thumb = entry.target;
+        if (thumb._drawn) continue;
+        thumb._drawn = true;
+        renderThumb(thumb._page, thumb.querySelector('canvas'));
+        thumbObserver.unobserve(thumb);
+      }
+    }, { root: $('#pages-view'), rootMargin: '600px 0px' });
+  }
+  return thumbObserver;
 }
 
 async function renderThumb(page, canvas) {

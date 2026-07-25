@@ -50,16 +50,18 @@ function updatePageNav() {
 
 export async function renderEditView() {
   const view = $('#edit-view');
+  if (pageObserver) pageObserver.disconnect();
   view.innerHTML = '';
   view.classList.toggle('view-double', state.viewMode === 'double');
   updatePageNav();
-  for (const page of pagesForView()) {
-    view.appendChild(buildPageWrap(page));
+  const pages = pagesForView();
+  for (const page of pages) {
+    view.appendChild(buildPageWrap(page, state.pages.indexOf(page)));
   }
   updatePlacingCursor();
 }
 
-function buildPageWrap(page) {
+function buildPageWrap(page, index) {
   const scale = pageScale(page);
   const wrap = document.createElement('div');
   wrap.className = 'page-wrap';
@@ -69,18 +71,96 @@ function buildPageWrap(page) {
 
   const canvas = document.createElement('canvas');
   canvas.className = 'page-canvas';
+  // Size the canvas box up front so the page occupies its correct space
+  // before (and after) its bitmap exists -- otherwise lazily rendering or
+  // releasing a page would shift everything below it and jump the scroll.
+  canvas.style.width = page.vw * scale + 'px';
+  canvas.style.height = page.vh * scale + 'px';
   wrap.appendChild(canvas);
 
   const num = document.createElement('div');
   num.className = 'page-num';
-  num.textContent = state.pages.indexOf(page) + 1;
+  num.textContent = index + 1;
   wrap.appendChild(num);
 
   wrap.addEventListener('pointerdown', (e) => onPagePointerDown(e, page, wrap));
 
-  renderPageCanvas(page, canvas, scale);
+  wrap._page = page;
+  wrap._scale = scale;
   for (const item of page.items) wrap.appendChild(buildItemEl(item, page, wrap));
+  ensurePageObserver().observe(wrap);
   return wrap;
+}
+
+/* ---------- lazy page rendering ----------
+   Rendering every page up front is what made long documents unusable: a
+   300-page file allocated ~950MB of canvas backing store on load and pushed
+   a single toolbar click past three seconds. Pages now rasterize only when
+   they come near the viewport and hand their bitmap back once they leave,
+   so canvas memory tracks what's on screen instead of document length. */
+
+let pageObserver = null;
+// Render a screen or so ahead of the scroll in both directions, so pages are
+// ready before they're actually visible.
+const RENDER_MARGIN = '1200px 0px';
+
+function ensurePageObserver() {
+  if (!pageObserver) {
+    pageObserver = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) renderWrap(entry.target);
+        else releaseWrap(entry.target);
+      }
+    }, { root: $('#main'), rootMargin: RENDER_MARGIN });
+  }
+  return pageObserver;
+}
+
+async function renderWrap(wrap) {
+  if (wrap._rendered || wrap._rendering) return;
+  wrap._rendering = true;
+  const page = wrap._page;
+  const scale = wrap._scale;
+  const canvas = wrap.querySelector('canvas.page-canvas');
+  try {
+    const src = state.sources[page.srcIndex];
+    const pdfPage = await src.pdfjs.getPage(page.srcPageNum);
+    // The view may have been rebuilt (zoom, mode switch, tab change) while
+    // this awaited; drop the result rather than painting a stale scale.
+    if (!wrap.isConnected || wrap._scale !== scale) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const vp = pdfPage.getViewport({ scale: scale * dpr });
+    canvas.width = vp.width;
+    canvas.height = vp.height;
+    canvas.style.width = vp.width / dpr + 'px';
+    canvas.style.height = vp.height / dpr + 'px';
+    const task = pdfPage.render({ canvasContext: canvas.getContext('2d'), viewport: vp });
+    wrap._task = task;
+    await task.promise;
+    wrap._rendered = true;
+  } catch (err) {
+    // A cancelled render is the normal outcome of scrolling quickly past a
+    // page, not an error worth surfacing.
+    if (!/cancel/i.test(err && err.message ? err.message : '')) console.error(err);
+  } finally {
+    wrap._task = null;
+    wrap._rendering = false;
+  }
+}
+
+function releaseWrap(wrap) {
+  if (wrap._task) {
+    try { wrap._task.cancel(); } catch {}
+    wrap._task = null;
+  }
+  wrap._rendering = false;
+  if (!wrap._rendered) return;
+  const canvas = wrap.querySelector('canvas.page-canvas');
+  // Zeroing the dimensions is what actually frees the bitmap; the CSS box
+  // set in buildPageWrap keeps the page's footprint so layout is unchanged.
+  canvas.width = 0;
+  canvas.height = 0;
+  wrap._rendered = false;
 }
 
 export function initViewControls() {
@@ -124,18 +204,6 @@ function stepPage(dir) {
   const max = Math.max(0, state.pages.length - 1);
   state.pageIndex = Math.max(0, Math.min(max, state.pageIndex + dir * step));
   renderEditView();
-}
-
-async function renderPageCanvas(page, canvas, scale) {
-  const src = state.sources[page.srcIndex];
-  const pdfPage = await src.pdfjs.getPage(page.srcPageNum);
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const vp = pdfPage.getViewport({ scale: scale * dpr });
-  canvas.width = vp.width;
-  canvas.height = vp.height;
-  canvas.style.width = vp.width / dpr + 'px';
-  canvas.style.height = vp.height / dpr + 'px';
-  await pdfPage.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
 }
 
 /* ---------- tools ---------- */

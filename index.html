@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Khmer PDF Editor</title>
 <link rel="icon" href="data:,">
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -23,7 +24,7 @@
     <button id="tab-pages" class="tab" data-i18n="tabPages">Pages</button>
   </nav>
   <div id="toolbar" hidden>
-    <button id="btn-upload" data-i18n="btnUpload" data-i18n-title="btnUploadTitle" title="Open a different PDF (replaces the current document)">Open PDF</button>
+    <button id="btn-upload" data-i18n="btnUpload" data-i18n-title="btnUploadTitle" title="Open a PDF or image in a new tab">Open</button>
     <span id="view-tools">
       <select id="view-mode" data-i18n-title="viewModeTitle" title="Page view">
         <option value="continuous" data-i18n="viewContinuous">Continuous</option>
@@ -54,17 +55,25 @@
       <button id="btn-append-pdf" data-i18n="btnAppendPdf" data-i18n-title="btnAppendPdfTitle" title="Append pages from another PDF">+ Append PDF</button>
       <button id="btn-remove-pages" data-i18n="removeSelected" data-i18n-title="removeSelectedTitle" title="Remove selected pages" disabled>Remove selected</button>
     </span>
+    <select id="compress-level" data-i18n-title="compressTitle" title="Output size / quality">
+      <option value="none" data-i18n="compressNone">Original quality</option>
+      <option value="low" data-i18n="compressLow">Compress — high quality</option>
+      <option value="medium" data-i18n="compressMedium">Compress — balanced</option>
+      <option value="high" data-i18n="compressHigh">Compress — smallest</option>
+    </select>
     <button id="btn-print" data-i18n="btnPrint" data-i18n-title="btnPrintTitle" title="Print the document">Print</button>
     <button id="btn-export" class="primary" data-i18n="btnExport" data-i18n-title="btnExportTitle" title="Download the modified PDF">Save PDF</button>
   </div>
 </header>
 
+<nav id="doc-tabs" hidden></nav>
+
 <main id="main">
   <div id="dropzone">
     <div class="dz-inner">
-      <p class="dz-title" data-i18n="dzTitle">Drop a PDF here</p>
+      <p class="dz-title" data-i18n="dzTitle">Drop a PDF or image here</p>
       <p class="dz-sub" data-i18n="dzOr">or</p>
-      <button id="btn-pick" data-i18n="btnPick">Choose a PDF file</button>
+      <button id="btn-pick" data-i18n="btnPick">Choose a file</button>
     </div>
   </div>
   <div id="hint-bar" hidden></div>
@@ -72,7 +81,7 @@
   <div id="pages-view" hidden></div>
 </main>
 
-<input type="file" id="file-input" accept="application/pdf,.pdf" hidden>
+<input type="file" id="file-input" accept="application/pdf,.pdf,image/png,image/jpeg,image/webp" multiple hidden>
 <input type="file" id="append-input" accept="application/pdf,.pdf" hidden>
 <input type="file" id="image-input" accept="image/png,image/jpeg" hidden>
 <input type="file" id="sig-upload-input" accept="image/png" hidden>
@@ -99,6 +108,12 @@
       <button class="modal-close" data-close="ocr-modal">&times;</button>
     </div>
     <div id="ocr-progress" hidden><div id="ocr-progress-bar"></div><span id="ocr-progress-label">Starting…</span></div>
+    <div id="ocr-views" hidden>
+      <button class="ocr-view-tab active" data-view="rendered" data-i18n="ocrViewRendered">Rendered</button>
+      <button class="ocr-view-tab" data-view="latex" data-i18n="ocrViewLatex">LaTeX</button>
+      <button class="ocr-view-tab" data-view="text" data-i18n="ocrViewText">Plain text</button>
+    </div>
+    <div id="ocr-rendered" hidden></div>
     <textarea id="ocr-output" spellcheck="false" data-i18n-placeholder="ocrPlaceholder" placeholder="Recognized text will appear here."></textarea>
     <div class="modal-actions">
       <button id="ocr-copy" data-i18n="ocrCopy">Copy text</button>
@@ -128,6 +143,7 @@
 <script src="vendor/pdf.min.js"></script>
 <script src="vendor/pdf-lib.min.js"></script>
 <script src="vendor/tesseract.min.js"></script>
+<script src="vendor/katex/katex.min.js"></script>
 <script type="module" src="js/app.js"></script>
 </body>
 </html>

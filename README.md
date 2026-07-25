@@ -11,12 +11,18 @@ support. No backend, no accounts — documents never leave your machine.
   page. Drag to move, corner handle to resize, × to delete.
 - **Pages mode** — thumbnail grid of all pages: select, drag to reorder,
   remove pages, and append pages from a second PDF.
-- **Save PDF** — downloads the modified document.
+- **Multiple documents** — every file you open gets its own tab; opening a
+  new one no longer replaces what you were working on.
+- **Opens images too** — PNG/JPEG/WebP files open as a one-page document, so a
+  photographed page can be annotated, OCR'd or exported like any PDF.
+- **Save PDF** — downloads the modified document, with an optional compression
+  level (original / high quality / balanced / smallest).
 - **Khmer text** renders correctly (subscript consonants, vowel reordering)
   in both the editor and the exported PDF.
 - **Recognize text (OCR)** — one *Recognize text* menu picks both the scope
   (whole page, or drag out an area) and the language (Auto = Khmer+English,
-  Khmer, English, or Math). Output is selectable/copyable text.
+  Khmer, English, or Math). Output is selectable/copyable text; Math mode adds
+  a rendered-formula preview and editable LaTeX.
 
 ## Running
 
@@ -63,6 +69,15 @@ untouched and stays selectable.
 | Writing the output PDF | [pdf-lib](https://pdf-lib.js.org/) 1.17 |
 | OCR | [tesseract.js](https://tesseract.projectnaptha.com/) 5.1 + `khm`/`eng` traineddata (tessdata_fast) |
 | Fonts | 16 Khmer + 13 Latin families from [Fontsource](https://fontsource.org/) (OFL/Apache) |
+| Math rendering | [KaTeX](https://katex.org/) 0.16 (woff2 subset) |
+
+## Large documents
+
+Pages rasterize only as they approach the viewport and release their bitmap
+once they leave, so memory tracks what's on screen rather than document
+length. Measured on a 300-page file: load `6.0s -> 0.37s`, canvas memory
+`948MB -> 58MB`, and a toolbar click `3.3s -> 0.14s`. A 41MB / 60-page scan
+loads in ~0.4s. Thumbnails in Pages mode are lazy for the same reason.
 
 ## Known limitations
 
@@ -73,13 +88,21 @@ untouched and stays selectable.
 - OCR quality depends on scan quality; the fast traineddata occasionally
   confuses similar Khmer signs. OCR output is provided as copyable text, not
   embedded back into the PDF.
-- Math OCR reads formulas as **plain text, not LaTeX** — `x + 1 = 2`, not
-  `$x + 1 = 2$`. It handles printed linear equations well but has no concept
-  of two-dimensional layout, so stacked fractions, matrices, integral bounds
-  and exponents come out flattened (`a2 + b2 = c2` rather than `a² + b² = c²`).
-  Tesseract's dedicated `equ` traineddata was evaluated for this and **dropped**:
-  on a six-equation test page it produced *no output at all* (0/6) while plain
-  English scored 6/6 on the same image, so math mode is English plus a
-  math-oriented character set and page-segmentation mode. True LaTeX-grade
-  math OCR needs a purpose-built model far too large to ship client-side.
+- **Math OCR is structurally good but character-wise unreliable on scripts.**
+  Math mode rebuilds two-dimensional layout from per-symbol geometry, so
+  baseline formulas and fractions come out exact (`(x + y) / 2 = 5` becomes
+  `\frac{x+y}{2}=5`) and super/subscript *positions* are detected correctly.
+  But Tesseract frequently misreads or drops the small raised *characters*
+  themselves — `E = mc²` often comes back as `E = mc` or `E = mc^{e}`. This was
+  tested against page-segmentation modes, character whitelists and render
+  resolutions from 2.5x to 8x; none of them fixed it, because the model simply
+  isn't trained for raised glyphs. Because of that the LaTeX is presented as
+  an **editable** field with a live preview: OCR gives you the structure, you
+  correct the odd exponent. Tesseract's dedicated `equ` traineddata was also
+  evaluated and dropped — it produced *no output at all* (0/6) where plain
+  English scored 6/6. True Mathpix-grade math OCR needs a purpose-built model
+  far too large to ship client-side without giving up the offline guarantee.
+- Compressing on export re-encodes pages as JPEG images, which shrinks a heavy
+  scan a lot (41MB -> 7MB at the smallest level) but makes any real text in the
+  original non-selectable. "Original quality" is the default for that reason.
 - Encrypted/password-protected PDFs are not supported.
