@@ -7,6 +7,7 @@ export const state = {
   viewMode: 'continuous', // 'continuous' | 'single' | 'double'
   zoom: 1,                // 1 = 100%
   pageIndex: 0,           // current page (single) / left page of spread (double)
+  lang: 'en',             // 'en' | 'km' -- interface language
 };
 
 export function newId() {

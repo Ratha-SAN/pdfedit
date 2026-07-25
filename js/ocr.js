@@ -1,4 +1,5 @@
 import { state, $ } from './state.js';
+import { t, translateOcrStatus } from './i18n.js';
 
 let workerPromise = null;
 
@@ -25,26 +26,26 @@ export async function recognizePage(page) {
   output.value = '';
   progress.hidden = false;
   bar.style.inset = '0 100% 0 0';
-  label.textContent = 'Loading OCR engine…';
+  label.textContent = t('ocrLoadingEngine');
   modal.hidden = false;
 
   const onProgress = (m) => {
     if (m.status === 'recognizing text') {
       bar.style.inset = `0 ${100 - Math.round(m.progress * 100)}% 0 0`;
-      label.textContent = `Recognizing… ${Math.round(m.progress * 100)}%`;
+      label.textContent = t('ocrRecognizing', { pct: Math.round(m.progress * 100) });
     } else if (m.status) {
-      label.textContent = m.status;
+      label.textContent = translateOcrStatus(m.status);
     }
   };
 
   try {
     const worker = await getWorker(onProgress);
     const canvas = await renderPageForOcr(page);
-    label.textContent = 'Recognizing…';
+    label.textContent = t('ocrRecognizingStart');
     const { data } = await worker.recognize(canvas);
-    output.value = data.text.trim() || '(no text found)';
+    output.value = data.text.trim() || t('ocrNoText');
   } catch (err) {
-    output.value = 'OCR failed: ' + (err && err.message ? err.message : err);
+    output.value = t('ocrFailed', { err: err && err.message ? err.message : err });
   } finally {
     progress.hidden = true;
   }
@@ -71,8 +72,8 @@ export function initOcr() {
     output.select();
     try {
       await navigator.clipboard.writeText(output.value);
-      $('#ocr-copy').textContent = 'Copied!';
-      setTimeout(() => { $('#ocr-copy').textContent = 'Copy text'; }, 1500);
+      $('#ocr-copy').textContent = t('ocrCopied');
+      setTimeout(() => { $('#ocr-copy').textContent = t('ocrCopy'); }, 1500);
     } catch {
       document.execCommand('copy');
     }

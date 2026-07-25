@@ -1,4 +1,5 @@
 import { state, newId, $, setHint } from './state.js';
+import { t } from './i18n.js';
 
 const DISPLAY_WIDTH = 800;
 
@@ -277,8 +278,8 @@ function buildItemEl(item, page, wrap) {
 
     const tb = document.createElement('div');
     tb.className = 'item-toolbar';
-    tb.innerHTML = `<label>Size <input type="number" min="6" max="120" step="1" value="${item.fontSize}"></label>
-      <input type="color" value="${item.color}" title="Text color">`;
+    tb.innerHTML = `<label>${t('itemSizeLabel')} <input type="number" min="6" max="120" step="1" value="${item.fontSize}"></label>
+      <input type="color" value="${item.color}" title="${t('itemTextColorTitle')}">`;
     const sizeInput = tb.querySelector('input[type=number]');
     sizeInput.addEventListener('input', () => {
       item.fontSize = Math.max(6, Math.min(120, Number(sizeInput.value) || 16));
@@ -303,7 +304,7 @@ function buildItemEl(item, page, wrap) {
 
     const tb = document.createElement('div');
     tb.className = 'item-toolbar';
-    tb.innerHTML = `<input type="color" value="${item.color}" title="Highlight color">`;
+    tb.innerHTML = `<input type="color" value="${item.color}" title="${t('itemHighlightColorTitle')}">`;
     const colorInput = tb.querySelector('input[type=color]');
     colorInput.addEventListener('input', () => {
       item.color = colorInput.value;
@@ -326,14 +327,14 @@ function buildItemEl(item, page, wrap) {
   const del = document.createElement('button');
   del.className = 'item-del';
   del.textContent = '×';
-  del.title = 'Delete';
+  del.title = t('itemDeleteTitle');
   del.addEventListener('pointerdown', (e) => e.stopPropagation());
   del.addEventListener('click', () => removeItem(item, page, el));
   el.appendChild(del);
 
   const rz = document.createElement('div');
   rz.className = 'item-resize';
-  rz.title = 'Resize';
+  rz.title = t('itemResizeTitle');
   rz.addEventListener('pointerdown', (e) => startResize(e, item, page, el));
   el.appendChild(rz);
 
@@ -354,6 +355,21 @@ function buildItemEl(item, page, wrap) {
     requestAnimationFrame(() => syncTextSize(item, el, scale));
   }
   return el;
+}
+
+// Patches translated text/tooltips on already-placed items in place, rather
+// than re-rendering the whole page (which would rebuild every canvas and
+// drop the current selection/in-progress text edit).
+export function refreshEditI18n() {
+  document.querySelectorAll('.item .item-toolbar label').forEach((label) => {
+    if (label.firstChild) label.firstChild.textContent = t('itemSizeLabel') + ' ';
+  });
+  document.querySelectorAll('.item .item-toolbar input[type=color]').forEach((input) => {
+    const isHighlight = input.closest('.item').classList.contains('item-highlight');
+    input.title = isHighlight ? t('itemHighlightColorTitle') : t('itemTextColorTitle');
+  });
+  document.querySelectorAll('.item .item-del').forEach((el) => { el.title = t('itemDeleteTitle'); });
+  document.querySelectorAll('.item .item-resize').forEach((el) => { el.title = t('itemResizeTitle'); });
 }
 
 function syncTextSize(item, el, scale) {

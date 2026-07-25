@@ -1,4 +1,5 @@
 import { state, showBusy, hideBusy } from './state.js';
+import { t } from './i18n.js';
 
 const { PDFDocument, degrees, rgb, BlendMode } = PDFLib;
 
@@ -29,7 +30,7 @@ function outputName() {
 }
 
 export async function exportPdf() {
-  showBusy('Building PDF…');
+  showBusy(t('buildingPdf'));
   try {
     const bytes = await buildPdfBytes();
     download(bytes, outputName());
@@ -39,7 +40,7 @@ export async function exportPdf() {
 }
 
 export async function printPdf() {
-  showBusy('Preparing to print…');
+  showBusy(t('preparingPrint'));
   try {
     const bytes = await buildPdfBytes();
     await printBytes(bytes);
