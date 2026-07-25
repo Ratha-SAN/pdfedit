@@ -3,7 +3,13 @@ import { state, newId, $, setHint } from './state.js';
 const DISPLAY_WIDTH = 800;
 
 function baseWidth() {
-  const avail = document.body.clientWidth - 32;
+  // Measure #main's own clientWidth (not document.body's): #main is the
+  // scrolling container, so its clientWidth already excludes its vertical
+  // scrollbar. Sizing against body.clientWidth instead would overshoot by
+  // the scrollbar's width on browsers with classic (non-overlay)
+  // scrollbars, which is enough to make the two double-page columns wrap
+  // onto separate rows instead of sitting side by side.
+  const avail = $('#main').clientWidth - 32;
   if (state.viewMode === 'double') return Math.min(DISPLAY_WIDTH, (avail - 24) / 2);
   return Math.min(DISPLAY_WIDTH, avail);
 }
