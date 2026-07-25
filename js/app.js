@@ -18,6 +18,11 @@ fileInput.addEventListener('change', (e) => {
   if (file) openFirstPdf(file);
 });
 
+$('#btn-upload').addEventListener('click', () => {
+  if (state.pages.length && !confirm('Open a different PDF? This replaces the current document; any unsaved edits will be lost.')) return;
+  fileInput.click();
+});
+
 ['dragover', 'dragenter'].forEach((ev) =>
   dropzone.addEventListener(ev, (e) => {
     e.preventDefault();
@@ -38,6 +43,7 @@ dropzone.addEventListener('drop', (e) => {
 async function openFirstPdf(file) {
   showBusy('Loading PDF…');
   try {
+    state.sources = [];
     const pages = await addSource(file);
     state.pages = pages;
     state.pageIndex = 0;
