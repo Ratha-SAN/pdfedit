@@ -1,6 +1,6 @@
 import { state, $ } from './state.js';
 import { t, translateOcrStatus } from './i18n.js';
-import { dataToLatexLines } from './mathlatex.js';
+import { dataToLatexLines, dataToLatexLinesWithBars, detectFractionBars, eraseBars, medianGlyphHeight } from './mathlatex.js';
 
 let workerPromise = null;
 let workerLang = null;
@@ -112,9 +112,25 @@ async function runRecognition(getCanvas) {
     // Ask for the structured (block/word/symbol) output too -- math mode
     // rebuilds super/subscripts from per-symbol geometry, which the flat
     // text string throws away.
-    const { data } = await worker.recognize(canvas, {}, { text: true, blocks: true });
+    const OUT = { text: true, blocks: true };
+    let { data } = await worker.recognize(canvas, {}, OUT);
+    let bars = [];
+
+    if (modeId === 'math') {
+      // Second pass for maths. Fraction bars carry structure the recogniser
+      // can't use but *can* corrupt neighbouring glyphs, so they're found
+      // geometrically, painted out, and the page re-read. Detection needs the
+      // first pass's glyph size to tell a real bar from an ordinary
+      // horizontal stroke, hence two passes rather than one.
+      bars = detectFractionBars(canvas, medianGlyphHeight(data));
+      if (bars.length) {
+        eraseBars(canvas, bars);
+        const second = await worker.recognize(canvas, {}, OUT);
+        data = second.data;
+      }
+    }
     output.value = data.text.trim() || t('ocrNoText');
-    showResult(modeId, data);
+    showResult(modeId, data, bars);
   } catch (err) {
     output.value = t('ocrFailed', { err: err && err.message ? err.message : err });
   } finally {
@@ -197,7 +213,7 @@ function setView(view) {
   }
 }
 
-function showResult(modeId, data) {
+function showResult(modeId, data, bars) {
   const output = $('#ocr-output');
   output.dataset.plain = output.value;
   const views = $('#ocr-views');
@@ -213,7 +229,7 @@ function showResult(modeId, data) {
     return;
   }
 
-  latexLines = dataToLatexLines(data);
+  latexLines = (bars && bars.length) ? dataToLatexLinesWithBars(data, bars) : dataToLatexLines(data);
   renderLatexInto(rendered, latexLines);
   views.hidden = false;
   setView('rendered');

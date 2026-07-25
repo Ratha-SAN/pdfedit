@@ -72,7 +72,7 @@ async function openFiles(files) {
     if (!activeDoc()) return;
     dropzone.hidden = true;
     $('#mode-tabs').hidden = false;
-    $('#toolbar').hidden = false;
+    $('#sidebar').hidden = false;
     renderDocTabs();
     await setMode('edit');
   } finally {
@@ -109,7 +109,7 @@ function renderDocTabs() {
       if (!state.docs.length) {
         dropzone.hidden = false;
         $('#mode-tabs').hidden = true;
-        $('#toolbar').hidden = true;
+        $('#sidebar').hidden = true;
         $('#edit-view').hidden = true;
         $('#pages-view').hidden = true;
       } else {
@@ -139,6 +139,7 @@ async function setMode(mode) {
   $('#pages-view').hidden = mode !== 'pages';
   $('#view-tools').hidden = mode !== 'edit';
   $('#edit-tools').hidden = mode !== 'edit';
+  $('#ocr-tools').hidden = mode !== 'edit';
   $('#pages-tools').hidden = mode !== 'pages';
   if (mode === 'edit') await renderEditView();
   else await renderPagesView();
@@ -192,48 +193,24 @@ $('#btn-add-highlight').addEventListener('click', () => {
   );
 });
 
-/* ---------- recognize (OCR) menu ---------- */
+/* ---------- sidebar sections ---------- */
 
-const ocrMenu = $('#ocr-menu');
-const recognizeBtn = $('#btn-recognize');
-
-// Positioned fixed and measured on open rather than anchored inside the
-// toolbar: on narrow screens the toolbar is an overflow-x scroller, which
-// would clip an absolutely-positioned child.
-function openOcrMenu() {
-  const r = recognizeBtn.getBoundingClientRect();
-  ocrMenu.hidden = false;
-  const mw = ocrMenu.offsetWidth;
-  ocrMenu.style.top = `${r.bottom + 6}px`;
-  ocrMenu.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - mw - 8))}px`;
-  recognizeBtn.setAttribute('aria-expanded', 'true');
-}
-
-function closeOcrMenu() {
-  ocrMenu.hidden = true;
-  recognizeBtn.setAttribute('aria-expanded', 'false');
-}
-
-recognizeBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  if (ocrMenu.hidden) openOcrMenu(); else closeOcrMenu();
+// Sections collapse so the longer ones (recognition options, output quality)
+// don't push everything else off-screen.
+document.querySelectorAll('.side-head').forEach((head) => {
+  head.addEventListener('click', () => {
+    const open = head.getAttribute('aria-expanded') === 'true';
+    head.setAttribute('aria-expanded', String(!open));
+    head.nextElementSibling.hidden = open;
+  });
 });
 
-// Clicking a language radio should keep the menu open (so the choice and the
-// action can be made in one visit); clicking an action closes it.
-ocrMenu.addEventListener('click', (e) => e.stopPropagation());
-document.addEventListener('click', () => { if (!ocrMenu.hidden) closeOcrMenu(); });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !ocrMenu.hidden) closeOcrMenu(); });
-window.addEventListener('resize', () => { if (!ocrMenu.hidden) closeOcrMenu(); });
-
 $('#mi-ocr-page').addEventListener('click', () => {
-  closeOcrMenu();
   const page = currentPage();
   if (page) recognizePage(page);
 });
 
 $('#mi-ocr-area').addEventListener('click', () => {
-  closeOcrMenu();
   if (state.tool && state.tool.type === 'ocr-area') armTool(null);
   else armTool({ type: 'ocr-area' }, t('ocrAreaHint'));
 });

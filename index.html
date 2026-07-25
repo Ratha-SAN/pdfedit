@@ -23,9 +23,33 @@
     <button id="tab-edit" class="tab active" data-i18n="tabEdit">Edit</button>
     <button id="tab-pages" class="tab" data-i18n="tabPages">Pages</button>
   </nav>
-  <div id="toolbar" hidden>
-    <button id="btn-upload" data-i18n="btnUpload" data-i18n-title="btnUploadTitle" title="Open a PDF or image in a new tab">Open</button>
-    <span id="view-tools">
+</header>
+
+<nav id="doc-tabs" hidden></nav>
+
+
+<div id="workspace">
+<aside id="sidebar" hidden>
+  <section class="side-sec" id="sec-file">
+    <button class="side-head" aria-expanded="true" data-i18n="secFile">File</button>
+    <div class="side-body">
+      <button id="btn-upload" data-i18n="btnUpload" data-i18n-title="btnUploadTitle" title="Open a PDF or image in a new tab">Open</button>
+      <button id="btn-export" class="primary" data-i18n="btnExport" data-i18n-title="btnExportTitle" title="Download the modified PDF">Save PDF</button>
+      <button id="btn-print" data-i18n="btnPrint" data-i18n-title="btnPrintTitle" title="Print the document">Print</button>
+      <label class="side-field"><span data-i18n="compressLabel">Output size</span>
+        <select id="compress-level" data-i18n-title="compressTitle" title="Output size / quality">
+          <option value="none" data-i18n="compressNone">Original quality</option>
+          <option value="low" data-i18n="compressLow">Compress — high quality</option>
+          <option value="medium" data-i18n="compressMedium">Compress — balanced</option>
+          <option value="high" data-i18n="compressHigh">Compress — smallest</option>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section class="side-sec" id="view-tools">
+    <button class="side-head" aria-expanded="true" data-i18n="secView">View</button>
+    <div class="side-body">
       <select id="view-mode" data-i18n-title="viewModeTitle" title="Page view">
         <option value="continuous" data-i18n="viewContinuous">Continuous</option>
         <option value="single" data-i18n="viewSingle">Single page</option>
@@ -41,32 +65,43 @@
         <span id="page-indicator">1 / 1</span>
         <button id="page-next" data-i18n-title="pageNextTitle" title="Next page">›</button>
       </span>
-    </span>
-    <span id="edit-tools">
+    </div>
+  </section>
+
+  <section class="side-sec" id="edit-tools">
+    <button class="side-head" aria-expanded="true" data-i18n="secInsert">Insert</button>
+    <div class="side-body">
       <button id="btn-add-text" data-i18n="btnAddText" data-i18n-title="btnAddTextTitle" title="Add a text box (click a page to place)">+ Text</button>
       <button id="btn-add-image" data-i18n="btnAddImage" data-i18n-title="btnAddImageTitle" title="Insert an image (click a page to place)">+ Image</button>
       <button id="btn-add-signature" data-i18n="btnAddSignature" data-i18n-title="btnAddSignatureTitle" title="Draw or upload a signature">+ Signature</button>
       <button id="btn-add-highlight" data-i18n="btnAddHighlight" data-i18n-title="btnAddHighlightTitle" title="Highlight part of a page (drag to draw)">+ Highlight</button>
-      <button id="btn-recognize" aria-haspopup="true" aria-expanded="false" data-i18n-title="btnRecognizeTitle" title="Recognize text (OCR) — choose scope and language">
-        <span data-i18n="btnRecognize">Recognize text</span> <span class="caret">▾</span>
-      </button>
-    </span>
-    <span id="pages-tools" hidden>
+      
+    </div>
+  </section>
+
+  <section class="side-sec" id="ocr-tools">
+    <button class="side-head" aria-expanded="false" data-i18n="secRecognize">Recognize text</button>
+    <div class="side-body" hidden>
+      <div class="menu-label" data-i18n="ocrMenuScope">What to recognize</div>
+      <button id="mi-ocr-page" data-i18n="ocrScopePage">Whole page</button>
+      <button id="mi-ocr-area" data-i18n="ocrScopeArea">Select an area…</button>
+      <div class="menu-label" data-i18n="ocrMenuLang">Language</div>
+      <label class="menu-radio"><input type="radio" name="ocr-lang" value="auto" checked><span data-i18n="ocrLangAuto">Auto (Khmer + English)</span></label>
+      <label class="menu-radio"><input type="radio" name="ocr-lang" value="khm"><span data-i18n="ocrLangKhmer">Khmer</span></label>
+      <label class="menu-radio"><input type="radio" name="ocr-lang" value="eng"><span data-i18n="ocrLangEnglish">English</span></label>
+      <label class="menu-radio"><input type="radio" name="ocr-lang" value="math"><span data-i18n="ocrLangMath">Math / formulas</span></label>
+      <div class="menu-note" data-i18n="ocrMathNote">Math mode rebuilds superscripts and fractions, and shows rendered formulas plus LaTeX.</div>
+    </div>
+  </section>
+
+  <section class="side-sec" id="pages-tools" hidden>
+    <button class="side-head" aria-expanded="true" data-i18n="secPages">Pages</button>
+    <div class="side-body">
       <button id="btn-append-pdf" data-i18n="btnAppendPdf" data-i18n-title="btnAppendPdfTitle" title="Append pages from another PDF">+ Append PDF</button>
       <button id="btn-remove-pages" data-i18n="removeSelected" data-i18n-title="removeSelectedTitle" title="Remove selected pages" disabled>Remove selected</button>
-    </span>
-    <select id="compress-level" data-i18n-title="compressTitle" title="Output size / quality">
-      <option value="none" data-i18n="compressNone">Original quality</option>
-      <option value="low" data-i18n="compressLow">Compress — high quality</option>
-      <option value="medium" data-i18n="compressMedium">Compress — balanced</option>
-      <option value="high" data-i18n="compressHigh">Compress — smallest</option>
-    </select>
-    <button id="btn-print" data-i18n="btnPrint" data-i18n-title="btnPrintTitle" title="Print the document">Print</button>
-    <button id="btn-export" class="primary" data-i18n="btnExport" data-i18n-title="btnExportTitle" title="Download the modified PDF">Save PDF</button>
-  </div>
-</header>
-
-<nav id="doc-tabs" hidden></nav>
+    </div>
+  </section>
+</aside>
 
 <main id="main">
   <div id="dropzone">
@@ -80,6 +115,7 @@
   <div id="edit-view" hidden></div>
   <div id="pages-view" hidden></div>
 </main>
+</div>
 
 <input type="file" id="file-input" accept="application/pdf,.pdf,image/png,image/jpeg,image/webp" multiple hidden>
 <input type="file" id="append-input" accept="application/pdf,.pdf" hidden>
@@ -121,21 +157,6 @@
   </div>
 </div>
 
-<div id="ocr-menu" hidden role="menu">
-  <div class="menu-label" data-i18n="ocrMenuScope">What to recognize</div>
-  <button class="menu-item" id="mi-ocr-page" role="menuitem">
-    <span data-i18n="ocrScopePage">Whole page</span>
-  </button>
-  <button class="menu-item" id="mi-ocr-area" role="menuitem">
-    <span data-i18n="ocrScopeArea">Select an area…</span>
-  </button>
-  <div class="menu-sep"></div>
-  <div class="menu-label" data-i18n="ocrMenuLang">Language</div>
-  <label class="menu-radio"><input type="radio" name="ocr-lang" value="auto" checked><span data-i18n="ocrLangAuto">Auto (Khmer + English)</span></label>
-  <label class="menu-radio"><input type="radio" name="ocr-lang" value="khm"><span data-i18n="ocrLangKhmer">Khmer</span></label>
-  <label class="menu-radio"><input type="radio" name="ocr-lang" value="eng"><span data-i18n="ocrLangEnglish">English</span></label>
-  <label class="menu-radio"><input type="radio" name="ocr-lang" value="math"><span data-i18n="ocrLangMath">Math / formulas</span></label>
-  <div class="menu-note" data-i18n="ocrMathNote">Math mode reads printed formulas as plain text, not LaTeX.</div>
 </div>
 
 <div id="busy" hidden><div class="spinner"></div><span id="busy-label">Working…</span></div>
