@@ -16,6 +16,12 @@ support. No backend, no accounts — documents never leave your machine.
   and place a signature (drawn on a canvas or uploaded as PNG) anywhere on any
   page. Drag to move, corner handle to resize, × to delete, and an **Edit**
   button (or double-click / long-press) to type into a text box in place.
+  Drawing a signature offers 5 brush styles (Pen, Ink, Stylus, Marker,
+  Brush) — each a genuinely different look (width range, opacity, blend
+  mode), not just a color — and the stroke width responds to real pointer
+  pressure from a stylus or force-sensitive touch (mouse/plain touch falls
+  back to a fixed mid-range width, since there's no pressure signal to
+  read).
 - **Left sidebar** — tools live in collapsible sections (File, Insert,
   Recognize text, Pages) rather than one long toolbar row, flush against the
   top bar; document tabs sit above the page area, not the sidebar. In Pages

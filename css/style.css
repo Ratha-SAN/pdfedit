@@ -120,16 +120,21 @@ body.lang-km { font-family: 'Noto Sans Khmer', system-ui, -apple-system, 'Segoe 
 .brand, #lang-toggle, #theme-toggle, #mode-tabs { flex-shrink: 0; }
 .brand { font-weight: 700; font-size: 16px; }
 
-#mode-tabs .tab, #lang-toggle .tab, #theme-toggle .tab {
+#mode-tabs .tab, #lang-toggle .tab, #theme-toggle .tab, #sig-styles .tab {
   border: 1px solid var(--border);
   background: var(--surface-alt);
   color: var(--text);
   padding: 6px 10px;
   cursor: pointer;
 }
-#mode-tabs .tab:first-child, #lang-toggle .tab:first-child, #theme-toggle .tab:first-child { border-radius: 6px 0 0 6px; }
-#mode-tabs .tab:last-child, #lang-toggle .tab:last-child, #theme-toggle .tab:last-child { border-radius: 0 6px 6px 0; margin-left: -1px; }
-#mode-tabs .tab.active, #lang-toggle .tab.active, #theme-toggle .tab.active { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; }
+#mode-tabs .tab:first-child, #lang-toggle .tab:first-child, #theme-toggle .tab:first-child, #sig-styles .tab:first-child { border-radius: 6px 0 0 6px; }
+#mode-tabs .tab:last-child, #lang-toggle .tab:last-child, #theme-toggle .tab:last-child, #sig-styles .tab:last-child { border-radius: 0 6px 6px 0; margin-left: -1px; }
+#mode-tabs .tab.active, #lang-toggle .tab.active, #theme-toggle .tab.active, #sig-styles .tab.active { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; }
+#sig-styles { display: flex; flex-wrap: wrap; margin-bottom: 10px; }
+#sig-styles .tab { border-radius: 0; }
+#sig-styles .tab:not(:first-child) { margin-left: -1px; }
+#sig-styles .tab:first-child { border-radius: 6px 0 0 6px; }
+#sig-styles .tab:last-child { border-radius: 0 6px 6px 0; }
 
 
 #view-mode { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); }
