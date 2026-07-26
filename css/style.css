@@ -1,3 +1,9 @@
+/* Hides the page while a saved Khmer preference is pending translation
+   (see the inline script in index.html's <head>) -- otherwise the
+   English defaults baked into the HTML would paint first. Removed by
+   applyTranslations() in js/i18n.js once the real text is in place. */
+html.lang-pending body { visibility: hidden; }
+
 /* Bundled webfonts. Every Khmer face guarantees correct Khmer shaping;
    Latin faces are paired with a Khmer fallback in FONT_STACKS (state.js)
    so Khmer text still renders no matter which font is chosen. */
@@ -225,6 +231,12 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   left: -44px;
   color: var(--text-muted);
   font-size: 12px;
+  /* Purely a label. In double-page mode and on narrow/mobile screens (below)
+     it's repositioned inside the page, directly over the canvas -- without
+     this it silently swallows the pointerdown that starts text/image/
+     signature placement, highlight drawing, and OCR area-select, since
+     onPagePointerDown only accepts the page-wrap or canvas as its target. */
+  pointer-events: none;
 }
 /* The left-margin position above assumes a single centered column; in
    double-page mode the left page has little to no left margin to sit in,

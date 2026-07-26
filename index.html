@@ -10,12 +10,26 @@
      script only runs after the document is parsed -- by then a flash would
      already have happened -- so this has to be an early, blocking, inline,
      classic script, not deferred module code. Dark is the default whenever
-     nothing is saved yet. -->
+     nothing is saved yet.
+
+     Also stashes a class for a saved Khmer language preference: the HTML
+     below is hard-coded in English, and swapping [data-i18n] text only
+     happens once js/i18n.js's applyTranslations() runs -- same deferred-
+     module timing gap as the theme, so a saved 'km' preference would
+     otherwise flash the English defaults first. Text content can't be
+     swapped this early (the elements don't exist until <body> parses), so
+     instead this just marks the page to stay invisible via CSS until
+     applyTranslations() removes the class. English (the default already
+     baked into the markup) never hits this path, so most users see no
+     change at all. -->
 <script>
   (function () {
     var saved = null;
     try { saved = localStorage.getItem('pdfedit-theme'); } catch (e) {}
     document.documentElement.dataset.theme = saved === 'light' ? 'light' : 'dark';
+    var lang = null;
+    try { lang = localStorage.getItem('pdfedit-lang'); } catch (e) {}
+    if (lang === 'km') document.documentElement.classList.add('lang-pending');
   })();
 </script>
 <link rel="stylesheet" href="vendor/katex/katex.min.css">
