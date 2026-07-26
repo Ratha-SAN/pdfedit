@@ -85,7 +85,7 @@ async function openFiles(files) {
 
 /* ---------- document tabs ---------- */
 
-function renderDocTabs() {
+export function renderDocTabs() {
   const bar = $('#doc-tabs');
   bar.innerHTML = '';
   bar.hidden = state.docs.length === 0;
@@ -148,6 +148,11 @@ async function setMode(mode) {
   $('#edit-tools').hidden = mode !== 'edit';
   $('#ocr-tools').hidden = mode !== 'edit';
   $('#pages-tools').hidden = mode !== 'pages';
+  // The compression control is the same element either way -- just moved
+  // bodily between the top bar and the Pages sidebar section, so its
+  // selected value and live estimate survive the move untouched.
+  if (mode === 'pages') $('#pages-compress-anchor').appendChild($('#topbar-compress'));
+  else $('#topbar-tools').appendChild($('#topbar-compress'));
   if (mode === 'edit') await renderEditView();
   else await renderPagesView();
 }
@@ -260,16 +265,20 @@ $('#btn-print').addEventListener('click', async () => {
 
 // A real pop-up window (not just a new tab) so it visibly floats apart from
 // the editor; the plain <a href target=_blank> stays as the no-JS/middle-
-// click fallback.
+// click fallback. features.html saves its own size/position (and scroll
+// position) as it's resized/moved/closed, so this reopens it exactly where
+// it was left rather than always at the same default spot.
 $('#btn-features').addEventListener('click', (e) => {
   e.preventDefault();
-  const w = Math.min(900, window.screen.availWidth - 80);
-  const h = Math.min(800, window.screen.availHeight - 80);
-  window.open(
-    'features.html',
-    'pdfeditFeatures',
-    `width=${w},height=${h},menubar=no,toolbar=no,location=no,status=no,scrollbars=yes,resizable=yes`
-  );
+  let geom = null;
+  try { geom = JSON.parse(localStorage.getItem('pdfedit-features-geom')); } catch {}
+  const w = Math.min((geom && geom.w) || 900, window.screen.availWidth - 20);
+  const h = Math.min((geom && geom.h) || 800, window.screen.availHeight - 20);
+  let features = `width=${w},height=${h},menubar=no,toolbar=no,location=no,status=no,scrollbars=yes,resizable=yes`;
+  if (geom && Number.isFinite(geom.x) && Number.isFinite(geom.y)) {
+    features += `,left=${geom.x},top=${geom.y}`;
+  }
+  window.open('features.html', 'pdfeditFeatures', features);
 });
 
 /* ---------- modals ---------- */

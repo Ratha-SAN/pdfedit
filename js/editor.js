@@ -665,42 +665,123 @@ export function currentPage() {
 
 let sigDirty = false;
 
+// Each brush style is a distinct look, not just a color: min/max stroke
+// width (interpolated by pointer pressure -- a real stylus/touch force
+// value where the device reports one, else a fixed mid-range default so
+// mouse/finger drawing still gets a reasonable width rather than the
+// thinnest possible line), an overall opacity, and a composite mode.
+// Marker uses "multiply" plus reduced opacity so overlapping passes darken
+// the way a real highlighter/marker does; the rest use plain source-over.
+const BRUSH_STYLES = {
+  pen:    { color: '#1a1a2e', minWidth: 1.6, maxWidth: 3.0,  opacity: 1,    composite: 'source-over' },
+  ink:    { color: '#0b1d4d', minWidth: 1.0, maxWidth: 4.2,  opacity: 0.92, composite: 'source-over' },
+  stylo:  { color: '#101010', minWidth: 1.8, maxWidth: 2.3,  opacity: 1,    composite: 'source-over' },
+  marker: { color: '#1a1a2e', minWidth: 6,   maxWidth: 10,   opacity: 0.55, composite: 'multiply' },
+  brush:  { color: '#161616', minWidth: 2,   maxWidth: 14,   opacity: 0.85, composite: 'source-over' },
+};
+let sigStyleId = 'pen';
+let clearSignatureLayers = () => {};
+
 export function initSignatureModal(onReady) {
   const modal = $('#sig-modal');
   const canvas = $('#sig-canvas');
   const ctx = canvas.getContext('2d');
-  ctx.lineWidth = 2.5;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  ctx.strokeStyle = '#1a1a2e';
+
+  // Two offscreen layers: `base` accumulates every finished stroke (each
+  // composited once, at its own style's opacity/blend mode); `stroke`
+  // holds only the in-progress stroke's shape, built up at full opacity so
+  // variable-width segments never double-blend against each other. Every
+  // frame the visible canvas is redrawn from base + stroke, so switching
+  // brush style mid-signature only affects strokes drawn after the switch.
+  const base = document.createElement('canvas');
+  base.width = canvas.width; base.height = canvas.height;
+  const baseCtx = base.getContext('2d');
+  const strokeLayer = document.createElement('canvas');
+  strokeLayer.width = canvas.width; strokeLayer.height = canvas.height;
+  const strokeCtx = strokeLayer.getContext('2d');
+  strokeCtx.lineCap = 'round';
+  strokeCtx.lineJoin = 'round';
+
   let drawing = false;
+  let last = null; // { x, y, pressure }
+  let activeStyle = BRUSH_STYLES.pen;
+
+  const redraw = () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.drawImage(base, 0, 0);
+    ctx.globalAlpha = activeStyle.opacity;
+    ctx.globalCompositeOperation = activeStyle.composite;
+    ctx.drawImage(strokeLayer, 0, 0);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+  };
 
   const pos = (e) => {
     const r = canvas.getBoundingClientRect();
-    return [(e.clientX - r.left) * (canvas.width / r.width), (e.clientY - r.top) * (canvas.height / r.height)];
+    const pressure = e.pressure > 0 ? e.pressure : 0.5; // no force sensor -> a reasonable mid-range default
+    return { x: (e.clientX - r.left) * (canvas.width / r.width), y: (e.clientY - r.top) * (canvas.height / r.height), pressure };
   };
+  const widthFor = (pressure) => activeStyle.minWidth + (activeStyle.maxWidth - activeStyle.minWidth) * pressure;
+
   canvas.addEventListener('pointerdown', (e) => {
     drawing = true;
     sigDirty = true;
-    canvas.setPointerCapture(e.pointerId);
-    const [x, y] = pos(e);
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x + 0.01, y + 0.01);
-    ctx.stroke();
+    activeStyle = BRUSH_STYLES[sigStyleId] || BRUSH_STYLES.pen;
+    try { canvas.setPointerCapture(e.pointerId); } catch {}
+    strokeCtx.clearRect(0, 0, strokeLayer.width, strokeLayer.height);
+    strokeCtx.fillStyle = activeStyle.color;
+    strokeCtx.strokeStyle = activeStyle.color;
+    const p = pos(e);
+    last = p;
+    // A tap with no movement still leaves a dot.
+    strokeCtx.beginPath();
+    strokeCtx.arc(p.x, p.y, widthFor(p.pressure) / 2, 0, Math.PI * 2);
+    strokeCtx.fill();
+    redraw();
   });
   canvas.addEventListener('pointermove', (e) => {
     if (!drawing) return;
-    const [x, y] = pos(e);
-    ctx.lineTo(x, y);
-    ctx.stroke();
+    const p = pos(e);
+    strokeCtx.lineWidth = widthFor((last.pressure + p.pressure) / 2);
+    strokeCtx.beginPath();
+    strokeCtx.moveTo(last.x, last.y);
+    strokeCtx.lineTo(p.x, p.y);
+    strokeCtx.stroke();
+    last = p;
+    redraw();
   });
-  canvas.addEventListener('pointerup', () => { drawing = false; });
+  const endStroke = () => {
+    if (!drawing) return;
+    drawing = false;
+    // Bake the finished stroke into the base layer at its own style's
+    // opacity/blend mode, exactly once, then clear it for the next stroke.
+    baseCtx.globalAlpha = activeStyle.opacity;
+    baseCtx.globalCompositeOperation = activeStyle.composite;
+    baseCtx.drawImage(strokeLayer, 0, 0);
+    baseCtx.globalAlpha = 1;
+    baseCtx.globalCompositeOperation = 'source-over';
+    strokeCtx.clearRect(0, 0, strokeLayer.width, strokeLayer.height);
+    redraw();
+  };
+  canvas.addEventListener('pointerup', endStroke);
+  canvas.addEventListener('pointercancel', endStroke);
 
-  $('#sig-clear').addEventListener('click', () => {
+  document.querySelectorAll('#sig-styles .tab').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      sigStyleId = btn.dataset.style;
+      document.querySelectorAll('#sig-styles .tab').forEach((b) => b.classList.toggle('active', b === btn));
+    });
+  });
+
+  clearSignatureLayers = () => {
+    baseCtx.clearRect(0, 0, base.width, base.height);
+    strokeCtx.clearRect(0, 0, strokeLayer.width, strokeLayer.height);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     sigDirty = false;
-  });
+  };
+  $('#sig-clear').addEventListener('click', clearSignatureLayers);
   $('#sig-upload').addEventListener('click', () => $('#sig-upload-input').click());
   $('#sig-upload-input').addEventListener('change', async (e) => {
     const file = e.target.files[0];
@@ -720,9 +801,7 @@ export function initSignatureModal(onReady) {
 }
 
 export function openSignatureModal() {
-  const canvas = $('#sig-canvas');
-  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-  sigDirty = false;
+  clearSignatureLayers();
   $('#sig-modal').hidden = false;
 }
 

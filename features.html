@@ -212,6 +212,33 @@
   document.getElementById('lang-en').addEventListener('click', function () { setLang('en'); });
   document.getElementById('lang-km').addEventListener('click', function () { setLang('km'); });
   setLang(lang);
+
+  // Resume where this window was left, rather than always reopening fresh:
+  // restore scroll position now, and remember size/position/scroll as they
+  // change so the *next* open (a fresh window.open() from the sidebar
+  // button) can be sized/positioned/scrolled to match.
+  var savedScroll = null;
+  try { savedScroll = parseInt(localStorage.getItem('pdfedit-features-scroll'), 10); } catch (e) {}
+  if (savedScroll) window.scrollTo(0, savedScroll);
+
+  function saveGeometry() {
+    try {
+      localStorage.setItem('pdfedit-features-geom', JSON.stringify({
+        w: window.outerWidth, h: window.outerHeight,
+        x: window.screenX, y: window.screenY,
+      }));
+    } catch (e) {}
+  }
+  function saveScroll() {
+    try { localStorage.setItem('pdfedit-features-scroll', String(window.scrollY)); } catch (e) {}
+  }
+  var scrollSaveTimer = null;
+  window.addEventListener('resize', saveGeometry);
+  window.addEventListener('scroll', function () {
+    clearTimeout(scrollSaveTimer);
+    scrollSaveTimer = setTimeout(saveScroll, 200);
+  });
+  window.addEventListener('beforeunload', function () { saveGeometry(); saveScroll(); });
 })();
 </script>
 

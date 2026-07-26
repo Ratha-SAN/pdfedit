@@ -7,24 +7,37 @@ support. No backend, no accounts — documents never leave your machine.
 
 - **Upload** a PDF by drag-and-drop or file picker.
 - **Top bar** — a single row, left to right: brand, language, theme, mode
-  tabs, page view (continuous/single/double + zoom), and a compression picker
-  with a live estimated output size; only **Save PDF** and **Print** sit on
-  the right, grouped together. Flush against the sidebar below it, with no
-  gap. On narrow screens the whole bar scrolls horizontally instead of
-  wrapping onto extra lines.
+  tabs, page view (continuous/single/double + zoom), and (in Edit mode) a
+  compression picker with a live estimated output size; only **Save PDF** and
+  **Print** sit on the right, grouped together. Flush against the sidebar
+  below it, with no gap. On narrow screens the whole bar scrolls horizontally
+  instead of wrapping onto extra lines.
 - **Edit mode** — add text boxes (Khmer or English), insert PNG/JPEG images,
   and place a signature (drawn on a canvas or uploaded as PNG) anywhere on any
   page. Drag to move, corner handle to resize, × to delete, and an **Edit**
   button (or double-click / long-press) to type into a text box in place.
+  Drawing a signature offers 5 brush styles (Pen, Ink, Stylus, Marker,
+  Brush) — each a genuinely different look (width range, opacity, blend
+  mode), not just a color — and the stroke width responds to real pointer
+  pressure from a stylus or force-sensitive touch (mouse/plain touch falls
+  back to a fixed mid-range width, since there's no pressure signal to
+  read).
 - **Left sidebar** — tools live in collapsible sections (File, Insert,
   Recognize text, Pages) rather than one long toolbar row, flush against the
-  top bar; document tabs sit above the page area, not the sidebar. On phones
-  the sidebar stacks above the document instead of taking width. A
-  **Features** button pinned to the bottom of the sidebar opens a bilingual
-  (English/Khmer) page describing everything the app can do, as a pop-up
-  window so the current document is never disturbed.
+  top bar; document tabs sit above the page area, not the sidebar. In Pages
+  mode the compression picker moves down into the Pages section (the top
+  bar's view controls aren't relevant there). On phones the sidebar stacks
+  above the document instead of taking width. A **Features** button pinned to
+  the bottom of the sidebar opens a bilingual (English/Khmer) page describing
+  everything the app can do, as a pop-up window that reopens at the same
+  size/position/scroll it was left at, so the current document is never
+  disturbed.
 - **Pages mode** — thumbnail grid of all pages: select, drag to reorder,
-  remove pages, and append pages from a second PDF.
+  remove pages, and append pages from a second PDF. **Split** breaks the
+  document into two tabs at a chosen page: select exactly one page, then
+  *Split before* (that page starts the second document) or *Split after*
+  (it stays in the first) — both documents keep working normally afterward,
+  including exporting each independently.
 - **Multiple documents** — every file you open gets its own tab; opening a
   new one no longer replaces what you were working on.
 - **Opens images too** — PNG/JPEG/WebP files open as a one-page document, so a

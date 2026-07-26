@@ -1,5 +1,6 @@
-import { state, $, showBusy, hideBusy, addSource } from './state.js';
+import { state, $, showBusy, hideBusy, addSource, addDoc, activeDoc } from './state.js';
 import { t } from './i18n.js';
+import { renderDocTabs } from './app.js';
 
 const THUMB_WIDTH = 150;
 const selected = new Set();
@@ -12,6 +13,7 @@ export async function renderPagesView() {
   view.innerHTML = '';
   selected.clear();
   updateRemoveButton();
+  updateSplitButtons();
   state.pages.forEach((page, idx) => {
     const thumb = document.createElement('div');
     thumb.className = 'thumb';
@@ -30,6 +32,7 @@ export async function renderPagesView() {
       if (check.checked) selected.add(page.id); else selected.delete(page.id);
       thumb.classList.toggle('selected', check.checked);
       updateRemoveButton();
+      updateSplitButtons();
     });
     thumb.appendChild(check);
 
@@ -127,6 +130,61 @@ function updateRemoveButton() {
   btn.textContent = selected.size ? t('removeSelectedCount', { n: selected.size }) : t('removeSelected');
 }
 
+// Splitting needs exactly one page picked as the boundary; further disabled
+// if that boundary would leave one side empty (e.g. "before" on the very
+// first page, "after" on the very last).
+function updateSplitButtons() {
+  const beforeBtn = $('#btn-split-before');
+  const afterBtn = $('#btn-split-after');
+  if (selected.size !== 1) {
+    beforeBtn.disabled = true;
+    afterBtn.disabled = true;
+    return;
+  }
+  const [pageId] = selected;
+  const idx = state.pages.findIndex((p) => p.id === pageId);
+  beforeBtn.disabled = idx <= 0;
+  afterBtn.disabled = idx < 0 || idx >= state.pages.length - 1;
+}
+
+function splitBaseName(name) {
+  const m = name.match(/^(.*)(\.[^./]+)$/);
+  return m ? [m[1], m[2]] : [name, ''];
+}
+
+// Splits the active document into two documents (two tabs) at the selected
+// page, sharing the same underlying sources -- each page object already
+// carries its own srcIndex/srcPageNum into that shared array, so no bytes
+// need copying or re-decoding. The first part keeps the current tab
+// (and focus); the second part becomes a new tab alongside it.
+function splitDocument(includeSelectedInFirst) {
+  if (selected.size !== 1) return;
+  const [pageId] = selected;
+  const idx = state.pages.findIndex((p) => p.id === pageId);
+  if (idx < 0) return;
+  const splitIndex = includeSelectedInFirst ? idx + 1 : idx;
+  if (splitIndex <= 0 || splitIndex >= state.pages.length) return;
+
+  const doc = activeDoc();
+  const [base, ext] = splitBaseName(doc.name);
+  const partA = state.pages.slice(0, splitIndex);
+  const partB = state.pages.slice(splitIndex);
+  const sources = doc.sources;
+  const keepId = doc.id;
+
+  doc.name = `${base} (1)${ext}`;
+  doc.pages = partA;
+
+  const newDoc = addDoc(`${base} (2)${ext}`);
+  newDoc.sources = sources;
+  newDoc.pages = partB;
+
+  state.activeDocId = keepId; // stay on the first part rather than jump to the new tab
+  selected.clear();
+  renderDocTabs();
+  renderPagesView();
+}
+
 // Patches translated labels on already-rendered thumbnails in place, rather
 // than re-rendering the grid (which would drop the current selection).
 export function refreshPagesI18n() {
@@ -137,6 +195,7 @@ export function refreshPagesI18n() {
     if (check) check.title = t('selectPageTitle');
   });
   updateRemoveButton();
+  updateSplitButtons();
 }
 
 export function initPagesMode() {
@@ -145,6 +204,9 @@ export function initPagesMode() {
     state.pages = state.pages.filter((p) => !selected.has(p.id));
     renderPagesView();
   });
+
+  $('#btn-split-before').addEventListener('click', () => splitDocument(false));
+  $('#btn-split-after').addEventListener('click', () => splitDocument(true));
 
   $('#btn-append-pdf').addEventListener('click', () => $('#append-input').click());
   $('#append-input').addEventListener('change', async (e) => {
