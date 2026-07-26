@@ -74,7 +74,7 @@ async function openFiles(files) {
     $('#mode-tabs').hidden = false;
     $('#sidebar').hidden = false;
     $('#topbar-tools').hidden = false;
-    $('#topbar-print-row').hidden = false;
+    $('#topbar-actions').hidden = false;
     renderDocTabs();
     await setMode('edit');
     updateCompressEstimate();
@@ -114,7 +114,7 @@ function renderDocTabs() {
         $('#mode-tabs').hidden = true;
         $('#sidebar').hidden = true;
         $('#topbar-tools').hidden = true;
-        $('#topbar-print-row').hidden = true;
+        $('#topbar-actions').hidden = true;
         $('#edit-view').hidden = true;
         $('#pages-view').hidden = true;
       } else {
@@ -254,6 +254,22 @@ $('#btn-print').addEventListener('click', async () => {
     hideBusy();
     alert(t('printFailed', { err: err && err.message ? err.message : err }));
   }
+});
+
+/* ---------- features page ---------- */
+
+// A real pop-up window (not just a new tab) so it visibly floats apart from
+// the editor; the plain <a href target=_blank> stays as the no-JS/middle-
+// click fallback.
+$('#btn-features').addEventListener('click', (e) => {
+  e.preventDefault();
+  const w = Math.min(900, window.screen.availWidth - 80);
+  const h = Math.min(800, window.screen.availHeight - 80);
+  window.open(
+    'features.html',
+    'pdfeditFeatures',
+    `width=${w},height=${h},menubar=no,toolbar=no,location=no,status=no,scrollbars=yes,resizable=yes`
+  );
 });
 
 /* ---------- modals ---------- */
