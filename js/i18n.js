@@ -301,6 +301,7 @@ export function applyTranslations() {
   document.body.classList.toggle('lang-km', state.lang === 'km');
   $('#lang-en').classList.toggle('active', state.lang === 'en');
   $('#lang-km').classList.toggle('active', state.lang === 'km');
+  document.documentElement.classList.remove('lang-pending');
 }
 
 export function setLang(lang) {
