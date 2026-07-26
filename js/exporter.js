@@ -30,6 +30,54 @@ function currentCompression() {
   return COMPRESSION[el ? el.value : 'none'] || null;
 }
 
+/* Estimating the exact output size would mean re-encoding every page, which
+ * is exactly the expensive work compression is trying to let the user avoid
+ * paying for twice. Instead this samples 1-2 representative pages (the
+ * first, and the middle one on longer documents), rasterizes them at the
+ * candidate preset, and extrapolates by page count -- cheap enough to run on
+ * every dropdown change, even on a large document. */
+export async function estimateExportSize(levelValue) {
+  if (!state.pages.length) return 0;
+  const preset = COMPRESSION[levelValue] || null;
+  if (!preset) {
+    return state.sources.reduce((sum, s) => sum + (s.bytes ? s.bytes.length : 0), 0);
+  }
+  const n = state.pages.length;
+  const sampleIdx = n > 1 ? [0, Math.floor(n / 2)] : [0];
+  let sampleTotal = 0;
+  for (const i of sampleIdx) {
+    sampleTotal += await rasterizedPageByteSize(state.pages[i], preset);
+  }
+  const perPage = sampleTotal / sampleIdx.length;
+  // ~1.2KB/page fudge factor for PDF object/xref overhead on top of the
+  // embedded JPEG stream itself.
+  return Math.round(perPage * n + n * 1200);
+}
+
+async function rasterizedPageByteSize(page, preset) {
+  const src = state.sources[page.srcIndex];
+  const pdfPage = await src.pdfjs.getPage(page.srcPageNum);
+  const scale = preset.dpi / 72;
+  const vp = pdfPage.getViewport({ scale });
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(vp.width));
+  canvas.height = Math.max(1, Math.round(vp.height));
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  await pdfPage.render({ canvasContext: ctx, viewport: vp }).promise;
+  const jpeg = await dataUrlToBytes(canvas.toDataURL('image/jpeg', preset.quality));
+  canvas.width = 0;
+  canvas.height = 0;
+  return jpeg.length;
+}
+
+export function formatBytes(bytes) {
+  if (!bytes) return '';
+  if (bytes < 1024 * 1024) return '~' + Math.max(1, Math.round(bytes / 1024)) + ' KB';
+  return '~' + (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
 async function buildPdfBytes() {
   const preset = currentCompression();
   const out = await PDFDocument.create();

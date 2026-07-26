@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Features — Khmer PDF Editor</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  body { display: block; }
+  .feat-topbar {
+    display: flex; align-items: center; gap: 16px; padding: 8px 16px;
+    background: var(--surface); border-bottom: 1px solid var(--border-strong);
+    position: sticky; top: 0; z-index: 50;
+  }
+  .feat-topbar .topbar-spacer { flex: 1; }
+  .feat-back {
+    font: inherit; color: var(--text); text-decoration: none;
+    border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px;
+    background: var(--surface-alt);
+  }
+  .feat-back:hover { background: var(--accent-soft); border-color: var(--accent); }
+  .feat-main { max-width: 880px; margin: 0 auto; padding: 40px 20px 80px; }
+  .feat-hero { text-align: center; margin-bottom: 40px; }
+  .feat-hero h1 { font-size: 30px; margin: 0 0 10px; }
+  .feat-hero p { color: var(--text-muted); font-size: 16px; margin: 0; }
+  .feat-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px; margin-bottom: 36px;
+  }
+  .feat-card {
+    background: var(--surface); border: 1px solid var(--border-strong);
+    border-radius: 10px; padding: 18px 20px;
+  }
+  .feat-card h3 { margin: 0 0 8px; font-size: 15px; }
+  .feat-card p { margin: 0; color: var(--text-muted); font-size: 13px; line-height: 1.55; }
+  .feat-note {
+    background: var(--hint-bg); border: 1px solid var(--hint-border);
+    border-radius: 10px; padding: 16px 20px; font-size: 13px; line-height: 1.6;
+  }
+  .feat-note strong { display: block; margin-bottom: 4px; }
+  [data-lang-block] { display: none; }
+  [data-lang-block].active { display: block; }
+</style>
+</head>
+<body>
+
+<header class="feat-topbar">
+  <div class="brand" id="feat-brand">Khmer PDF Editor — Features</div>
+  <div class="topbar-spacer"></div>
+  <span id="lang-toggle">
+    <button id="lang-en" class="tab active">English</button>
+    <button id="lang-km" class="tab">ខ្មែរ</button>
+  </span>
+  <span id="theme-toggle">
+    <button id="theme-light" class="tab" title="Light theme">☀</button>
+    <button id="theme-dark" class="tab active" title="Dark theme">🌙</button>
+  </span>
+  <a class="feat-back" id="feat-back" href="index.html">← Back to the editor</a>
+</header>
+
+<main class="feat-main">
+
+<div data-lang-block="en" class="active">
+  <div class="feat-hero">
+    <h1>Everything the Khmer PDF Editor can do</h1>
+    <p>A fully client-side PDF editor built for Khmer text — nothing you open here ever leaves your device.</p>
+  </div>
+
+  <div class="feat-grid">
+    <div class="feat-card">
+      <h3>📄 Open PDFs and images</h3>
+      <p>Drag and drop, or pick a file. PNG, JPEG and WebP photos open as a one-page document too, so a scanned page can be edited or OCR'd like any PDF. Every file you open gets its own tab, so several documents stay open side by side.</p>
+    </div>
+    <div class="feat-card">
+      <h3>✍️ Edit mode</h3>
+      <p>Add text boxes in Khmer or English, insert images, and place a signature — drawn on a canvas or uploaded as a PNG. Drag to move, use the corner handle to resize, and click <em>Edit</em> (or double-click) to type directly into a text box in place.</p>
+    </div>
+    <div class="feat-card">
+      <h3>🖊️ Khmer text, rendered correctly</h3>
+      <p>Khmer is a complex script — subscript consonants and reordering vowels need real OpenType shaping. This app lets the browser's own text engine do that shaping, so Khmer always renders correctly no matter which of the bundled fonts you pick.</p>
+    </div>
+    <div class="feat-card">
+      <h3>🗂️ Pages mode</h3>
+      <p>See every page as a thumbnail: select, drag to reorder, remove pages, or append pages from a second PDF.</p>
+    </div>
+    <div class="feat-card">
+      <h3>🔍 Recognize text (OCR)</h3>
+      <p>Pick a scope (the whole page, or drag out an area) and a language — Auto (Khmer + English), Khmer, English, or Math. The result is copyable text; Math mode also shows a rendered formula preview and editable LaTeX, and reconstructs stacked fractions as <code>\frac{}{}</code>.</p>
+    </div>
+    <div class="feat-card">
+      <h3>💾 Save with compression</h3>
+      <p>Download the edited PDF at original quality, or pick a compression level to shrink a heavy scan — the top bar shows an estimated output size as soon as you choose a level, before you save.</p>
+    </div>
+    <div class="feat-card">
+      <h3>🖨️ Print</h3>
+      <p>Send the edited document straight to your printer without a separate download step.</p>
+    </div>
+    <div class="feat-card">
+      <h3>🌓 Light &amp; dark themes, two languages</h3>
+      <p>The interface itself is available in English and Khmer, and switches between light and dark themes — your choice is remembered for next time.</p>
+    </div>
+    <div class="feat-card">
+      <h3>⚡ Built for large documents</h3>
+      <p>Pages render only as they approach the viewport and release their memory once they scroll away, so a 300-page scan opens in under half a second instead of several.</p>
+    </div>
+  </div>
+
+  <div class="feat-note">
+    <strong>Your documents never leave your device.</strong>
+    There is no server, no account, and no upload. Every library this app
+    uses — PDF rendering, PDF writing, OCR, and math rendering — is bundled
+    with the app itself, so it keeps working even with no internet
+    connection at all.
+  </div>
+</div>
+
+<div data-lang-block="km">
+  <div class="feat-hero">
+    <h1>អ្វីៗទាំងអស់ដែលកម្មវិធីកែសម្រួល PDF ខ្មែរអាចធ្វើបាន</h1>
+    <p>កម្មវិធីកែសម្រួល PDF ដែលដំណើរការទាំងស្រុងនៅលើកុំព្យូទ័ររបស់អ្នក សម្រាប់អត្ថបទខ្មែរ — ឯកសារដែលអ្នកបើកនៅទីនេះមិនចេញពីឧបករណ៍របស់អ្នកឡើយ។</p>
+  </div>
+
+  <div class="feat-grid">
+    <div class="feat-card">
+      <h3>📄 បើកឯកសារ PDF និងរូបភាព</h3>
+      <p>អូសទម្លាក់ ឬជ្រើសរើសឯកសារ។ រូបភាព PNG, JPEG និង WebP ក៏អាចបើកជាឯកសារមួយទំព័រផងដែរ ដូច្នេះទំព័រដែលបានស្កេនអាចកែសម្រួល ឬស្គាល់អក្សរបានដូចឯកសារ PDF ធម្មតា។ ឯកសារនីមួយៗដែលអ្នកបើកនឹងទទួលបានផ្ទាំងផ្ទាល់ខ្លួន ដូច្នេះឯកសារជាច្រើនអាចបើករួមគ្នាបាន។</p>
+    </div>
+    <div class="feat-card">
+      <h3>✍️ របៀបកែសម្រួល</h3>
+      <p>បន្ថែមប្រអប់អត្ថបទជាភាសាខ្មែរ ឬអង់គ្លេស បញ្ចូលរូបភាព និងដាក់ហត្ថលេខា — គូរនៅលើផ្ទាំង ឬផ្ទុកឡើងជា PNG។ អូសដើម្បីផ្លាស់ទី ប្រើចំណុចជ្រុងដើម្បីប្តូរទំហំ ហើយចុច <em>កែ</em> (ឬចុចពីរដង) ដើម្បីវាយអក្សរផ្ទាល់ក្នុងប្រអប់អត្ថបទ។</p>
+    </div>
+    <div class="feat-card">
+      <h3>🖊️ អក្សរខ្មែរបង្ហាញត្រឹមត្រូវ</h3>
+      <p>អក្សរខ្មែរជាអក្សរស្មុគស្មាញ — តម្រូវឱ្យមានការតម្រៀបអក្សរជាន់ និងស្រៈផ្លាស់ទីត្រឹមត្រូវ។ កម្មវិធីនេះប្រើប្រាស់ម៉ាស៊ីនបង្ហាញអក្សររបស់កម្មវិធីរុករកបណ្ដាញផ្ទាល់ ដូច្នេះអក្សរខ្មែរតែងតែបង្ហាញត្រឹមត្រូវ មិនថាអ្នកជ្រើសរើសពុម្ពអក្សរណាមួយក្នុងចំណោមពុម្ពអក្សរដែលភ្ជាប់មកជាមួយ។</p>
+    </div>
+    <div class="feat-card">
+      <h3>🗂️ របៀបទំព័រ</h3>
+      <p>មើលរាល់ទំព័រជារូបភាពតូច៖ ជ្រើសរើស អូសដើម្បីរៀបលំដាប់ឡើងវិញ លុបទំព័រ ឬបន្ថែមទំព័រពីឯកសារ PDF មួយទៀត។</p>
+    </div>
+    <div class="feat-card">
+      <h3>🔍 ស្គាល់អក្សរ (OCR)</h3>
+      <p>ជ្រើសរើសវិសាលភាព (ទាំងមូលទំព័រ ឬអូសជ្រើសរើសតំបន់មួយ) និងភាសា — ស្វ័យប្រវត្តិ (ខ្មែរ + អង់គ្លេស) ខ្មែរ អង់គ្លេស ឬគណិតវិទ្យា។ លទ្ធផលជាអត្ថបទដែលអាចចម្លងបាន៖ របៀបគណិតវិទ្យាក៏បង្ហាញរូបមន្តជារូបភាព និង LaTeX ដែលអាចកែបាន ព្រមទាំងស្ថាបនាប្រភាគជាន់គ្នាឡើងវិញជា <code>\frac{}{}</code>។</p>
+    </div>
+    <div class="feat-card">
+      <h3>💾 រក្សាទុកជាមួយការបង្រួម</h3>
+      <p>ទាញយកឯកសារ PDF ដែលបានកែជាគុណភាពដើម ឬជ្រើសរើសកម្រិតបង្រួមដើម្បីបន្ថយទំហំឯកសារស្កេនធំ — របារខាងលើបង្ហាញទំហំលទ្ធផលប៉ាន់ស្មានភ្លាមៗពេលអ្នកជ្រើសរើសកម្រិត មុននឹងរក្សាទុក។</p>
+    </div>
+    <div class="feat-card">
+      <h3>🖨️ បោះពុម្ព</h3>
+      <p>ផ្ញើឯកសារដែលបានកែសម្រួលទៅម៉ាស៊ីនបោះពុម្ពរបស់អ្នកដោយផ្ទាល់ ដោយមិនចាំបាច់ទាញយកដាច់ដោយឡែក។</p>
+    </div>
+    <div class="feat-card">
+      <h3>🌓 រចនាបថភ្លឺ/ងងឹត ២ភាសា</h3>
+      <p>ចំណុចប្រទាក់ខ្លួនឯងមានទាំងភាសាអង់គ្លេស និងខ្មែរ ហើយប្តូររវាងរចនាបថភ្លឺ និងងងឹតបាន — ជម្រើសរបស់អ្នកនឹងចងចាំសម្រាប់លើកក្រោយ។</p>
+    </div>
+    <div class="feat-card">
+      <h3>⚡ សាងសង់សម្រាប់ឯកសារធំ</h3>
+      <p>ទំព័របង្ហាញតែនៅពេលដែលជិតមកដល់ផ្ទាំងអេក្រង់ ហើយបញ្ចេញសតិនៅពេលរំកិលចេញ ដូច្នេះឯកសារស្កេន ៣០០ទំព័របើកក្នុងរយៈពេលតិចជាងកន្លះវិនាទី។</p>
+    </div>
+  </div>
+
+  <div class="feat-note">
+    <strong>ឯកសាររបស់អ្នកមិនចេញពីឧបករណ៍របស់អ្នកឡើយ។</strong>
+    មិនមានម៉ាស៊ីនមេ គណនី ឬការផ្ទុកឡើងឡើយ។ បណ្ណាល័យទាំងអស់ដែលកម្មវិធីនេះប្រើប្រាស់ —
+    ការបង្ហាញ PDF ការសរសេរ PDF OCR និងការបង្ហាញរូបមន្តគណិតវិទ្យា — ត្រូវបានភ្ជាប់មកជាមួយកម្មវិធីផ្ទាល់
+    ដូច្នេះវានៅតែដំណើរការទោះបីគ្មានការតភ្ជាប់អ៊ីនធឺណិតទាំងស្រុងក៏ដោយ។
+  </div>
+</div>
+
+</main>
+
+<script>
+(function () {
+  var savedTheme = null;
+  try { savedTheme = localStorage.getItem('pdfedit-theme'); } catch (e) {}
+  var theme = savedTheme === 'light' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = theme;
+  document.getElementById('theme-light').classList.toggle('active', theme === 'light');
+  document.getElementById('theme-dark').classList.toggle('active', theme === 'dark');
+  document.getElementById('theme-light').addEventListener('click', function () { setTheme('light'); });
+  document.getElementById('theme-dark').addEventListener('click', function () { setTheme('dark'); });
+  function setTheme(t) {
+    document.documentElement.dataset.theme = t;
+    document.getElementById('theme-light').classList.toggle('active', t === 'light');
+    document.getElementById('theme-dark').classList.toggle('active', t === 'dark');
+    try { localStorage.setItem('pdfedit-theme', t); } catch (e) {}
+  }
+
+  var STR = {
+    en: { brand: 'Khmer PDF Editor — Features', back: '← Back to the editor', title: 'Features — Khmer PDF Editor' },
+    km: { brand: 'កម្មវិធីកែសម្រួល PDF ខ្មែរ — លក្ខណៈពិសេស', back: '← ត្រឡប់ទៅកម្មវិធីកែសម្រួល', title: 'លក្ខណៈពិសេស — កម្មវិធីកែសម្រួល PDF ខ្មែរ' },
+  };
+
+  var savedLang = null;
+  try { savedLang = localStorage.getItem('pdfedit-lang'); } catch (e) {}
+  var lang = savedLang === 'km' ? 'km' : 'en';
+  function setLang(l) {
+    lang = l;
+    document.documentElement.lang = l;
+    document.body.classList.toggle('lang-km', l === 'km');
+    document.getElementById('lang-en').classList.toggle('active', l === 'en');
+    document.getElementById('lang-km').classList.toggle('active', l === 'km');
+    document.querySelectorAll('[data-lang-block]').forEach(function (el) {
+      el.classList.toggle('active', el.dataset.langBlock === l);
+    });
+    document.getElementById('feat-brand').textContent = STR[l].brand;
+    document.getElementById('feat-back').textContent = STR[l].back;
+    document.title = STR[l].title;
+    try { localStorage.setItem('pdfedit-lang', l); } catch (e) {}
+  }
+  document.getElementById('lang-en').addEventListener('click', function () { setLang('en'); });
+  document.getElementById('lang-km').addEventListener('click', function () { setLang('km'); });
+  setLang(lang);
+})();
+</script>
+
+</body>
+</html>

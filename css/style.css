@@ -99,16 +99,19 @@ body.lang-km { font-family: 'Noto Sans Khmer', system-ui, -apple-system, 'Segoe 
 
 #topbar {
   display: flex;
-  align-items: center;
-  gap: 16px;
+  flex-direction: column;
+  gap: 8px;
   padding: 8px 16px;
   background: var(--surface);
   border-bottom: 1px solid var(--border-strong);
   position: sticky;
   top: 0;
   z-index: 50;
-  flex-wrap: wrap;
 }
+.topbar-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.topbar-spacer { flex: 1; }
+.topbar-row-print { justify-content: flex-end; }
+.topbar-view, .topbar-save { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .brand { font-weight: 700; font-size: 16px; }
 
 #mode-tabs .tab, #lang-toggle .tab, #theme-toggle .tab {
@@ -132,6 +135,10 @@ body.lang-km { font-family: 'Noto Sans Khmer', system-ui, -apple-system, 'Segoe 
 #zoom-level { min-width: 52px; }
 #page-nav { display: flex; align-items: center; gap: 6px; }
 #page-indicator { font-variant-numeric: tabular-nums; color: var(--text-muted); min-width: 64px; text-align: center; }
+
+.compress-field { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+.compress-field select { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); }
+.compress-estimate { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 64px; }
 button {
   font: inherit;
   padding: 6px 12px;
@@ -407,12 +414,13 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
 
 /* ---------- Narrow screens ---------- */
 @media (max-width: 640px) {
-  /* Stack into rows (title, tabs, toolbar) instead of one wide flex row.
-     This also bounds #toolbar's width to the viewport -- as a plain flex
-     child of a wrapping row it would otherwise grow to its full intrinsic
-     content width and overflow the page sideways instead of scrolling
-     internally. */
-  #topbar { flex-direction: column; align-items: stretch; gap: 8px; padding: 8px 12px; }
+  #topbar { padding: 8px 12px; gap: 6px; }
+  /* Each row scrolls horizontally instead of wrapping onto extra lines --
+     wrapping was tripling the top bar's height on a phone and pushing the
+     document mostly off-screen (only ~68px of #main remained visible). */
+  .topbar-row { flex-wrap: nowrap; overflow-x: auto; }
+  .topbar-row-print { justify-content: flex-start; }
+  .topbar-spacer { flex: 0 0 8px; }
 
 
   /* Same off-screen clipping bug the double-page label had: on a phone the
@@ -553,8 +561,14 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
 
 /* ---------- Left sidebar ---------- */
 #workspace { flex: 1; display: flex; min-height: 0; }
+/* Doc tabs live above the document only, not the sidebar, so the sidebar's
+   top edge sits flush against the top bar instead of being pushed down by
+   the tab strip. */
+#content-col { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 #sidebar {
   flex: 0 0 234px;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
   padding: 10px;
   background: var(--surface);
@@ -593,7 +607,6 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
 .side-body #page-nav button { flex: 0 0 auto; }
 .side-body #page-indicator { flex: 1; }
 .side-body select { width: 100%; font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); }
-.side-field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-muted); }
 #sidebar .menu-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); padding: 6px 2px 2px; }
 #sidebar .menu-radio { display: flex; align-items: center; gap: 8px; padding: 5px 2px; cursor: pointer; font-size: 13px; }
 #sidebar .menu-note { font-size: 11px; color: var(--text-muted); line-height: 1.4; padding-top: 4px; }
@@ -614,3 +627,20 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   }
 }
 .item-toolbar .item-edit { font-size: 12px; padding: 3px 8px; border-radius: 4px; }
+
+/* Pinned to the sidebar's bottom edge (margin-top:auto in a flex column);
+   when the sections overflow it simply follows at the end of the scroll
+   instead of overlapping content. */
+.side-bottom-btn {
+  display: block;
+  margin-top: auto;
+  padding: 8px 12px;
+  text-align: center;
+  text-decoration: none;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.side-bottom-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
