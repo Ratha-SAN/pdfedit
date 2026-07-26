@@ -1,7 +1,7 @@
 import { state, $, showBusy, hideBusy, setHint, addSource, addDoc, closeDoc, activeDoc, isImageFile } from './state.js';
 import { renderEditView, armTool, initSignatureModal, openSignatureModal, initViewControls, currentPage, fileToDataUrl, loadImage, deselectAll, refreshEditI18n } from './editor.js';
 import { renderPagesView, initPagesMode, refreshPagesI18n } from './pagesMode.js';
-import { exportPdf, printPdf } from './exporter.js';
+import { exportPdf, printPdf, estimateExportSize, formatBytes } from './exporter.js';
 import { recognizePage, initOcr } from './ocr.js';
 import { t, initLang } from './i18n.js';
 import { initTheme } from './theme.js';
@@ -73,8 +73,11 @@ async function openFiles(files) {
     dropzone.hidden = true;
     $('#mode-tabs').hidden = false;
     $('#sidebar').hidden = false;
+    $('#topbar-tools').hidden = false;
+    $('#topbar-print-row').hidden = false;
     renderDocTabs();
     await setMode('edit');
+    updateCompressEstimate();
   } finally {
     hideBusy();
   }
@@ -110,10 +113,13 @@ function renderDocTabs() {
         dropzone.hidden = false;
         $('#mode-tabs').hidden = true;
         $('#sidebar').hidden = true;
+        $('#topbar-tools').hidden = true;
+        $('#topbar-print-row').hidden = true;
         $('#edit-view').hidden = true;
         $('#pages-view').hidden = true;
       } else {
         setMode(state.mode);
+        updateCompressEstimate();
       }
     });
     tab.appendChild(close);
@@ -123,6 +129,7 @@ function renderDocTabs() {
       state.activeDocId = doc.id;
       renderDocTabs();
       setMode(state.mode);
+      updateCompressEstimate();
     });
     bar.appendChild(tab);
   }
@@ -137,7 +144,7 @@ async function setMode(mode) {
   $('#tab-pages').classList.toggle('active', mode === 'pages');
   $('#edit-view').hidden = mode !== 'edit';
   $('#pages-view').hidden = mode !== 'pages';
-  $('#view-tools').hidden = mode !== 'edit';
+  $('#topbar-view').hidden = mode !== 'edit';
   $('#edit-tools').hidden = mode !== 'edit';
   $('#ocr-tools').hidden = mode !== 'edit';
   $('#pages-tools').hidden = mode !== 'pages';
@@ -214,6 +221,20 @@ $('#mi-ocr-area').addEventListener('click', () => {
   if (state.tool && state.tool.type === 'ocr-area') armTool(null);
   else armTool({ type: 'ocr-area' }, t('ocrAreaHint'));
 });
+
+/* ---------- compression size estimate ---------- */
+
+let estimateToken = 0;
+async function updateCompressEstimate() {
+  const label = $('#compress-estimate');
+  if (!label || !state.pages.length) { if (label) label.textContent = ''; return; }
+  const token = ++estimateToken;
+  label.textContent = t('estimating');
+  const bytes = await estimateExportSize($('#compress-level').value);
+  if (token !== estimateToken) return; // a newer request/selection superseded this one
+  label.textContent = formatBytes(bytes);
+}
+$('#compress-level').addEventListener('change', updateCompressEstimate);
 
 $('#btn-export').addEventListener('click', async () => {
   deselectAll();

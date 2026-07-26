@@ -6,13 +6,22 @@ support. No backend, no accounts — documents never leave your machine.
 ## Features
 
 - **Upload** a PDF by drag-and-drop or file picker.
+- **Top bar** — page view (continuous/single/double + zoom), a compression
+  picker with a live estimated output size, and **Save PDF** all live in the
+  top bar; **Print** sits in its own row at the bottom of the bar, both it
+  and Save right-aligned.
 - **Edit mode** — add text boxes (Khmer or English), insert PNG/JPEG images,
   and place a signature (drawn on a canvas or uploaded as PNG) anywhere on any
   page. Drag to move, corner handle to resize, × to delete, and an **Edit**
   button (or double-click / long-press) to type into a text box in place.
-- **Left sidebar** — tools live in collapsible sections (File, View, Insert,
-  Recognize text, Pages) rather than one long toolbar row; on phones the
-  sidebar stacks above the document instead of taking width.
+- **Left sidebar** — tools live in collapsible sections (File, Insert,
+  Recognize text, Pages) rather than one long toolbar row, flush against the
+  top bar; document tabs sit above the page area, not the sidebar. On phones
+  the sidebar stacks above the document instead of taking width, and each top
+  bar row scrolls horizontally rather than wrapping onto extra lines. A
+  **Features** button pinned to the bottom of the sidebar opens a bilingual
+  (English/Khmer) page describing everything the app can do, in a new tab so
+  the current document is never disturbed.
 - **Pages mode** — thumbnail grid of all pages: select, drag to reorder,
   remove pages, and append pages from a second PDF.
 - **Multiple documents** — every file you open gets its own tab; opening a
@@ -20,7 +29,10 @@ support. No backend, no accounts — documents never leave your machine.
 - **Opens images too** — PNG/JPEG/WebP files open as a one-page document, so a
   photographed page can be annotated, OCR'd or exported like any PDF.
 - **Save PDF** — downloads the modified document, with an optional compression
-  level (original / high quality / balanced / smallest).
+  level (original / high quality / balanced / smallest). Picking a level
+  samples a couple of representative pages at that level's resolution/quality
+  and extrapolates, so the top bar shows an estimated output size (e.g. `~7
+  MB`) before you commit to exporting.
 - **Khmer text** renders correctly (subscript consonants, vowel reordering)
   in both the editor and the exported PDF.
 - **Recognize text (OCR)** — one *Recognize text* menu picks both the scope
@@ -98,8 +110,11 @@ loads in ~0.4s. Thumbnails in Pages mode are lazy for the same reason.
   is an HTTP client for a pix2tex/Mathpix *server*, which would break the
   offline, nothing-leaves-your-machine guarantee. `onnxruntime-web` exists, but
   pix2tex-class weights (~100MB+) are not on npm and would be a heavy download
-  for every user. Math support is therefore Tesseract plus geometric
-  reconstruction, described next.
+  for every user. A package literally named `texo` also exists on npm, but it
+  is an unrelated immutable-list utility library (and `@texo-ui/*` is a
+  Markdown/YAML UI kit) — neither has anything to do with math recognition.
+  Math support is therefore Tesseract plus geometric reconstruction, described
+  next.
 - **Math OCR is structurally good but character-wise unreliable on scripts.**
   Math mode rebuilds two-dimensional layout from per-symbol geometry, so
   baseline formulas and fractions come out exact (`(x + y) / 2 = 5` becomes
