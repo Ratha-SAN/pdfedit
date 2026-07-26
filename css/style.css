@@ -270,6 +270,12 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
 .item.item-highlight .highlight-fill {
   position: absolute;
   inset: 0;
+  /* mix-blend-mode alone made the highlight look fully opaque on some
+     mobile browsers, where blending over the page canvas doesn't reliably
+     apply. Explicit opacity (matching the exported PDF's 0.45) gives plain
+     alpha-compositing translucency everywhere, with multiply layered on
+     top for browsers that do support it. */
+  opacity: 0.45;
   mix-blend-mode: multiply;
   border-radius: 2px;
   pointer-events: none;
@@ -358,9 +364,16 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   inset: 0;
   background: var(--overlay);
   display: flex;
-  align-items: center;
+  /* Deliberately no align-items:center here: centering a flex item that way
+     clips it at the top once it's taller than the container, with no way
+     to scroll to the clipped part -- exactly the "cropped on a short
+     viewport" bug this is fixing. margin:auto on .modal-box centers it the
+     same way when it fits, but degrades to plain top-aligned + scrollable
+     when it doesn't, so nothing is ever unreachable. */
   justify-content: center;
   z-index: 100;
+  padding: 16px;
+  overflow-y: auto;
 }
 .modal-box {
   background: var(--surface);
@@ -369,13 +382,20 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   padding: 16px;
   max-width: min(640px, 92vw);
   width: 560px;
+  margin: auto 0; /* keeps it centered when it fits, scrolled-to-top when it doesn't */
 }
 .modal-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-weight: 600;
-  margin-bottom: 10px;
+  margin: -16px -16px 10px;
+  padding: 16px 16px 10px;
+  position: sticky;
+  top: -16px;
+  background: var(--surface);
+  border-radius: 10px 10px 0 0;
+  z-index: 1;
 }
 .modal-close { border: none; background: none; color: var(--text); font-size: 22px; padding: 0 4px; }
 #sig-canvas {
