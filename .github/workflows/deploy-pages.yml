@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main, master, claude/khmer-pdf-editor-orm6nv]
+    branches: [main, master, claude/khmer-pdf-editor-orm6nv, claude/khmer-pdf-editor-continue-p3mkcd]
   workflow_dispatch:
 
 permissions:
