@@ -1,7 +1,6 @@
 import { state, $ } from './state.js';
 import { t, translateOcrStatus } from './i18n.js';
 import { dataToLatexLines, dataToLatexLinesWithBars, detectFractionBars, eraseBars, medianGlyphHeight } from './mathlatex.js';
-import { recognizeLatexWithTexo } from './texo.js';
 
 let workerPromise = null;
 let workerLang = null;
@@ -72,56 +71,7 @@ export async function recognizePage(page) {
 }
 
 export async function recognizeArea(page, rect) {
-  // Texo is trained to read one cropped formula, which is exactly what an
-  // area selection is -- try it first and only fall back to the Tesseract
-  // + geometric-reconstruction pipeline if it can't load or run (offline,
-  // blocked host, incompatible export). Whole-page math recognition can
-  // contain several formulas at once, which isn't Texo's use case, so that
-  // path stays on the existing pipeline unconditionally.
-  if (currentMode() === 'math' && await runAreaMathWithTexo(page, rect)) return;
   await runRecognition(() => renderAreaForOcr(page, rect));
-}
-
-async function runAreaMathWithTexo(page, rect) {
-  const modal = $('#ocr-modal');
-  const progress = $('#ocr-progress');
-  const bar = $('#ocr-progress-bar');
-  const label = $('#ocr-progress-label');
-  const output = $('#ocr-output');
-  $('#ocr-modal-title').textContent = t('ocrModalTitle', { lang: t(OCR_MODES.math.labelKey) });
-  output.value = '';
-  progress.hidden = false;
-  bar.style.inset = '0 100% 0 0';
-  label.textContent = t('texoLoading');
-  modal.hidden = false;
-
-  const onProgress = (p) => {
-    if (p && p.status === 'progress' && typeof p.progress === 'number') {
-      bar.style.inset = `0 ${100 - Math.round(p.progress)}% 0 0`;
-      label.textContent = t('texoDownloading', { pct: Math.round(p.progress) });
-    }
-  };
-
-  try {
-    const canvas = await renderAreaForOcr(page, rect);
-    label.textContent = t('texoRecognizing');
-    const latex = await recognizeLatexWithTexo(canvas, onProgress);
-    if (!latex) throw new Error('Texo returned an empty result');
-    latexLines = [latex];
-    output.dataset.plain = latex;
-    const views = $('#ocr-views');
-    views.hidden = false;
-    setView('rendered');
-    return true;
-  } catch (err) {
-    // Not surfaced to the user as an error -- the Tesseract fallback below
-    // takes over and drives the same modal to a real result or a real
-    // failure message.
-    console.warn('Texo math recognition unavailable, falling back to Tesseract:', err);
-    return false;
-  } finally {
-    progress.hidden = true;
-  }
 }
 
 async function runRecognition(getCanvas) {

@@ -5,20 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Khmer PDF Editor</title>
 <link rel="icon" href="data:,">
+<!-- Applies the theme before any CSS loads or paints, so there is no
+     dark-then-light (or light-then-dark) flash on load. js/app.js's module
+     script only runs after the document is parsed -- by then a flash would
+     already have happened -- so this has to be an early, blocking, inline,
+     classic script, not deferred module code. Dark is the default whenever
+     nothing is saved yet. -->
+<script>
+  (function () {
+    var saved = null;
+    try { saved = localStorage.getItem('pdfedit-theme'); } catch (e) {}
+    document.documentElement.dataset.theme = saved === 'light' ? 'light' : 'dark';
+  })();
+</script>
 <link rel="stylesheet" href="vendor/katex/katex.min.css">
 <link rel="stylesheet" href="css/style.css">
-<!-- vendor/texo/transformers.web.min.js has two bare (bundler-style) module
-     specifiers at its top level; native browser ESM can't resolve those
-     without an import map, so this maps them to their vendored equivalents
-     (the same files a bundler's default resolution would pick). -->
-<script type="importmap">
-{
-  "imports": {
-    "onnxruntime-common": "./vendor/texo/onnxruntime-common/index.js",
-    "onnxruntime-web/webgpu": "./vendor/texo/ort.webgpu.bundle.min.mjs"
-  }
-}
-</script>
 </head>
 <body>
 <header id="topbar">

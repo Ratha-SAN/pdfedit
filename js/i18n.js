@@ -42,7 +42,7 @@ const translations = {
     ocrLangKhmer: 'Khmer',
     ocrLangEnglish: 'English',
     ocrLangMath: 'Math / formulas',
-    ocrMathNote: 'Math mode shows rendered formulas plus LaTeX. Selecting an area first tries the Texo LaTeX model (downloads once, then cached); whole-page recognition rebuilds superscripts and fractions geometrically instead.',
+    ocrMathNote: 'Math mode rebuilds superscripts from the scan and shows rendered formulas plus LaTeX.',
     ocrAreaHint: 'Drag a rectangle around the text you want to recognize.',
 
     themeLightTitle: 'Light theme',
@@ -86,9 +86,6 @@ const translations = {
     ocrRecognizing: 'Recognizing… {pct}%',
     ocrNoText: '(no text found)',
     ocrFailed: 'OCR failed: {err}',
-    texoLoading: 'Loading LaTeX model…',
-    texoDownloading: 'Downloading LaTeX model… {pct}% (first use only, then cached)',
-    texoRecognizing: 'Recognizing formula…',
 
     textToolHint: 'Click anywhere on a page to place a text box. Type Khmer or English, drag to move, use the corner handle to resize.',
     imageToolHint: 'Click on a page to place the image.',
@@ -163,7 +160,7 @@ const translations = {
     ocrLangKhmer: 'ខ្មែរ',
     ocrLangEnglish: 'អង់គ្លេស',
     ocrLangMath: 'គណិតវិទ្យា / រូបមន្ត',
-    ocrMathNote: 'របៀបគណិតវិទ្យាបង្ហាញរូបមន្តជារូបភាព និង LaTeX។ ការជ្រើសរើសតំបន់សាកល្បងម៉ូដែល Texo LaTeX មុន (ទាញយកតែម្តង រួចរក្សាទុកក្នុងឆាច); ការស្គាល់ទាំងមូលទំព័រស្ថាបនាសូចនាករនិងប្រភាគតាមភូមិសាស្ត្រវិញ។',
+    ocrMathNote: 'របៀបគណិតវិទ្យាស្ថាបនាសូចនាករឡើងវិញ ហើយបង្ហាញរូបមន្តជារូបភាព និង LaTeX។',
     ocrAreaHint: 'អូសដើម្បីគូរប្រអប់ជុំវិញអក្សរដែលអ្នកចង់ស្គាល់។',
 
     themeLightTitle: 'រចនាបថភ្លឺ',
@@ -207,9 +204,6 @@ const translations = {
     ocrRecognizing: 'កំពុងស្គាល់អក្សរ… {pct}%',
     ocrNoText: '(រកមិនឃើញអក្សរទេ)',
     ocrFailed: 'ការស្គាល់អក្សរបរាជ័យ៖ {err}',
-    texoLoading: 'កំពុងផ្ទុកម៉ូដែល LaTeX…',
-    texoDownloading: 'កំពុងទាញយកម៉ូដែល LaTeX… {pct}% (តែម្តងប៉ុណ្ណោះ រួចរក្សាទុកក្នុងឆាច)',
-    texoRecognizing: 'កំពុងស្គាល់រូបមន្ត…',
 
     textToolHint: 'ចុចត្រង់កន្លែងណាមួយលើទំព័រដើម្បីដាក់ប្រអប់អត្ថបទ។ វាយអក្សរខ្មែរ ឬអង់គ្លេស អូសដើម្បីផ្លាស់ទី ហើយប្រើចំណុចជ្រុងដើម្បីប្តូរទំហំ។',
     imageToolHint: 'ចុចលើទំព័រដើម្បីដាក់រូបភាព។',
