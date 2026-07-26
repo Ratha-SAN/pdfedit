@@ -268,8 +268,15 @@ $('#btn-print').addEventListener('click', async () => {
 // click fallback. features.html saves its own size/position (and scroll
 // position) as it's resized/moved/closed, so this reopens it exactly where
 // it was left rather than always at the same default spot.
+//
+// window.open() is attempted first and preventDefault() is only called if
+// it actually returned a window -- some mobile browsers and in-app webviews
+// block or ignore windowed window.open() calls, and calling preventDefault()
+// unconditionally would turn those into a dead click. Leaving the default
+// anchor behaviour alone in that case falls back to the plain target=_blank
+// tab, which is always a separate browsing context, so the editor tab and
+// its loaded document are never touched either way.
 $('#btn-features').addEventListener('click', (e) => {
-  e.preventDefault();
   let geom = null;
   try { geom = JSON.parse(localStorage.getItem('pdfedit-features-geom')); } catch {}
   const w = Math.min((geom && geom.w) || 900, window.screen.availWidth - 20);
@@ -278,7 +285,9 @@ $('#btn-features').addEventListener('click', (e) => {
   if (geom && Number.isFinite(geom.x) && Number.isFinite(geom.y)) {
     features += `,left=${geom.x},top=${geom.y}`;
   }
-  window.open('features.html', 'pdfeditFeatures', features);
+  let popup = null;
+  try { popup = window.open('features.html', 'pdfeditFeatures', features); } catch {}
+  if (popup) e.preventDefault();
 });
 
 /* ---------- modals ---------- */
