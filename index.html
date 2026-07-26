@@ -55,13 +55,15 @@
         <button id="page-next" data-i18n-title="pageNextTitle" title="Next page">›</button>
       </span>
     </div>
-    <select id="compress-level" class="compress-field" data-i18n-title="compressTitle" title="Output size / quality">
-      <option value="none" data-i18n="compressNone">Original quality</option>
-      <option value="low" data-i18n="compressLow">Compress — high quality</option>
-      <option value="medium" data-i18n="compressMedium">Compress — balanced</option>
-      <option value="high" data-i18n="compressHigh">Compress — smallest</option>
-    </select>
-    <span id="compress-estimate" class="compress-estimate"></span>
+    <span class="topbar-compress" id="topbar-compress">
+      <select id="compress-level" class="compress-field" data-i18n-title="compressTitle" title="Output size / quality">
+        <option value="none" data-i18n="compressNone">Original quality</option>
+        <option value="low" data-i18n="compressLow">Compress — high quality</option>
+        <option value="medium" data-i18n="compressMedium">Compress — balanced</option>
+        <option value="high" data-i18n="compressHigh">Compress — smallest</option>
+      </select>
+      <span id="compress-estimate" class="compress-estimate"></span>
+    </span>
   </div>
 
   <div class="topbar-spacer"></div>
@@ -112,6 +114,11 @@
     <div class="side-body">
       <button id="btn-append-pdf" data-i18n="btnAppendPdf" data-i18n-title="btnAppendPdfTitle" title="Append pages from another PDF">+ Append PDF</button>
       <button id="btn-remove-pages" data-i18n="removeSelected" data-i18n-title="removeSelectedTitle" title="Remove selected pages" disabled>Remove selected</button>
+      <div class="menu-label" data-i18n="splitMenuLabel">Split document (select one page)</div>
+      <button id="btn-split-before" data-i18n="btnSplitBefore" data-i18n-title="btnSplitBeforeTitle" title="Split so the selected page starts the second document" disabled>Split before selected page</button>
+      <button id="btn-split-after" data-i18n="btnSplitAfter" data-i18n-title="btnSplitAfterTitle" title="Split so the selected page ends the first document" disabled>Split after selected page</button>
+      <div class="menu-label" data-i18n="compressLabelSidebar">Output size</div>
+      <span id="pages-compress-anchor"></span>
     </div>
   </section>
 

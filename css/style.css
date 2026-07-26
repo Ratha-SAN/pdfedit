@@ -144,6 +144,11 @@ body.lang-km { font-family: 'Noto Sans Khmer', system-ui, -apple-system, 'Segoe 
 
 .compress-field { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); }
 .compress-estimate { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+/* Moved bodily between the top bar (edit mode) and the sidebar's Pages
+   section (pages mode) by setMode() in app.js -- same element either way,
+   just relocated, so its value/listeners/estimate text are never lost. */
+.topbar-compress { display: flex; align-items: center; gap: 8px; }
+#pages-compress-anchor { display: block; }
 button {
   font: inherit;
   padding: 6px 12px;

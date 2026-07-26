@@ -85,7 +85,7 @@ async function openFiles(files) {
 
 /* ---------- document tabs ---------- */
 
-function renderDocTabs() {
+export function renderDocTabs() {
   const bar = $('#doc-tabs');
   bar.innerHTML = '';
   bar.hidden = state.docs.length === 0;
@@ -148,6 +148,11 @@ async function setMode(mode) {
   $('#edit-tools').hidden = mode !== 'edit';
   $('#ocr-tools').hidden = mode !== 'edit';
   $('#pages-tools').hidden = mode !== 'pages';
+  // The compression control is the same element either way -- just moved
+  // bodily between the top bar and the Pages sidebar section, so its
+  // selected value and live estimate survive the move untouched.
+  if (mode === 'pages') $('#pages-compress-anchor').appendChild($('#topbar-compress'));
+  else $('#topbar-tools').appendChild($('#topbar-compress'));
   if (mode === 'edit') await renderEditView();
   else await renderPagesView();
 }
