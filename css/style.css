@@ -99,26 +99,32 @@ body.lang-km { font-family: 'Noto Sans Khmer', system-ui, -apple-system, 'Segoe 
 
 #topbar {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  gap: 10px;
   padding: 8px 16px;
   background: var(--surface);
   border-bottom: 1px solid var(--border-strong);
   position: sticky;
   top: 0;
   z-index: 50;
+  /* A single row, left to right, with Save/Print pinned to the right via
+     .topbar-spacer -- wrapping would break that (the wrapped line starts
+     over at the left, ignoring the spacer), so overflow scrolls instead. */
+  flex-wrap: nowrap;
+  overflow-x: auto;
 }
-.topbar-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.topbar-spacer { flex: 1; }
-.topbar-row-print { justify-content: flex-end; }
-.topbar-view, .topbar-save { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.topbar-spacer { flex: 1; min-width: 16px; }
+.topbar-tools { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.topbar-view { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.topbar-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.brand, #lang-toggle, #theme-toggle, #mode-tabs { flex-shrink: 0; }
 .brand { font-weight: 700; font-size: 16px; }
 
 #mode-tabs .tab, #lang-toggle .tab, #theme-toggle .tab {
   border: 1px solid var(--border);
   background: var(--surface-alt);
   color: var(--text);
-  padding: 6px 14px;
+  padding: 6px 10px;
   cursor: pointer;
 }
 #mode-tabs .tab:first-child, #lang-toggle .tab:first-child, #theme-toggle .tab:first-child { border-radius: 6px 0 0 6px; }
@@ -136,9 +142,8 @@ body.lang-km { font-family: 'Noto Sans Khmer', system-ui, -apple-system, 'Segoe 
 #page-nav { display: flex; align-items: center; gap: 6px; }
 #page-indicator { font-variant-numeric: tabular-nums; color: var(--text-muted); min-width: 64px; text-align: center; }
 
-.compress-field { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
-.compress-field select { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); }
-.compress-estimate { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 64px; }
+.compress-field { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); }
+.compress-estimate { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 button {
   font: inherit;
   padding: 6px 12px;
@@ -415,11 +420,6 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
 /* ---------- Narrow screens ---------- */
 @media (max-width: 640px) {
   #topbar { padding: 8px 12px; gap: 6px; }
-  /* Each row scrolls horizontally instead of wrapping onto extra lines --
-     wrapping was tripling the top bar's height on a phone and pushing the
-     document mostly off-screen (only ~68px of #main remained visible). */
-  .topbar-row { flex-wrap: nowrap; overflow-x: auto; }
-  .topbar-row-print { justify-content: flex-start; }
   .topbar-spacer { flex: 0 0 8px; }
 
 

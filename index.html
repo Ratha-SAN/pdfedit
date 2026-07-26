@@ -7,27 +7,36 @@
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="vendor/katex/katex.min.css">
 <link rel="stylesheet" href="css/style.css">
+<!-- vendor/texo/transformers.web.min.js has two bare (bundler-style) module
+     specifiers at its top level; native browser ESM can't resolve those
+     without an import map, so this maps them to their vendored equivalents
+     (the same files a bundler's default resolution would pick). -->
+<script type="importmap">
+{
+  "imports": {
+    "onnxruntime-common": "./vendor/texo/onnxruntime-common/index.js",
+    "onnxruntime-web/webgpu": "./vendor/texo/ort.webgpu.bundle.min.mjs"
+  }
+}
+</script>
 </head>
 <body>
 <header id="topbar">
-  <div class="topbar-row topbar-row-top">
-    <div class="brand" data-i18n="appTitle">Khmer PDF Editor</div>
-    <div class="topbar-spacer"></div>
-    <span id="lang-toggle">
-      <button id="lang-en" class="tab active">English</button>
-      <button id="lang-km" class="tab">ខ្មែរ</button>
-    </span>
-    <span id="theme-toggle">
-      <button id="theme-light" class="tab" data-i18n-title="themeLightTitle" title="Light theme">☀</button>
-      <button id="theme-dark" class="tab active" data-i18n-title="themeDarkTitle" title="Dark theme">🌙</button>
-    </span>
-    <nav id="mode-tabs" hidden>
-      <button id="tab-edit" class="tab active" data-i18n="tabEdit">Edit</button>
-      <button id="tab-pages" class="tab" data-i18n="tabPages">Pages</button>
-    </nav>
-  </div>
+  <div class="brand" data-i18n="appTitle">Khmer PDF Editor</div>
+  <span id="lang-toggle">
+    <button id="lang-en" class="tab active">English</button>
+    <button id="lang-km" class="tab">ខ្មែរ</button>
+  </span>
+  <span id="theme-toggle">
+    <button id="theme-light" class="tab" data-i18n-title="themeLightTitle" title="Light theme">☀</button>
+    <button id="theme-dark" class="tab active" data-i18n-title="themeDarkTitle" title="Dark theme">🌙</button>
+  </span>
+  <nav id="mode-tabs" hidden>
+    <button id="tab-edit" class="tab active" data-i18n="tabEdit">Edit</button>
+    <button id="tab-pages" class="tab" data-i18n="tabPages">Pages</button>
+  </nav>
 
-  <div class="topbar-row topbar-row-tools" id="topbar-tools" hidden>
+  <div class="topbar-tools" id="topbar-tools" hidden>
     <div class="topbar-view" id="topbar-view">
       <select id="view-mode" data-i18n-title="viewModeTitle" title="Page view">
         <option value="continuous" data-i18n="viewContinuous">Continuous</option>
@@ -45,22 +54,19 @@
         <button id="page-next" data-i18n-title="pageNextTitle" title="Next page">›</button>
       </span>
     </div>
-    <div class="topbar-spacer"></div>
-    <div class="topbar-save">
-      <label class="compress-field"><span data-i18n="compressLabel">Output size</span>
-        <select id="compress-level" data-i18n-title="compressTitle" title="Output size / quality">
-          <option value="none" data-i18n="compressNone">Original quality</option>
-          <option value="low" data-i18n="compressLow">Compress — high quality</option>
-          <option value="medium" data-i18n="compressMedium">Compress — balanced</option>
-          <option value="high" data-i18n="compressHigh">Compress — smallest</option>
-        </select>
-      </label>
-      <span id="compress-estimate" class="compress-estimate"></span>
-      <button id="btn-export" class="primary" data-i18n="btnExport" data-i18n-title="btnExportTitle" title="Download the modified PDF">Save PDF</button>
-    </div>
+    <select id="compress-level" class="compress-field" data-i18n-title="compressTitle" title="Output size / quality">
+      <option value="none" data-i18n="compressNone">Original quality</option>
+      <option value="low" data-i18n="compressLow">Compress — high quality</option>
+      <option value="medium" data-i18n="compressMedium">Compress — balanced</option>
+      <option value="high" data-i18n="compressHigh">Compress — smallest</option>
+    </select>
+    <span id="compress-estimate" class="compress-estimate"></span>
   </div>
 
-  <div class="topbar-row topbar-row-print" id="topbar-print-row" hidden>
+  <div class="topbar-spacer"></div>
+
+  <div class="topbar-actions" id="topbar-actions" hidden>
+    <button id="btn-export" class="primary" data-i18n="btnExport" data-i18n-title="btnExportTitle" title="Download the modified PDF">Save PDF</button>
     <button id="btn-print" data-i18n="btnPrint" data-i18n-title="btnPrintTitle" title="Print the document">Print</button>
   </div>
 </header>
@@ -108,7 +114,7 @@
     </div>
   </section>
 
-  <a id="btn-features" class="side-bottom-btn" href="features.html" target="_blank" rel="noopener" data-i18n="btnFeatures" data-i18n-title="btnFeaturesTitle" title="See what this app can do (opens in a new tab)">✨ Features</a>
+  <a id="btn-features" class="side-bottom-btn" href="features.html" target="_blank" rel="noopener" data-i18n="btnFeatures" data-i18n-title="btnFeaturesTitle" title="See what this app can do (opens in a pop-up window)">✨ Features</a>
 </aside>
 
 <div id="content-col">
