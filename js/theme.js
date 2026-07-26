@@ -9,10 +9,12 @@ export function setTheme(theme) {
 }
 
 export function initTheme() {
-  let saved = null;
-  try { saved = localStorage.getItem('pdfedit-theme'); } catch {}
-  const theme = saved === 'light' ? 'light' : 'dark'; // dark is the default
+  // The theme itself was already applied by the inline script at the top
+  // of <head> -- before first paint, so there's no flash. This just wires
+  // up the buttons and syncs their active state to match.
+  const theme = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
   $('#theme-light').addEventListener('click', () => setTheme('light'));
   $('#theme-dark').addEventListener('click', () => setTheme('dark'));
-  setTheme(theme);
+  $('#theme-light').classList.toggle('active', theme === 'light');
+  $('#theme-dark').classList.toggle('active', theme === 'dark');
 }
