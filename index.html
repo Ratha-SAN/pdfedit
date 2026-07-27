@@ -136,7 +136,7 @@
     </div>
   </section>
 
-  <a id="btn-features" class="side-bottom-btn" href="features.html" target="_blank" rel="noopener" data-i18n="btnFeatures" data-i18n-title="btnFeaturesTitle" title="See what this app can do (opens in a pop-up window)">✨ Features</a>
+  <button type="button" id="btn-features" class="side-bottom-btn" data-i18n="btnFeatures" data-i18n-title="btnFeaturesTitle" title="See what this app can do">✨ Features</button>
 </aside>
 
 <div id="content-col">
@@ -200,6 +200,16 @@
     <div class="modal-actions">
       <button id="ocr-copy" data-i18n="ocrCopy">Copy text</button>
     </div>
+  </div>
+</div>
+
+<div id="features-modal" class="modal" hidden>
+  <div class="modal-box">
+    <div class="modal-head">
+      <span data-i18n="btnFeatures">✨ Features</span>
+      <button class="modal-close" data-close="features-modal">&times;</button>
+    </div>
+    <iframe id="features-frame" title="Features"></iframe>
   </div>
 </div>
 

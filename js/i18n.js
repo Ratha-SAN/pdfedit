@@ -72,7 +72,7 @@ const translations = {
     btnExport: 'Save PDF',
     btnExportTitle: 'Download the modified PDF',
     btnFeatures: '✨ Features',
-    btnFeaturesTitle: 'See what this app can do (opens in a pop-up window)',
+    btnFeaturesTitle: 'See what this app can do',
 
     dzTitle: 'Drop a PDF or image here',
     dzOr: 'or',
@@ -202,7 +202,7 @@ const translations = {
     btnExport: 'រក្សាទុក PDF',
     btnExportTitle: 'ទាញយកឯកសារ PDF ដែលបានកែប្រែ',
     btnFeatures: '✨ លក្ខណៈពិសេស',
-    btnFeaturesTitle: 'មើលអ្វីដែលកម្មវិធីនេះអាចធ្វើបាន (បើកជាបង្អួចលោត)',
+    btnFeaturesTitle: 'មើលអ្វីដែលកម្មវិធីនេះអាចធ្វើបាន',
 
     dzTitle: 'ទម្លាក់ឯកសារ PDF ឬរូបភាពនៅទីនេះ',
     dzOr: 'ឬ',
