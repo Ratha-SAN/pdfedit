@@ -1,6 +1,8 @@
-import { state, newId, $, setHint, FONT_STACKS, FONT_FAMILY_NAME, KHMER_FONTS, LATIN_FONTS, DEFAULT_FONT, normalizeFontId } from './state.js';
+import { state, newId, $, setHint, FONT_STACKS, FONT_FAMILY_NAME, KHMER_FONTS, LATIN_FONTS, DEFAULT_FONT, normalizeFontId, DRAW_TOOL_STYLES, dashPattern } from './state.js';
 import { t } from './i18n.js';
 import { recognizeArea } from './ocr.js';
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
 
 const DISPLAY_WIDTH = 800;
 
@@ -208,17 +210,28 @@ function stepPage(dir) {
 
 /* ---------- tools ---------- */
 
+const DRAW_TOOL_BUTTON_ID = { pen: 'btn-draw-pen', pencil: 'btn-draw-pencil', marker: 'btn-draw-marker', highlighter: 'btn-draw-highlighter' };
+
 export function armTool(tool, hint) {
   state.tool = tool;
   setHint(hint || null);
-  document.querySelectorAll('#edit-tools button, #ocr-tools button').forEach((b) => b.classList.remove('tool-armed'));
+  document.querySelectorAll('#edit-tools button, #ocr-tools button, #draw-tools button').forEach((b) => b.classList.remove('tool-armed'));
   if (tool) {
     if (tool.type === 'text') $('#btn-add-text').classList.add('tool-armed');
     if (tool.type === 'stamp' && tool.kind === 'image') $('#btn-add-image').classList.add('tool-armed');
     if (tool.type === 'stamp' && tool.kind === 'signature') $('#btn-add-signature').classList.add('tool-armed');
     if (tool.type === 'highlight') $('#btn-add-highlight').classList.add('tool-armed');
     if (tool.type === 'ocr-area') $('#mi-ocr-area').classList.add('tool-armed');
+    if (tool.type === 'draw') $('#' + DRAW_TOOL_BUTTON_ID[tool.tool]).classList.add('tool-armed');
+    if (tool.type === 'shape') $('#btn-draw-shape').classList.add('tool-armed');
+    if (tool.type === 'eraser') $('#btn-draw-eraser').classList.add('tool-armed');
   }
+  // The shape-kind row only makes sense while the shape tool itself is
+  // armed; the color/thickness/style cluster applies to draw and shape
+  // alike, but not the eraser (which has no style of its own).
+  $('#draw-shape-kinds').hidden = !tool || tool.type !== 'shape';
+  $('#draw-settings').hidden = !tool || (tool.type !== 'draw' && tool.type !== 'shape');
+  $('#draw-fill-row').hidden = !tool || tool.type !== 'shape' || (tool.shape !== 'rect' && tool.shape !== 'ellipse');
   updatePlacingCursor();
 }
 
@@ -227,7 +240,12 @@ function updatePlacingCursor() {
 }
 
 function onPagePointerDown(e, page, wrap) {
-  if (e.target !== wrap && !e.target.classList.contains('page-canvas')) return;
+  const onCanvasArea = e.target === wrap || e.target.classList.contains('page-canvas');
+  // With a tool armed, a pointerdown that bubbled up from an *existing*
+  // item (its own handler now defers to the armed tool -- see buildItemEl)
+  // still needs to reach here: erasing has to work when dragging directly
+  // over a stroke, and drawing/placing over existing content should too.
+  if (!onCanvasArea && !(state.tool && e.target.closest('.item'))) return;
   deselectAll();
   if (!state.tool) return;
   e.preventDefault();
@@ -237,6 +255,18 @@ function onPagePointerDown(e, page, wrap) {
   }
   if (state.tool.type === 'ocr-area') {
     startOcrAreaSelect(e, page, wrap);
+    return;
+  }
+  if (state.tool.type === 'draw') {
+    startFreehandDraw(e, page, wrap);
+    return;
+  }
+  if (state.tool.type === 'shape') {
+    startShapeDraw(e, page, wrap);
+    return;
+  }
+  if (state.tool.type === 'eraser') {
+    startErase(e, page, wrap);
     return;
   }
   const scale = pageScale(page);
@@ -343,6 +373,313 @@ function startOcrAreaSelect(e, page, wrap) {
   window.addEventListener('pointerup', up);
 }
 
+/* ---------- freehand drawing ---------- */
+
+// Pen/pencil/marker/highlighter all place the same item type -- only the
+// tool name (and the DRAW_TOOL_STYLES it looks up) differs. Unlike the
+// one-shot tools above, this does NOT re-arm(null) when a stroke finishes:
+// a drawing tool is meant to draw many strokes in a row, stopping only when
+// the user picks another tool (or clicks the same one again to toggle off,
+// wired in app.js).
+function startFreehandDraw(e, page, wrap) {
+  const scale = pageScale(page);
+  const rect = wrap.getBoundingClientRect();
+  const settings = state.draw;
+  const toolId = settings.tool;
+  const style = DRAW_TOOL_STYLES[toolId] || DRAW_TOOL_STYLES.pen;
+
+  // The live preview is drawn directly in absolute page-space (spanning the
+  // whole page) so growing the stroke never requires recomputing a bounding
+  // box mid-gesture -- that only happens once, in finishFreehand(), when the
+  // final item's tight box and locally-relative points are known.
+  const preview = document.createElementNS(SVG_NS, 'svg');
+  preview.setAttribute('viewBox', `0 0 ${page.vw} ${page.vh}`);
+  preview.style.cssText = `position:absolute; left:0; top:0; width:${page.vw * scale}px; height:${page.vh * scale}px; pointer-events:none; opacity:${style.opacity}; mix-blend-mode:${style.composite === 'multiply' ? 'multiply' : 'normal'};`;
+  const path = document.createElementNS(SVG_NS, 'path');
+  path.setAttribute('fill', 'none');
+  path.setAttribute('stroke', settings.color);
+  path.setAttribute('stroke-width', settings.size);
+  path.setAttribute('stroke-linecap', style.cap);
+  path.setAttribute('stroke-linejoin', style.cap === 'round' ? 'round' : 'miter');
+  const dash = dashPattern(settings.dash, settings.size);
+  if (dash) path.setAttribute('stroke-dasharray', dash.join(' '));
+  preview.appendChild(path);
+  wrap.appendChild(preview);
+
+  const points = [];
+  const addPoint = (ev) => {
+    const x = Math.max(0, Math.min(page.vw, (ev.clientX - rect.left) / scale));
+    const y = Math.max(0, Math.min(page.vh, (ev.clientY - rect.top) / scale));
+    points.push([x, y]);
+    path.setAttribute('d', 'M ' + points.map(([px, py]) => `${px},${py}`).join(' L '));
+  };
+  addPoint(e);
+
+  const move = (ev) => addPoint(ev);
+  const up = () => {
+    window.removeEventListener('pointermove', move);
+    window.removeEventListener('pointerup', up);
+    preview.remove();
+    finishFreehand(points, page, wrap, toolId, settings);
+  };
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', up);
+}
+
+function finishFreehand(points, page, wrap, toolId, settings) {
+  if (points.length < 2) points.push([...points[0]]); // a tap with no movement still leaves a dot
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const [x, y] of points) {
+    minX = Math.min(minX, x); minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
+  }
+  // Pad by half the stroke width so a line isn't clipped at its own box edge.
+  const pad = settings.size / 2 + 1;
+  minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+  const w = Math.max(1, maxX - minX), h = Math.max(1, maxY - minY);
+  const item = {
+    id: newId(), type: 'draw', tool: toolId,
+    color: settings.color, size: settings.size, dash: settings.dash,
+    x: minX, y: minY, w, h, natW: w, natH: h,
+    points: points.map(([x, y]) => [x - minX, y - minY]),
+  };
+  page.items.push(item);
+  wrap.appendChild(buildItemEl(item, page, wrap));
+}
+
+/* ---------- shapes ---------- */
+
+function shapeTagName(kind) {
+  if (kind === 'rect') return 'rect';
+  if (kind === 'ellipse') return 'ellipse';
+  return 'line'; // 'line' and 'arrow' both render as an SVG <line>; arrow adds a marker-end
+}
+
+// Sets an SVG shape element's geometry attributes from two raw corner/end
+// points -- shared by the live preview (absolute page-space points) and the
+// finished item's own rendering (item-local natW/natH-space points), since
+// both are just "two points define this shape" in whatever space they're in.
+function positionShapeEl(el, kind, x1, y1, x2, y2) {
+  if (kind === 'rect') {
+    el.setAttribute('x', Math.min(x1, x2));
+    el.setAttribute('y', Math.min(y1, y2));
+    el.setAttribute('width', Math.max(0.1, Math.abs(x2 - x1)));
+    el.setAttribute('height', Math.max(0.1, Math.abs(y2 - y1)));
+  } else if (kind === 'ellipse') {
+    el.setAttribute('cx', (x1 + x2) / 2);
+    el.setAttribute('cy', (y1 + y2) / 2);
+    el.setAttribute('rx', Math.max(0.1, Math.abs(x2 - x1) / 2));
+    el.setAttribute('ry', Math.max(0.1, Math.abs(y2 - y1) / 2));
+  } else {
+    el.setAttribute('x1', x1); el.setAttribute('y1', y1);
+    el.setAttribute('x2', x2); el.setAttribute('y2', y2);
+  }
+}
+
+function styleShapeEl(el, kind, settings, markerId) {
+  el.setAttribute('stroke', settings.color);
+  el.setAttribute('stroke-width', settings.size);
+  const canFill = kind === 'rect' || kind === 'ellipse';
+  el.setAttribute('fill', canFill && settings.fill ? settings.color : 'none');
+  const dash = dashPattern(settings.dash, settings.size);
+  if (dash) el.setAttribute('stroke-dasharray', dash.join(' ')); else el.removeAttribute('stroke-dasharray');
+  if (kind === 'arrow') {
+    el.setAttribute('marker-end', `url(#${markerId})`);
+    el.setAttribute('stroke-linecap', 'round');
+  }
+}
+
+// A self-contained <marker> def for the arrowhead, sized proportionally to
+// the current stroke width (markerUnits=userSpaceOnUse puts it in the same
+// coordinate space as the line itself) so a thicker line gets a bigger head.
+function buildArrowMarker(markerId, color, size) {
+  const marker = document.createElementNS(SVG_NS, 'marker');
+  marker.setAttribute('id', markerId);
+  marker.setAttribute('viewBox', '0 0 10 10');
+  marker.setAttribute('refX', '8.5');
+  marker.setAttribute('refY', '5');
+  marker.setAttribute('markerWidth', size * 3.2);
+  marker.setAttribute('markerHeight', size * 3.2);
+  marker.setAttribute('markerUnits', 'userSpaceOnUse');
+  marker.setAttribute('orient', 'auto');
+  const head = document.createElementNS(SVG_NS, 'path');
+  head.setAttribute('d', 'M0,0 L10,5 L0,10 Z');
+  head.setAttribute('fill', color);
+  marker.appendChild(head);
+  return marker;
+}
+
+let previewArrowMarkerSeq = 0;
+
+function startShapeDraw(e, page, wrap) {
+  const scale = pageScale(page);
+  const rect = wrap.getBoundingClientRect();
+  const settings = state.draw;
+  const kind = settings.shape;
+  const startX = Math.max(0, Math.min(page.vw, (e.clientX - rect.left) / scale));
+  const startY = Math.max(0, Math.min(page.vh, (e.clientY - rect.top) / scale));
+
+  const preview = document.createElementNS(SVG_NS, 'svg');
+  preview.setAttribute('viewBox', `0 0 ${page.vw} ${page.vh}`);
+  preview.style.cssText = `position:absolute; left:0; top:0; width:${page.vw * scale}px; height:${page.vh * scale}px; pointer-events:none;`;
+  let markerId = null;
+  if (kind === 'arrow') {
+    markerId = `arrow-preview-${++previewArrowMarkerSeq}`;
+    const defs = document.createElementNS(SVG_NS, 'defs');
+    defs.appendChild(buildArrowMarker(markerId, settings.color, settings.size));
+    preview.appendChild(defs);
+  }
+  const shapeEl = document.createElementNS(SVG_NS, shapeTagName(kind));
+  styleShapeEl(shapeEl, kind, settings, markerId);
+  preview.appendChild(shapeEl);
+  wrap.appendChild(preview);
+
+  let endX = startX, endY = startY;
+  positionShapeEl(shapeEl, kind, startX, startY, endX, endY);
+
+  const move = (ev) => {
+    endX = Math.max(0, Math.min(page.vw, (ev.clientX - rect.left) / scale));
+    endY = Math.max(0, Math.min(page.vh, (ev.clientY - rect.top) / scale));
+    positionShapeEl(shapeEl, kind, startX, startY, endX, endY);
+  };
+  const up = () => {
+    window.removeEventListener('pointermove', move);
+    window.removeEventListener('pointerup', up);
+    preview.remove();
+    finishShape(startX, startY, endX, endY, page, wrap, settings);
+  };
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', up);
+}
+
+function finishShape(x1, y1, x2, y2, page, wrap, settings) {
+  const kind = settings.shape;
+  const dragged = Math.abs(x2 - x1) >= 4 || Math.abs(y2 - y1) >= 4;
+  if (!dragged) {
+    // A click with no real drag: default to a small fixed-size shape
+    // anchored at the click point, matching the highlight tool's fallback.
+    x2 = x1 + 80;
+    y2 = y1 + (kind === 'line' || kind === 'arrow' ? 40 : 56);
+  }
+  const pad = settings.size / 2 + (kind === 'arrow' ? settings.size * 3.2 : 1);
+  const minX = Math.min(x1, x2) - pad, minY = Math.min(y1, y2) - pad;
+  const w = Math.abs(x2 - x1) + pad * 2, h = Math.abs(y2 - y1) + pad * 2;
+  const item = {
+    id: newId(), type: 'shape', shape: kind,
+    color: settings.color, size: settings.size, dash: settings.dash, fill: settings.fill,
+    x: minX, y: minY, w, h, natW: w, natH: h,
+  };
+  if (kind === 'line' || kind === 'arrow') {
+    item.p1 = [x1 - minX, y1 - minY];
+    item.p2 = [x2 - minX, y2 - minY];
+  }
+  page.items.push(item);
+  wrap.appendChild(buildItemEl(item, page, wrap));
+}
+
+/* ---------- eraser ---------- */
+
+function distToSegment(px, py, x1, y1, x2, y2) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const lenSq = dx * dx + dy * dy;
+  let t = lenSq > 0 ? ((px - x1) * dx + (py - y1) * dy) / lenSq : 0;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+}
+
+// Maps a point stored in an item's own local (natW/natH-space) coordinates
+// -- as freehand points and shape p1/p2 both are -- into absolute page
+// space, using the same uniform scale factor resizing already relies on.
+function itemLocalToPage(item, lx, ly) {
+  const sx = item.w / item.natW, sy = item.h / item.natH;
+  return { x: item.x + lx * sx, y: item.y + ly * sy };
+}
+
+// How far a page-space point is from an item's actual drawn geometry (not
+// just its bounding box), so the eraser only deletes what it visually
+// touches. Returns Infinity for anything it shouldn't consider erasable.
+function eraseDistance(item, px, py) {
+  if (item.type === 'highlight') {
+    const cx = Math.max(item.x, Math.min(px, item.x + item.w));
+    const cy = Math.max(item.y, Math.min(py, item.y + item.h));
+    return Math.hypot(px - cx, py - cy);
+  }
+  if (item.type === 'draw') {
+    let best = Infinity;
+    for (let i = 1; i < item.points.length; i++) {
+      const a = itemLocalToPage(item, item.points[i - 1][0], item.points[i - 1][1]);
+      const b = itemLocalToPage(item, item.points[i][0], item.points[i][1]);
+      best = Math.min(best, distToSegment(px, py, a.x, a.y, b.x, b.y));
+    }
+    return best;
+  }
+  if (item.type === 'shape') {
+    if (item.shape === 'line' || item.shape === 'arrow') {
+      const a = itemLocalToPage(item, item.p1[0], item.p1[1]);
+      const b = itemLocalToPage(item, item.p2[0], item.p2[1]);
+      return distToSegment(px, py, a.x, a.y, b.x, b.y);
+    }
+    if (item.shape === 'rect') {
+      const inside = px >= item.x && px <= item.x + item.w && py >= item.y && py <= item.y + item.h;
+      if (item.fill && inside) return 0;
+      const x0 = item.x, y0 = item.y, x1 = item.x + item.w, y1 = item.y + item.h;
+      return Math.min(
+        distToSegment(px, py, x0, y0, x1, y0),
+        distToSegment(px, py, x1, y0, x1, y1),
+        distToSegment(px, py, x1, y1, x0, y1),
+        distToSegment(px, py, x0, y1, x0, y0),
+      );
+    }
+    if (item.shape === 'ellipse') {
+      const cx = item.x + item.w / 2, cy = item.y + item.h / 2;
+      const rx = item.w / 2 || 1, ry = item.h / 2 || 1;
+      const nr = Math.hypot((px - cx) / rx, (py - cy) / ry);
+      if (item.fill && nr <= 1) return 0;
+      return Math.abs(nr - 1) * Math.min(rx, ry);
+    }
+  }
+  return Infinity;
+}
+
+// Page-space units, not screen pixels -- scales with zoom, so it's more
+// forgiving when zoomed in (working precisely) and tighter when zoomed out
+// (everything is small anyway). 16 was chosen after finding that a real
+// fingertip's touch imprecision easily misses a value as tight as 10 on a
+// thin diagonal stroke.
+const ERASE_RADIUS = 16;
+
+function startErase(e, page, wrap) {
+  const scale = pageScale(page);
+  const rect = wrap.getBoundingClientRect();
+  const idToEl = new Map();
+  wrap.querySelectorAll('.item').forEach((el) => idToEl.set(Number(el.dataset.itemId), el));
+
+  const eraseAt = (ev) => {
+    const px = (ev.clientX - rect.left) / scale;
+    const py = (ev.clientY - rect.top) / scale;
+    const hitIds = new Set();
+    for (const it of page.items) {
+      if (it.type !== 'draw' && it.type !== 'shape' && it.type !== 'highlight') continue;
+      if (eraseDistance(it, px, py) <= ERASE_RADIUS) hitIds.add(it.id);
+    }
+    if (!hitIds.size) return;
+    for (const id of hitIds) {
+      const el = idToEl.get(id);
+      if (el) el.remove();
+      idToEl.delete(id);
+    }
+    page.items = page.items.filter((it) => !hitIds.has(it.id));
+  };
+  eraseAt(e);
+  const move = (ev) => eraseAt(ev);
+  const up = () => {
+    window.removeEventListener('pointermove', move);
+    window.removeEventListener('pointerup', up);
+  };
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', up);
+}
+
 export function deselectAll() {
   document.querySelectorAll('.item.selected').forEach((el) => {
     el.classList.remove('selected');
@@ -385,6 +722,7 @@ function buildItemEl(item, page, wrap) {
   el.dataset.itemId = item.id;
 
   if (item.type === 'text') {
+    el.classList.add('item-text');
     item.fontFamily = normalizeFontId(item.fontFamily);
     const tc = document.createElement('div');
     tc.className = 'text-content';
@@ -470,6 +808,109 @@ function buildItemEl(item, page, wrap) {
     });
     tb.addEventListener('pointerdown', (e) => e.stopPropagation());
     el.appendChild(tb);
+  } else if (item.type === 'draw') {
+    el.classList.add('item-draw');
+    const style = DRAW_TOOL_STYLES[item.tool] || DRAW_TOOL_STYLES.pen;
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('viewBox', `0 0 ${item.natW} ${item.natH}`);
+    svg.style.opacity = style.opacity;
+    svg.style.mixBlendMode = style.composite === 'multiply' ? 'multiply' : 'normal';
+    const path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke-linejoin', style.cap === 'round' ? 'round' : 'miter');
+    svg.appendChild(path);
+    el.appendChild(svg);
+    el.style.width = item.w * scale + 'px';
+    el.style.height = item.h * scale + 'px';
+
+    const syncDraw = () => {
+      path.setAttribute('d', 'M ' + item.points.map(([x, y]) => `${x},${y}`).join(' L '));
+      path.setAttribute('stroke', item.color);
+      path.setAttribute('stroke-width', item.size);
+      path.setAttribute('stroke-linecap', style.cap);
+      const dash = dashPattern(item.dash, item.size);
+      if (dash) path.setAttribute('stroke-dasharray', dash.join(' ')); else path.removeAttribute('stroke-dasharray');
+    };
+    syncDraw();
+
+    const tb = document.createElement('div');
+    tb.className = 'item-toolbar';
+    tb.innerHTML = `<input type="color" value="${item.color}" title="${t('itemDrawColorTitle')}">
+      <input type="range" min="1" max="24" step="1" value="${item.size}" title="${t('itemDrawSizeTitle')}">
+      <select title="${t('itemDrawStyleTitle')}">
+        <option value="solid">${t('drawStyleSolid')}</option>
+        <option value="dashed">${t('drawStyleDashed')}</option>
+        <option value="dotted">${t('drawStyleDotted')}</option>
+      </select>`;
+    const colorInput = tb.querySelector('input[type=color]');
+    const sizeInput = tb.querySelector('input[type=range]');
+    const styleSelect = tb.querySelector('select');
+    styleSelect.value = item.dash;
+    colorInput.addEventListener('input', () => { item.color = colorInput.value; syncDraw(); });
+    sizeInput.addEventListener('input', () => { item.size = Number(sizeInput.value) || 1; syncDraw(); });
+    styleSelect.addEventListener('change', () => { item.dash = styleSelect.value; syncDraw(); });
+    tb.addEventListener('pointerdown', (e) => e.stopPropagation());
+    el.appendChild(tb);
+  } else if (item.type === 'shape') {
+    el.classList.add('item-shape');
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('viewBox', `0 0 ${item.natW} ${item.natH}`);
+    el.appendChild(svg);
+    el.style.width = item.w * scale + 'px';
+    el.style.height = item.h * scale + 'px';
+
+    let markerEl = null;
+    const markerId = `arrow-item-${item.id}`;
+    if (item.shape === 'arrow') {
+      const defs = document.createElementNS(SVG_NS, 'defs');
+      markerEl = buildArrowMarker(markerId, item.color, item.size);
+      defs.appendChild(markerEl);
+      svg.appendChild(defs);
+    }
+    const shapeEl = document.createElementNS(SVG_NS, shapeTagName(item.shape));
+    svg.appendChild(shapeEl);
+
+    const canFill = item.shape === 'rect' || item.shape === 'ellipse';
+    const syncShape = () => {
+      if (item.shape === 'line' || item.shape === 'arrow') {
+        positionShapeEl(shapeEl, item.shape, item.p1[0], item.p1[1], item.p2[0], item.p2[1]);
+      } else {
+        const inset = item.size / 2 + 1;
+        positionShapeEl(shapeEl, item.shape, inset, inset, item.natW - inset, item.natH - inset);
+      }
+      styleShapeEl(shapeEl, item.shape, item, markerId);
+      if (markerEl) {
+        markerEl.setAttribute('markerWidth', item.size * 3.2);
+        markerEl.setAttribute('markerHeight', item.size * 3.2);
+        markerEl.querySelector('path').setAttribute('fill', item.color);
+      }
+    };
+    syncShape();
+
+    const tb = document.createElement('div');
+    tb.className = 'item-toolbar';
+    tb.innerHTML = `<input type="color" value="${item.color}" title="${t('itemDrawColorTitle')}">
+      <input type="range" min="1" max="24" step="1" value="${item.size}" title="${t('itemDrawSizeTitle')}">
+      <select title="${t('itemDrawStyleTitle')}">
+        <option value="solid">${t('drawStyleSolid')}</option>
+        <option value="dashed">${t('drawStyleDashed')}</option>
+        <option value="dotted">${t('drawStyleDotted')}</option>
+      </select>
+      ${canFill ? `<label class="item-fill-label" title="${t('itemShapeFillTitle')}"><input type="checkbox"> ${t('drawFillLabel')}</label>` : ''}`;
+    const colorInput = tb.querySelector('input[type=color]');
+    const sizeInput = tb.querySelector('input[type=range]');
+    const styleSelect = tb.querySelector('select');
+    styleSelect.value = item.dash;
+    colorInput.addEventListener('input', () => { item.color = colorInput.value; syncShape(); });
+    sizeInput.addEventListener('input', () => { item.size = Number(sizeInput.value) || 1; syncShape(); });
+    styleSelect.addEventListener('change', () => { item.dash = styleSelect.value; syncShape(); });
+    const fillInput = tb.querySelector('input[type=checkbox]');
+    if (fillInput) {
+      fillInput.checked = !!item.fill;
+      fillInput.addEventListener('change', () => { item.fill = fillInput.checked; syncShape(); });
+    }
+    tb.addEventListener('pointerdown', (e) => e.stopPropagation());
+    el.appendChild(tb);
   } else {
     const img = document.createElement('img');
     img.src = item.dataUrl;
@@ -497,6 +938,13 @@ function buildItemEl(item, page, wrap) {
   el.appendChild(rz);
 
   el.addEventListener('pointerdown', (e) => {
+    // While a tool is armed, an item must not swallow the pointerdown via
+    // its own select/drag handling below -- otherwise placing/drawing/
+    // erasing at a spot that happens to land on an *existing* item would
+    // silently select/drag that item instead of reaching the armed tool.
+    // Letting it bubble up to the page-wrap's own listener is exactly what
+    // makes the eraser (and drawing over existing content) work at all.
+    if (state.tool) return;
     const tc = el.querySelector('.text-content');
     if (tc && tc.isContentEditable) { e.stopPropagation(); return; }
     e.stopPropagation();
@@ -557,14 +1005,28 @@ function buildItemEl(item, page, wrap) {
 // than re-rendering the whole page (which would rebuild every canvas and
 // drop the current selection/in-progress text edit).
 export function refreshEditI18n() {
-  document.querySelectorAll('.item .item-toolbar label').forEach((label) => {
+  document.querySelectorAll('.item.item-text .item-toolbar label').forEach((label) => {
     if (label.firstChild) label.firstChild.textContent = t('itemSizeLabel') + ' ';
   });
   document.querySelectorAll('.item .item-toolbar input[type=color]').forEach((input) => {
-    const isHighlight = input.closest('.item').classList.contains('item-highlight');
-    input.title = isHighlight ? t('itemHighlightColorTitle') : t('itemTextColorTitle');
+    const el = input.closest('.item');
+    input.title = el.classList.contains('item-highlight') ? t('itemHighlightColorTitle')
+      : el.classList.contains('item-draw') || el.classList.contains('item-shape') ? t('itemDrawColorTitle')
+      : t('itemTextColorTitle');
   });
-  document.querySelectorAll('.item .item-toolbar select').forEach((select) => {
+  document.querySelectorAll('.item .item-toolbar input[type=range]').forEach((input) => { input.title = t('itemDrawSizeTitle'); });
+  document.querySelectorAll('.item.item-draw .item-toolbar select, .item.item-shape .item-toolbar select').forEach((select) => {
+    select.title = t('itemDrawStyleTitle');
+    const [solid, dashed, dotted] = select.querySelectorAll('option');
+    if (solid) solid.textContent = t('drawStyleSolid');
+    if (dashed) dashed.textContent = t('drawStyleDashed');
+    if (dotted) dotted.textContent = t('drawStyleDotted');
+  });
+  document.querySelectorAll('.item .item-fill-label').forEach((label) => {
+    label.title = t('itemShapeFillTitle');
+    label.lastChild.textContent = ' ' + t('drawFillLabel');
+  });
+  document.querySelectorAll('.item.item-text .item-toolbar select').forEach((select) => {
     select.title = t('itemFontTitle');
     // Font names themselves are proper nouns and stay as-is; only the two
     // group headings are translated.

@@ -126,7 +126,7 @@ body.lang-km { font-family: 'Noto Sans Khmer', system-ui, -apple-system, 'Segoe 
 .brand, #lang-toggle, #theme-toggle, #mode-tabs { flex-shrink: 0; }
 .brand { font-weight: 700; font-size: 16px; }
 
-#mode-tabs .tab, #lang-toggle .tab, #theme-toggle .tab, #sig-styles .tab {
+#mode-tabs .tab, #lang-toggle .tab, #theme-toggle .tab, #sig-styles .tab, #draw-shape-kinds .tab {
   border: 1px solid var(--border);
   background: var(--surface-alt);
   color: var(--text);
@@ -135,12 +135,23 @@ body.lang-km { font-family: 'Noto Sans Khmer', system-ui, -apple-system, 'Segoe 
 }
 #mode-tabs .tab:first-child, #lang-toggle .tab:first-child, #theme-toggle .tab:first-child, #sig-styles .tab:first-child { border-radius: 6px 0 0 6px; }
 #mode-tabs .tab:last-child, #lang-toggle .tab:last-child, #theme-toggle .tab:last-child, #sig-styles .tab:last-child { border-radius: 0 6px 6px 0; margin-left: -1px; }
-#mode-tabs .tab.active, #lang-toggle .tab.active, #theme-toggle .tab.active, #sig-styles .tab.active { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; }
+#mode-tabs .tab.active, #lang-toggle .tab.active, #theme-toggle .tab.active, #sig-styles .tab.active, #draw-shape-kinds .tab.active { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; }
 #sig-styles { display: flex; flex-wrap: wrap; margin-bottom: 10px; }
 #sig-styles .tab { border-radius: 0; }
 #sig-styles .tab:not(:first-child) { margin-left: -1px; }
 #sig-styles .tab:first-child { border-radius: 6px 0 0 6px; }
 #sig-styles .tab:last-child { border-radius: 0 6px 6px 0; }
+/* Wraps to a 2x2 grid at the sidebar's width, so each button just gets a
+   uniform radius rather than the single-row first/last-child scheme above
+   (which would round only the outer two corners of the whole 2x2 block). */
+#draw-shape-kinds { display: flex; flex-wrap: wrap; gap: 1px; margin: 4px 0; }
+#draw-shape-kinds .tab { border-radius: 4px; flex: 1 0 calc(50% - 1px); text-align: center; margin-left: 0; }
+
+#draw-settings { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--border); }
+#draw-settings label:not(#draw-fill-row) { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; }
+#draw-settings select { font: inherit; padding: 4px 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); }
+#draw-settings input[type=range] { flex: 1; }
+#draw-fill-row { display: flex; align-items: center; gap: 6px; font-size: 13px; }
 
 
 #view-mode { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); }
@@ -283,7 +294,7 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   display: none;
 }
 .item.selected .item-del, .item.selected .item-resize { display: block; }
-.item img { width: 100%; height: 100%; display: block; pointer-events: none; }
+.item img, .item svg { width: 100%; height: 100%; display: block; pointer-events: none; }
 .item.item-highlight .highlight-fill {
   position: absolute;
   inset: 0;
@@ -324,6 +335,8 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
 .item-toolbar input[type=number] { width: 54px; font: inherit; padding: 2px 4px; }
 .item-toolbar select { font: inherit; font-size: 12px; padding: 2px 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); color: var(--text); }
 .item-toolbar input[type=color] { width: 28px; height: 24px; padding: 0; border: 1px solid var(--border); }
+.item-toolbar input[type=range] { width: 70px; }
+.item-fill-label { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; cursor: pointer; }
 
 /* Transient rectangle shown while dragging out an OCR area selection --
    not a saved item, just visual feedback during the drag. */

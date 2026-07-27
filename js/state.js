@@ -63,6 +63,39 @@ export function normalizeFontId(id) {
   return LEGACY_FONT_IDS[id] || DEFAULT_FONT;
 }
 
+// Each freehand draw tool is a distinct feel, not just a line -- opacity,
+// blend mode, and cap style are fixed per tool (what makes a marker read as
+// a marker and not a thin pen), while color/size/dash stay user-editable via
+// state.draw. Shared by editor.js (live SVG rendering) and exporter.js
+// (canvas rasterization for the exported PDF) so both draw identically.
+export const DRAW_TOOL_STYLES = {
+  pen:         { opacity: 1,    composite: 'source-over', cap: 'round' },
+  pencil:      { opacity: 0.75, composite: 'source-over', cap: 'round' },
+  marker:      { opacity: 0.55, composite: 'multiply',    cap: 'square' },
+  highlighter: { opacity: 0.35, composite: 'multiply',    cap: 'square' },
+};
+
+// Suggested starting color/thickness for each tool -- applied whenever the
+// tool is (re)selected from the sidebar, so switching tools immediately
+// feels distinct (a thin dark pen vs. a thick yellow highlighter) rather
+// than requiring the user to re-tune color/size by hand every time. Both
+// remain freely user-editable afterwards via state.draw.
+export const DRAW_TOOL_DEFAULT_COLOR = {
+  pen: '#1a1a2e', pencil: '#3a3a3a', marker: '#e63946', highlighter: '#ffeb3b',
+};
+export const DRAW_TOOL_DEFAULT_SIZE = {
+  pen: 2.5, pencil: 1.5, marker: 8, highlighter: 16,
+};
+
+// Dash pattern as a stroke-dasharray-style [on, off] pair, scaled to the
+// current stroke width so dashes/dots stay proportional at any thickness.
+// Returns null for 'solid' (both SVG and Canvas 2D treat that as "no dash").
+export function dashPattern(dash, size) {
+  if (dash === 'dashed') return [size * 3, size * 2];
+  if (dash === 'dotted') return [size * 0.01, size * 1.8]; // paired with a round/square cap, renders as dots
+  return null;
+}
+
 export const state = {
   // Open documents, one per tab. Each holds its own sources/pages/scroll
   // position so switching tabs restores exactly what you left.
@@ -70,11 +103,25 @@ export const state = {
   activeDocId: null,
   mode: 'edit',
   tool: null,    // { type: 'text' } | { type: 'stamp', kind, dataUrl, natW, natH } | { type: 'highlight', color }
+                 // | { type: 'draw', tool } | { type: 'shape', shape } | { type: 'eraser' }
   nextId: 1,
   viewMode: 'continuous', // 'continuous' | 'single' | 'double'
   zoom: 1,                // 1 = 100%
   lang: 'en',             // 'en' | 'km' -- interface language
   lastFont: null,
+  // Shared settings for the Draw section's tools -- read when a new stroke/
+  // shape is started, and written by its sidebar controls. Kept separate
+  // from state.tool (which only describes which tool is armed) so switching
+  // between pen/pencil/marker/highlighter/shapes doesn't reset color/size/
+  // style, matching how a real drawing app remembers your last settings.
+  draw: {
+    tool: 'pen',       // 'pen' | 'pencil' | 'marker' | 'highlighter'
+    color: '#1a1a2e',
+    size: 3,
+    dash: 'solid',     // 'solid' | 'dashed' | 'dotted'
+    shape: 'rect',     // 'rect' | 'ellipse' | 'line' | 'arrow'
+    fill: false,
+  },
 };
 
 export function activeDoc() {

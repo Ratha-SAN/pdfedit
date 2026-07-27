@@ -104,6 +104,34 @@ const translations = {
     signatureToolHint: 'Click on a page to place the signature.',
     highlightToolHint: 'Drag across a page to highlight (or click for a default size). Change the color afterward from the highlight’s own toolbar.',
 
+    secDraw: 'Draw',
+    btnDrawPen: 'Pen',
+    btnDrawPenTitle: 'Freehand pen (drag to draw)',
+    btnDrawPencil: 'Pencil',
+    btnDrawPencilTitle: 'Freehand pencil -- thinner, slightly translucent (drag to draw)',
+    btnDrawMarker: 'Marker',
+    btnDrawMarkerTitle: 'Freehand marker -- thick, darkens where strokes overlap (drag to draw)',
+    btnDrawHighlighter: 'Highlighter',
+    btnDrawHighlighterTitle: 'Freehand highlighter -- very thick and translucent (drag to draw)',
+    btnDrawShape: 'Shapes',
+    btnDrawShapeTitle: 'Draw a rectangle, ellipse, line, or arrow (drag to draw)',
+    btnDrawEraser: 'Eraser',
+    btnDrawEraserTitle: 'Drag over a stroke or shape to delete it',
+    drawToolHint: 'Drag on the page to draw with {tool}. Click {tool} again to stop.',
+    shapeToolHint: 'Drag on the page to draw a {shape}. Click Shapes again to stop.',
+    eraserToolHint: 'Drag over a stroke or shape to delete it. Click Eraser again to stop.',
+    shapeKindRect: 'Rectangle',
+    shapeKindEllipse: 'Ellipse',
+    shapeKindLine: 'Line',
+    shapeKindArrow: 'Arrow',
+    drawColorTitle: 'Color',
+    drawSizeLabel: 'Thickness',
+    drawStyleTitle: 'Style',
+    drawStyleSolid: 'Solid',
+    drawStyleDashed: 'Dashed',
+    drawStyleDotted: 'Dotted',
+    drawFillLabel: 'Fill',
+
     itemSizeLabel: 'Size',
     itemEditLabel: 'Edit',
     itemEditTitle: 'Edit this text inline',
@@ -116,6 +144,10 @@ const translations = {
     fontGroupLatin: 'English fonts',
     itemTextColorTitle: 'Text color',
     itemHighlightColorTitle: 'Highlight color',
+    itemDrawColorTitle: 'Color',
+    itemDrawSizeTitle: 'Thickness',
+    itemDrawStyleTitle: 'Style',
+    itemShapeFillTitle: 'Fill',
     itemDeleteTitle: 'Delete',
     itemResizeTitle: 'Resize',
     page: 'Page',
@@ -234,6 +266,34 @@ const translations = {
     signatureToolHint: 'ចុចលើទំព័រដើម្បីដាក់ហត្ថលេខា។',
     highlightToolHint: 'អូសកាត់លើទំព័រដើម្បីបន្លិចពណ៌ (ឬចុចម្តងសម្រាប់ទំហំលំនាំដើម)។ ប្តូរពណ៌នៅពេលក្រោយពីរបារឧបករណ៍របស់ផ្នែកបន្លិចពណ៌នោះផ្ទាល់។',
 
+    secDraw: 'គូរគំនូរ',
+    btnDrawPen: 'ប៊ិច',
+    btnDrawPenTitle: 'ប៊ិចគូរដោយដៃ (អូសដើម្បីគូរ)',
+    btnDrawPencil: 'ខ្មៅដៃ',
+    btnDrawPencilTitle: 'ខ្មៅដៃគូរដោយដៃ — ស្តើង តិចថ្លា (អូសដើម្បីគូរ)',
+    btnDrawMarker: 'ប៊ិចសម្គាល់',
+    btnDrawMarkerTitle: 'ប៊ិចសម្គាល់ — ក្រាស់ ងងឹតឡើងកន្លែងជាន់គ្នា (អូសដើម្បីគូរ)',
+    btnDrawHighlighter: 'ប៊ិចបន្លិច',
+    btnDrawHighlighterTitle: 'ប៊ិចបន្លិចគូរដោយដៃ — ក្រាស់ណាស់ និងថ្លា (អូសដើម្បីគូរ)',
+    btnDrawShape: 'រូបរាង',
+    btnDrawShapeTitle: 'គូរចតុកោណ រាងពងក្រពើ បន្ទាត់ ឬព្រួញ (អូសដើម្បីគូរ)',
+    btnDrawEraser: 'ជ័រលុប',
+    btnDrawEraserTitle: 'អូសកាត់លើគំនូរឬរូបរាងដើម្បីលុបវា',
+    drawToolHint: 'អូសលើទំព័រដើម្បីគូរដោយ {tool}។ ចុច {tool} ម្តងទៀតដើម្បីបញ្ឈប់។',
+    shapeToolHint: 'អូសលើទំព័រដើម្បីគូរ {shape}។ ចុចរូបរាងម្តងទៀតដើម្បីបញ្ឈប់។',
+    eraserToolHint: 'អូសកាត់លើគំនូរឬរូបរាងដើម្បីលុបវា។ ចុចជ័រលុបម្តងទៀតដើម្បីបញ្ឈប់។',
+    shapeKindRect: 'ចតុកោណ',
+    shapeKindEllipse: 'រាងពងក្រពើ',
+    shapeKindLine: 'បន្ទាត់',
+    shapeKindArrow: 'ព្រួញ',
+    drawColorTitle: 'ពណ៌',
+    drawSizeLabel: 'កម្រាស់',
+    drawStyleTitle: 'រចនាបថ',
+    drawStyleSolid: 'ដិត',
+    drawStyleDashed: 'បន្ទាត់ដាច់',
+    drawStyleDotted: 'ចំណុច',
+    drawFillLabel: 'បំពេញពណ៌',
+
     itemSizeLabel: 'ទំហំ',
     itemEditLabel: 'កែ',
     itemEditTitle: 'កែអត្ថបទនេះនៅនឹងកន្លែង',
@@ -246,6 +306,10 @@ const translations = {
     fontGroupLatin: 'ពុម្ពអក្សរអង់គ្លេស',
     itemTextColorTitle: 'ពណ៌អក្សរ',
     itemHighlightColorTitle: 'ពណ៌បន្លិច',
+    itemDrawColorTitle: 'ពណ៌',
+    itemDrawSizeTitle: 'កម្រាស់',
+    itemDrawStyleTitle: 'រចនាបថ',
+    itemShapeFillTitle: 'បំពេញពណ៌',
     itemDeleteTitle: 'លុប',
     itemResizeTitle: 'ប្តូរទំហំ',
     page: 'ទំព័រ',
@@ -284,7 +348,10 @@ const ocrStatusMap = {
 
 export function t(key, vars) {
   let str = translations[state.lang]?.[key] ?? translations.en[key] ?? key;
-  if (vars) for (const [k, v] of Object.entries(vars)) str = str.replace(`{${k}}`, v);
+  // replaceAll, not replace -- a placeholder can appear more than once in a
+  // string (e.g. drawToolHint's "{tool}" both names the tool and repeats it
+  // in "click {tool} again"), and .replace() only swaps the first match.
+  if (vars) for (const [k, v] of Object.entries(vars)) str = str.replaceAll(`{${k}}`, v);
   return str;
 }
 
