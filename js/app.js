@@ -263,31 +263,18 @@ $('#btn-print').addEventListener('click', async () => {
 
 /* ---------- features page ---------- */
 
-// A real pop-up window (not just a new tab) so it visibly floats apart from
-// the editor; the plain <a href target=_blank> stays as the no-JS/middle-
-// click fallback. features.html saves its own size/position (and scroll
-// position) as it's resized/moved/closed, so this reopens it exactly where
-// it was left rather than always at the same default spot.
-//
-// window.open() is attempted first and preventDefault() is only called if
-// it actually returned a window -- some mobile browsers and in-app webviews
-// block or ignore windowed window.open() calls, and calling preventDefault()
-// unconditionally would turn those into a dead click. Leaving the default
-// anchor behaviour alone in that case falls back to the plain target=_blank
-// tab, which is always a separate browsing context, so the editor tab and
-// its loaded document are never touched either way.
-$('#btn-features').addEventListener('click', (e) => {
-  let geom = null;
-  try { geom = JSON.parse(localStorage.getItem('pdfedit-features-geom')); } catch {}
-  const w = Math.min((geom && geom.w) || 900, window.screen.availWidth - 20);
-  const h = Math.min((geom && geom.h) || 800, window.screen.availHeight - 20);
-  let features = `width=${w},height=${h},menubar=no,toolbar=no,location=no,status=no,scrollbars=yes,resizable=yes`;
-  if (geom && Number.isFinite(geom.x) && Number.isFinite(geom.y)) {
-    features += `,left=${geom.x},top=${geom.y}`;
-  }
-  let popup = null;
-  try { popup = window.open('features.html', 'pdfeditFeatures', features); } catch {}
-  if (popup) e.preventDefault();
+// An in-page modal (iframe) rather than a separate tab/window -- some
+// mobile browsers and in-app webviews block or mishandle window.open(),
+// which could leave the button doing nothing or, worse, navigating the
+// editor tab away from the loaded document. A same-page modal has no such
+// failure mode. The iframe's src is set on first open only, so the modal
+// starts empty and its scroll position/state persists across repeated
+// opens for the rest of this session (it's hidden, not destroyed, when
+// closed).
+$('#btn-features').addEventListener('click', () => {
+  const frame = $('#features-frame');
+  if (!frame.src) frame.src = 'features.html';
+  $('#features-modal').hidden = false;
 });
 
 /* ---------- modals ---------- */

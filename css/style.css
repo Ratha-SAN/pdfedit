@@ -423,6 +423,14 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   background: #fff;
 }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+
+/* Features modal: wider than the default modal-box, and the iframe fills
+   it edge-to-edge -- so this overrides the box's own padding rather than
+   reusing it, since .modal-head's negative-margin trick assumes exactly
+   the default 16px padding it's compensating for. */
+#features-modal .modal-box { max-width: min(1000px, 96vw); width: 1000px; padding: 0; }
+#features-modal .modal-head { margin: 0; top: 0; padding: 12px 16px; }
+#features-frame { display: block; width: 100%; height: 80vh; border: 0; }
 #ocr-output {
   width: 100%;
   height: 260px;

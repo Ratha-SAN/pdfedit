@@ -29,9 +29,8 @@ support. No backend, no accounts — documents never leave your machine.
   bar's view controls aren't relevant there). On phones the sidebar stacks
   above the document instead of taking width. A **Features** button pinned to
   the bottom of the sidebar opens a bilingual (English/Khmer) page describing
-  everything the app can do, as a pop-up window that reopens at the same
-  size/position/scroll it was left at, so the current document is never
-  disturbed.
+  everything the app can do, as an in-page modal (an embedded iframe, not a
+  separate tab or window), so the current document is never disturbed.
 - **Pages mode** — thumbnail grid of all pages: select, drag to reorder,
   remove pages, and append pages from a second PDF. **Split** breaks the
   document into two tabs at a chosen page: select exactly one page, then
