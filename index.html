@@ -108,6 +108,48 @@
     </div>
   </section>
 
+  <section class="side-sec" id="draw-tools">
+    <button class="side-head" aria-expanded="false" data-i18n="secDraw">Draw</button>
+    <div class="side-body" hidden>
+      <button id="btn-draw-pen" data-i18n="btnDrawPen" data-i18n-title="btnDrawPenTitle" title="Freehand pen (drag to draw)">Pen</button>
+      <button id="btn-draw-pencil" data-i18n="btnDrawPencil" data-i18n-title="btnDrawPencilTitle" title="Freehand pencil -- thinner, slightly translucent (drag to draw)">Pencil</button>
+      <button id="btn-draw-marker" data-i18n="btnDrawMarker" data-i18n-title="btnDrawMarkerTitle" title="Freehand marker -- thick, darkens where strokes overlap (drag to draw)">Marker</button>
+      <button id="btn-draw-highlighter" data-i18n="btnDrawHighlighter" data-i18n-title="btnDrawHighlighterTitle" title="Freehand highlighter -- very thick and translucent (drag to draw)">Highlighter</button>
+      <button id="btn-draw-shape" data-i18n="btnDrawShape" data-i18n-title="btnDrawShapeTitle" title="Draw a rectangle, ellipse, line, or arrow (drag to draw)">Shapes</button>
+      <button id="btn-draw-eraser" data-i18n="btnDrawEraser" data-i18n-title="btnDrawEraserTitle" title="Drag over a stroke or shape to delete it">Eraser</button>
+
+      <div id="draw-shape-kinds" hidden>
+        <button data-shape="rect" class="tab active" data-i18n="shapeKindRect" title="Rectangle">Rectangle</button>
+        <button data-shape="ellipse" class="tab" data-i18n="shapeKindEllipse" title="Ellipse">Ellipse</button>
+        <button data-shape="line" class="tab" data-i18n="shapeKindLine" title="Line">Line</button>
+        <button data-shape="arrow" class="tab" data-i18n="shapeKindArrow" title="Arrow">Arrow</button>
+      </div>
+
+      <div id="draw-settings" hidden>
+        <label>
+          <span data-i18n="drawColorTitle">Color</span>
+          <input type="color" id="draw-color" value="#1a1a2e" data-i18n-title="drawColorTitle" title="Color">
+        </label>
+        <label>
+          <span data-i18n="drawSizeLabel">Thickness</span>
+          <input type="range" id="draw-size" min="1" max="24" step="1" value="3" data-i18n-title="drawSizeLabel" title="Thickness">
+        </label>
+        <label>
+          <span data-i18n="drawStyleTitle">Style</span>
+          <select id="draw-style" data-i18n-title="drawStyleTitle" title="Style">
+            <option value="solid" data-i18n="drawStyleSolid">Solid</option>
+            <option value="dashed" data-i18n="drawStyleDashed">Dashed</option>
+            <option value="dotted" data-i18n="drawStyleDotted">Dotted</option>
+          </select>
+        </label>
+        <label id="draw-fill-row" hidden>
+          <input type="checkbox" id="draw-fill">
+          <span data-i18n="drawFillLabel">Fill</span>
+        </label>
+      </div>
+    </div>
+  </section>
+
   <section class="side-sec" id="ocr-tools">
     <button class="side-head" aria-expanded="false" data-i18n="secRecognize">Recognize text</button>
     <div class="side-body" hidden>

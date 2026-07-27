@@ -1,4 +1,4 @@
-import { state, $, showBusy, hideBusy, FONT_STACKS, FONT_FAMILY_NAME, normalizeFontId } from './state.js';
+import { state, $, showBusy, hideBusy, FONT_STACKS, FONT_FAMILY_NAME, normalizeFontId, DRAW_TOOL_STYLES, dashPattern } from './state.js';
 import { t } from './i18n.js';
 
 const { PDFDocument, degrees, rgb, BlendMode } = PDFLib;
@@ -190,7 +190,7 @@ async function drawItem(out, outPage, item) {
     });
     return;
   }
-  let image, w, h;
+  let image, w, h, blendMode;
   if (item.type === 'text') {
     if (!item.text.trim()) return;
     const canvas = await rasterizeText(item);
@@ -198,6 +198,24 @@ async function drawItem(out, outPage, item) {
     image = await out.embedPng(png);
     w = canvas.width / TEXT_SUPERSAMPLE;
     h = canvas.height / TEXT_SUPERSAMPLE;
+  } else if (item.type === 'draw') {
+    const canvas = rasterizeDraw(item);
+    const png = await dataUrlToBytes(canvas.toDataURL('image/png'));
+    image = await out.embedPng(png);
+    w = item.w;
+    h = item.h;
+    // Marker/highlighter darken where they overlap the page's own content
+    // on screen via mix-blend-mode:multiply; blendMode here is pdf-lib's
+    // equivalent, applied at placement (baking it into the raster itself
+    // would have nothing underneath yet to multiply against).
+    const style = DRAW_TOOL_STYLES[item.tool] || DRAW_TOOL_STYLES.pen;
+    if (style.composite === 'multiply') blendMode = BlendMode.Multiply;
+  } else if (item.type === 'shape') {
+    const canvas = rasterizeShape(item);
+    const png = await dataUrlToBytes(canvas.toDataURL('image/png'));
+    image = await out.embedPng(png);
+    w = item.w;
+    h = item.h;
   } else {
     const bytes = await dataUrlToBytes(item.dataUrl);
     image = item.dataUrl.startsWith('data:image/jpeg')
@@ -207,7 +225,90 @@ async function drawItem(out, outPage, item) {
     h = item.h;
   }
   const placement = mapViewportRect(outPage, item.x, item.y, w, h);
-  outPage.drawImage(image, { ...placement, width: w, height: h });
+  outPage.drawImage(image, { ...placement, width: w, height: h, ...(blendMode ? { blendMode } : {}) });
+}
+
+// Freehand strokes and shapes are rasterized (like text already is) rather
+// than drawn as native PDF vector paths -- pdf-lib's drawSvgPath flips and
+// positions its path data in ways this codebase hasn't verified across
+// rotated pages, whereas mapViewportRect + drawImage below is the same,
+// already-tested path text/images use. A drawing tool's output not
+// remaining vector-editable in the exported PDF matches the existing
+// tradeoff for text (see README's Known limitations).
+const DRAW_SUPERSAMPLE = 2;
+
+function rasterizeDraw(item) {
+  const SS = DRAW_SUPERSAMPLE;
+  const style = DRAW_TOOL_STYLES[item.tool] || DRAW_TOOL_STYLES.pen;
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.ceil(item.natW * SS));
+  canvas.height = Math.max(1, Math.ceil(item.natH * SS));
+  const ctx = canvas.getContext('2d');
+  ctx.scale(SS, SS);
+  ctx.globalAlpha = style.opacity;
+  ctx.lineCap = style.cap;
+  ctx.lineJoin = style.cap === 'round' ? 'round' : 'miter';
+  ctx.strokeStyle = item.color;
+  ctx.lineWidth = item.size;
+  ctx.setLineDash(dashPattern(item.dash, item.size) || []);
+  ctx.beginPath();
+  item.points.forEach(([x, y], i) => { if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); });
+  ctx.stroke();
+  return canvas;
+}
+
+function rasterizeShape(item) {
+  const SS = DRAW_SUPERSAMPLE;
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.ceil(item.natW * SS));
+  canvas.height = Math.max(1, Math.ceil(item.natH * SS));
+  const ctx = canvas.getContext('2d');
+  ctx.scale(SS, SS);
+  ctx.strokeStyle = item.color;
+  ctx.fillStyle = item.color;
+  ctx.lineWidth = item.size;
+  ctx.setLineDash(dashPattern(item.dash, item.size) || []);
+
+  if (item.shape === 'rect') {
+    const inset = item.size / 2 + 1;
+    const x = inset, y = inset, w = item.natW - inset * 2, h = item.natH - inset * 2;
+    if (item.fill) ctx.fillRect(x, y, w, h);
+    ctx.strokeRect(x, y, w, h);
+  } else if (item.shape === 'ellipse') {
+    const inset = item.size / 2 + 1;
+    const rx = Math.max(0.1, item.natW / 2 - inset), ry = Math.max(0.1, item.natH / 2 - inset);
+    ctx.beginPath();
+    ctx.ellipse(item.natW / 2, item.natH / 2, rx, ry, 0, 0, Math.PI * 2);
+    if (item.fill) ctx.fill();
+    ctx.stroke();
+  } else {
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(item.p1[0], item.p1[1]);
+    ctx.lineTo(item.p2[0], item.p2[1]);
+    ctx.stroke();
+    if (item.shape === 'arrow') drawArrowheadOnCtx(ctx, item.p1[0], item.p1[1], item.p2[0], item.p2[1], item.size, item.color);
+  }
+  return canvas;
+}
+
+// Manual trigonometry rather than an SVG <marker> (Canvas 2D has no
+// equivalent primitive) -- proportions tuned to roughly match the live
+// on-screen SVG arrowhead (buildArrowMarker in editor.js).
+function drawArrowheadOnCtx(ctx, x1, y1, x2, y2, size, color) {
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+  const len = size * 2.7, wing = size * 1.4;
+  ctx.save();
+  ctx.translate(x2, y2);
+  ctx.rotate(angle);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(-len, wing);
+  ctx.lineTo(-len, -wing);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.restore();
 }
 
 // Maps a rect given in pdf.js viewport coordinates (top-left origin, rotation

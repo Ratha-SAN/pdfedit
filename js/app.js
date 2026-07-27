@@ -1,4 +1,4 @@
-import { state, $, showBusy, hideBusy, setHint, addSource, addDoc, closeDoc, activeDoc, isImageFile } from './state.js';
+import { state, $, showBusy, hideBusy, setHint, addSource, addDoc, closeDoc, activeDoc, isImageFile, DRAW_TOOL_DEFAULT_COLOR, DRAW_TOOL_DEFAULT_SIZE } from './state.js';
 import { renderEditView, armTool, initSignatureModal, openSignatureModal, initViewControls, currentPage, fileToDataUrl, loadImage, deselectAll, refreshEditI18n } from './editor.js';
 import { renderPagesView, initPagesMode, refreshPagesI18n } from './pagesMode.js';
 import { exportPdf, printPdf, estimateExportSize, formatBytes } from './exporter.js';
@@ -204,6 +204,55 @@ $('#btn-add-highlight').addEventListener('click', () => {
     t('highlightToolHint')
   );
 });
+
+/* ---------- draw tools ---------- */
+
+const DRAW_TOOL_LABEL_KEY = { pen: 'btnDrawPen', pencil: 'btnDrawPencil', marker: 'btnDrawMarker', highlighter: 'btnDrawHighlighter' };
+const SHAPE_LABEL_KEY = { rect: 'shapeKindRect', ellipse: 'shapeKindEllipse', line: 'shapeKindLine', arrow: 'shapeKindArrow' };
+
+function syncDrawSettingsInputs() {
+  $('#draw-color').value = state.draw.color;
+  $('#draw-size').value = state.draw.size;
+  $('#draw-style').value = state.draw.dash;
+  $('#draw-fill').checked = state.draw.fill;
+}
+
+['pen', 'pencil', 'marker', 'highlighter'].forEach((toolId) => {
+  $('#btn-draw-' + toolId).addEventListener('click', () => {
+    if (state.tool && state.tool.type === 'draw' && state.tool.tool === toolId) { armTool(null); return; }
+    // Each tool suggests its own color/thickness so switching tools feels
+    // distinct immediately; dash style and shape-fill are left as they were.
+    state.draw.tool = toolId;
+    state.draw.color = DRAW_TOOL_DEFAULT_COLOR[toolId];
+    state.draw.size = DRAW_TOOL_DEFAULT_SIZE[toolId];
+    syncDrawSettingsInputs();
+    armTool({ type: 'draw', tool: toolId }, t('drawToolHint', { tool: t(DRAW_TOOL_LABEL_KEY[toolId]) }));
+  });
+});
+
+$('#btn-draw-shape').addEventListener('click', () => {
+  if (state.tool && state.tool.type === 'shape') armTool(null);
+  else armTool({ type: 'shape', shape: state.draw.shape }, t('shapeToolHint', { shape: t(SHAPE_LABEL_KEY[state.draw.shape]) }));
+});
+
+document.querySelectorAll('#draw-shape-kinds button').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    state.draw.shape = btn.dataset.shape;
+    document.querySelectorAll('#draw-shape-kinds button').forEach((b) => b.classList.toggle('active', b === btn));
+    armTool({ type: 'shape', shape: state.draw.shape }, t('shapeToolHint', { shape: t(SHAPE_LABEL_KEY[state.draw.shape]) }));
+  });
+});
+
+$('#btn-draw-eraser').addEventListener('click', () => {
+  if (state.tool && state.tool.type === 'eraser') armTool(null);
+  else armTool({ type: 'eraser' }, t('eraserToolHint'));
+});
+
+$('#draw-color').addEventListener('input', (e) => { state.draw.color = e.target.value; });
+$('#draw-size').addEventListener('input', (e) => { state.draw.size = Number(e.target.value) || 1; });
+$('#draw-style').addEventListener('change', (e) => { state.draw.dash = e.target.value; });
+$('#draw-fill').addEventListener('change', (e) => { state.draw.fill = e.target.checked; });
+syncDrawSettingsInputs();
 
 /* ---------- sidebar sections ---------- */
 
