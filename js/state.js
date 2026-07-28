@@ -204,6 +204,12 @@ export const state = {
     dash: 'solid',     // 'solid' | 'dashed' | 'dotted'
     shape: 'rect',     // 'rect' | 'ellipse' | 'line' | 'arrow'
     fill: false,
+    // Each freehand tool plus shapes remembers its own last-used thickness
+    // (a thick marker and a thin pencil are both "correct" at once), keyed
+    // separately from the single `size` above -- `size` is just "whatever
+    // the currently-armed tool's slider shows right now"; this is where
+    // each tool's own value persists across switching to a different one.
+    sizeByTool: { ...DRAW_TOOL_DEFAULT_SIZE, shape: 3 },
   },
 };
 

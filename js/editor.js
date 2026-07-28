@@ -1264,8 +1264,39 @@ export function initSignatureModal(onReady) {
   };
 
   let drawing = false;
-  let last = null; // { x, y, pressure }
+  // Rolling window of the last two accepted points -- quadratic-curve-
+  // through-midpoints (see the move handler below) needs three consecutive
+  // points (p0, p1, and the incoming one) to draw one smooth segment.
+  let p0 = null, p1 = null;
+  let lastRaw = null; // { x, y, t } -- raw client coords + timestamp, for velocity math
+  let smoothPressure = 0.5;
   let activeStyle = BRUSH_STYLES.pen;
+
+  // A real stylus reports genuine pressure; plain touch (and mouse) almost
+  // never does, so on those inputs pressure is simulated from how fast the
+  // pointer is moving -- slower strokes read as harder presses, faster ones
+  // as lighter, the same relationship a real ink pen has, and the standard
+  // technique signature-pad libraries use when there's no hardware pressure
+  // signal to read. Distance/time are measured in raw CSS pixels/ms (not
+  // canvas backing-store pixels) so the mapping doesn't shift with screen
+  // DPI.
+  const VELOCITY_MAX = 1.2; // css px/ms; an unhurried signing stroke spans most of the width range
+  const velocityPressure = (dist, dt) => {
+    if (dt <= 0) return smoothPressure;
+    const t = Math.max(0, Math.min(1, (dist / dt) / VELOCITY_MAX));
+    return 1 - t; // slow = thick (pressure -> 1), fast = thin (pressure -> 0)
+  };
+  const rawPressureOf = (e) => {
+    if (e.pointerType === 'pen') return e.pressure > 0 ? e.pressure : 0.5;
+    if (!lastRaw) return 0.5; // first sample of a stroke -- no velocity yet
+    return velocityPressure(Math.hypot(e.clientX - lastRaw.x, e.clientY - lastRaw.y), e.timeStamp - lastRaw.t);
+  };
+  // Exponential smoothing on the (simulated) pressure signal, since raw
+  // velocity is noisy sample-to-sample -- pulls a fraction of the way from
+  // the last value toward each new one, reading as a natural, gently damped
+  // change in width rather than a jittery one.
+  const PRESSURE_SMOOTHING = 0.3;
+  const smooth = (prev, raw, factor) => prev + (raw - prev) * factor;
 
   // Re-composites only the sub-rectangle a batch of new segments actually
   // touched (padded for stroke width + antialiasing) instead of the whole
@@ -1293,8 +1324,7 @@ export function initSignatureModal(onReady) {
 
   const pos = (e) => {
     const r = canvas.getBoundingClientRect();
-    const pressure = e.pressure > 0 ? e.pressure : 0.5; // no force sensor -> a reasonable mid-range default
-    return { x: (e.clientX - r.left) * (canvas.width / r.width), y: (e.clientY - r.top) * (canvas.height / r.height), pressure };
+    return { x: (e.clientX - r.left) * (canvas.width / r.width), y: (e.clientY - r.top) * (canvas.height / r.height) };
   };
   const widthFor = (pressure) => activeStyle.minWidth + (activeStyle.maxWidth - activeStyle.minWidth) * pressure;
 
@@ -1307,9 +1337,11 @@ export function initSignatureModal(onReady) {
     strokeCtx.fillStyle = activeStyle.color;
     strokeCtx.strokeStyle = activeStyle.color;
     const p = pos(e);
-    last = p;
+    smoothPressure = rawPressureOf(e);
+    p0 = p1 = { x: p.x, y: p.y, pressure: smoothPressure };
+    lastRaw = { x: e.clientX, y: e.clientY, t: e.timeStamp };
     // A tap with no movement still leaves a dot.
-    const r = widthFor(p.pressure) / 2;
+    const r = widthFor(smoothPressure) / 2;
     strokeCtx.beginPath();
     strokeCtx.arc(p.x, p.y, r, 0, Math.PI * 2);
     strokeCtx.fill();
@@ -1322,19 +1354,38 @@ export function initSignatureModal(onReady) {
     if (!drawing) return;
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const ev of events) {
-      const p = pos(ev);
-      const w = widthFor((last.pressure + p.pressure) / 2);
-      const pad = w / 2 + 2;
+      const raw = pos(ev);
+      const rawPressure = rawPressureOf(ev);
+      smoothPressure = smooth(smoothPressure, rawPressure, PRESSURE_SMOOTHING);
+      const p2 = { x: raw.x, y: raw.y, pressure: smoothPressure };
+
+      // Quadratic curve from the midpoint of (p0,p1) to the midpoint of
+      // (p1,p2), using p1 as the control point -- the standard "curve
+      // through midpoints" technique. Unlike straight segments between raw
+      // points (which show a visible angle at every sample) this stays
+      // smooth at any sample density, since consecutive curves share their
+      // anchor at each midpoint rather than meeting at a sharp corner.
+      const mid01x = (p0.x + p1.x) / 2, mid01y = (p0.y + p1.y) / 2;
+      const mid12x = (p1.x + p2.x) / 2, mid12y = (p1.y + p2.y) / 2;
+      const w = widthFor((p1.pressure + p2.pressure) / 2);
       strokeCtx.lineWidth = w;
       strokeCtx.beginPath();
-      strokeCtx.moveTo(last.x, last.y);
-      strokeCtx.lineTo(p.x, p.y);
+      strokeCtx.moveTo(mid01x, mid01y);
+      strokeCtx.quadraticCurveTo(p1.x, p1.y, mid12x, mid12y);
       strokeCtx.stroke();
-      minX = Math.min(minX, last.x - pad, p.x - pad);
-      minY = Math.min(minY, last.y - pad, p.y - pad);
-      maxX = Math.max(maxX, last.x + pad, p.x + pad);
-      maxY = Math.max(maxY, last.y + pad, p.y + pad);
-      last = p;
+
+      // A quadratic Bezier always lies within the triangle formed by its
+      // start, control, and end points, so that triangle's bounding box
+      // (padded for stroke width) safely bounds the whole curve.
+      const pad = w / 2 + 2;
+      minX = Math.min(minX, mid01x - pad, p1.x - pad, mid12x - pad);
+      minY = Math.min(minY, mid01y - pad, p1.y - pad, mid12y - pad);
+      maxX = Math.max(maxX, mid01x + pad, p1.x + pad, mid12x + pad);
+      maxY = Math.max(maxY, mid01y + pad, p1.y + pad, mid12y + pad);
+
+      p0 = p1;
+      p1 = p2;
+      lastRaw = { x: ev.clientX, y: ev.clientY, t: ev.timeStamp };
     }
     redrawRect(minX, minY, maxX, maxY);
   });

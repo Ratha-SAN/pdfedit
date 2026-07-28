@@ -220,19 +220,23 @@ function syncDrawSettingsInputs() {
 ['pen', 'pencil', 'marker', 'highlighter'].forEach((toolId) => {
   $('#btn-draw-' + toolId).addEventListener('click', () => {
     if (state.tool && state.tool.type === 'draw' && state.tool.tool === toolId) { armTool(null); return; }
-    // Each tool suggests its own color/thickness so switching tools feels
-    // distinct immediately; dash style and shape-fill are left as they were.
+    // Each tool suggests its own color so switching tools feels distinct
+    // immediately; thickness instead restores whatever this specific tool
+    // was last set to (see state.draw.sizeByTool), and dash style/shape-fill
+    // are left as they were.
     state.draw.tool = toolId;
     state.draw.color = DRAW_TOOL_DEFAULT_COLOR[toolId];
-    state.draw.size = DRAW_TOOL_DEFAULT_SIZE[toolId];
+    state.draw.size = state.draw.sizeByTool[toolId];
     syncDrawSettingsInputs();
     armTool({ type: 'draw', tool: toolId }, t('drawToolHint', { tool: t(DRAW_TOOL_LABEL_KEY[toolId]) }));
   });
 });
 
 $('#btn-draw-shape').addEventListener('click', () => {
-  if (state.tool && state.tool.type === 'shape') armTool(null);
-  else armTool({ type: 'shape', shape: state.draw.shape }, t('shapeToolHint', { shape: t(SHAPE_LABEL_KEY[state.draw.shape]) }));
+  if (state.tool && state.tool.type === 'shape') { armTool(null); return; }
+  state.draw.size = state.draw.sizeByTool.shape;
+  syncDrawSettingsInputs();
+  armTool({ type: 'shape', shape: state.draw.shape }, t('shapeToolHint', { shape: t(SHAPE_LABEL_KEY[state.draw.shape]) }));
 });
 
 document.querySelectorAll('#draw-shape-kinds button').forEach((btn) => {
@@ -248,8 +252,18 @@ $('#btn-draw-eraser').addEventListener('click', () => {
   else armTool({ type: 'eraser' }, t('eraserToolHint'));
 });
 
+// Which sizeByTool bucket the slider currently edits: shapes share one
+// entry across all 4 kinds (state.draw.tool doesn't change for shapes), the
+// 4 freehand tools each get their own.
+function currentSizeToolKey() {
+  return state.tool && state.tool.type === 'shape' ? 'shape' : state.draw.tool;
+}
+
 $('#draw-color').addEventListener('input', (e) => { state.draw.color = e.target.value; });
-$('#draw-size').addEventListener('input', (e) => { state.draw.size = Number(e.target.value) || 1; });
+$('#draw-size').addEventListener('input', (e) => {
+  state.draw.size = Number(e.target.value) || 1;
+  state.draw.sizeByTool[currentSizeToolKey()] = state.draw.size;
+});
 $('#draw-style').addEventListener('change', (e) => { state.draw.dash = e.target.value; });
 $('#draw-fill').addEventListener('change', (e) => { state.draw.fill = e.target.checked; });
 syncDrawSettingsInputs();

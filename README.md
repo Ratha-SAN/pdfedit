@@ -19,17 +19,26 @@ support. No backend, no accounts — documents never leave your machine.
   Drawing a signature offers 5 brush styles (Pen, Ink, Stylus, Marker,
   Brush) — each a genuinely different look (width range, opacity, blend
   mode), not just a color — and the stroke width responds to real pointer
-  pressure from a stylus or force-sensitive touch (mouse/plain touch falls
-  back to a fixed mid-range width, since there's no pressure signal to
-  read). The canvas renders at the display's actual pixel density (not a
-  fixed low-res bitmap), so the signature stays crisp at any screen size,
-  and drawing stays smooth on mobile since each frame only redraws the
-  small area a stroke actually touched rather than the whole canvas.
+  pressure from a stylus. Touch and mouse, which almost never report real
+  pressure, instead get it simulated from how fast the pointer is moving
+  (slower = a harder press, faster = a lighter one, the way a real ink pen
+  behaves), so the signature still looks natural when signed with a finger.
+  Every stroke is smoothed through a curve rather than straight segments
+  between raw samples, so it stays smooth regardless of how coarsely the
+  touchscreen samples the gesture. The canvas renders at the display's
+  actual pixel density (not a fixed low-res bitmap), so the signature stays
+  crisp at any screen size, and drawing stays smooth on mobile since each
+  frame only redraws the small area a stroke actually touched rather than
+  the whole canvas.
 - **Draw** — a sidebar section (tools arranged in a compact grid) with Pen,
   Pencil, Marker, Highlighter, Shapes (rectangle/ellipse/line/arrow, with
   optional fill), and an Eraser. Color, thickness, and line style
   (solid/dashed/dotted) are all adjustable before drawing and again
-  afterward from each stroke's own toolbar once selected. Each freehand
+  afterward from each stroke's own toolbar once selected. Each of the 5
+  sizeable tools (the 4 freehand ones plus Shapes) remembers its own
+  thickness — switching from a thick marker to a thin pencil and back
+  restores each one's own last setting rather than sharing a single value.
+  Each freehand
   tool keeps its own look (marker and highlighter darken where strokes
   overlap, matching a real marker/highlighter) via opacity and blend mode,
   not just width. The four freehand tools are pressure-sensitive: stroke
