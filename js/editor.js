@@ -1,4 +1,4 @@
-import { state, newId, $, setHint, FONT_STACKS, FONT_FAMILY_NAME, KHMER_FONTS, LATIN_FONTS, DEFAULT_FONT, normalizeFontId, DRAW_TOOL_STYLES, dashPattern, strokeSegment, strokeDot, strokeFullPath } from './state.js';
+import { state, newId, $, setHint, FONT_STACKS, FONT_FAMILY_NAME, KHMER_FONTS, LATIN_FONTS, DEFAULT_FONT, normalizeFontId, DRAW_TOOL_STYLES, dashPattern, strokeSegment, strokeDot, strokeFullPath, rafPointerBatcher } from './state.js';
 import { t } from './i18n.js';
 import { recognizeArea } from './ocr.js';
 
@@ -402,7 +402,15 @@ function startFreehandDraw(e, page, wrap) {
   const dash = dashPattern(settings.dash, maxWidth);
   const strokeOpts = { color: settings.color, minWidth, maxWidth, cap: style.cap, dash };
 
-  const SS = Math.min(window.devicePixelRatio || 1, 2) * 1.5;
+  // The live preview only has to look right while the pointer is moving --
+  // buildItemEl() rebuilds the finished stroke at full supersampled
+  // resolution the moment it lifts -- so a device-pixel (not extra
+  // supersampled) backing store here is free performance, not a lasting
+  // quality loss. Combined with the dirty-rect compositing and rAF batching
+  // below, this is what keeps drawing responsive on mobile: the previous
+  // version cleared and recomposited the *entire* page-sized canvas, at up
+  // to 3x supersampling, on every single pointermove.
+  const SS = Math.min(window.devicePixelRatio || 1, 2);
   const pxScale = scale * SS;
   const pxW = Math.max(1, Math.round(page.vw * pxScale));
   const pxH = Math.max(1, Math.round(page.vh * pxScale));
@@ -418,34 +426,64 @@ function startFreehandDraw(e, page, wrap) {
   wrap.appendChild(preview);
   const pctx = preview.getContext('2d');
 
-  const points = [];
-  let drawnUpTo = 0;
-  const compositePreview = () => {
-    pctx.clearRect(0, 0, pxW, pxH);
+  // Only re-composites the sub-rectangle a frame's new segments actually
+  // touched (padded for stroke width + antialiasing), instead of the whole
+  // canvas -- a typical stroke's bounding box is a small fraction of a full
+  // page, so this turns an O(page area) operation into an O(stroke width)
+  // one on every frame.
+  const compositeRect = (x0, y0, x1, y1) => {
+    const rx = Math.max(0, Math.floor(x0 * pxScale));
+    const ry = Math.max(0, Math.floor(y0 * pxScale));
+    const rw = Math.min(pxW, Math.ceil(x1 * pxScale)) - rx;
+    const rh = Math.min(pxH, Math.ceil(y1 * pxScale)) - ry;
+    if (rw <= 0 || rh <= 0) return;
+    pctx.clearRect(rx, ry, rw, rh);
     pctx.globalAlpha = style.opacity;
     pctx.globalCompositeOperation = style.composite === 'multiply' ? 'multiply' : 'source-over';
-    pctx.drawImage(buffer, 0, 0);
+    pctx.drawImage(buffer, rx, ry, rw, rh, rx, ry, rw, rh);
     pctx.globalAlpha = 1;
     pctx.globalCompositeOperation = 'source-over';
   };
-  const pressureOf = (ev) => (ev.pressure > 0 ? ev.pressure : 0.5); // no force sensor -> a reasonable mid-range default
-  const addPoint = (ev) => {
-    const x = Math.max(0, Math.min(page.vw, (ev.clientX - rect.left) / scale));
-    const y = Math.max(0, Math.min(page.vh, (ev.clientY - rect.top) / scale));
-    points.push([x, y, pressureOf(ev)]);
-    if (points.length === 1) strokeDot(bctx, points[0], strokeOpts);
-    while (drawnUpTo < points.length - 1) {
-      strokeSegment(bctx, points[drawnUpTo], points[drawnUpTo + 1], strokeOpts);
-      drawnUpTo++;
-    }
-    compositePreview();
-  };
-  addPoint(e);
 
-  const move = (ev) => addPoint(ev);
+  const points = [];
+  const pad = maxWidth / 2 + 2;
+  const pressureOf = (ev) => (ev.pressure > 0 ? ev.pressure : 0.5); // no force sensor -> a reasonable mid-range default
+  const eventXY = (ev) => [
+    Math.max(0, Math.min(page.vw, (ev.clientX - rect.left) / scale)),
+    Math.max(0, Math.min(page.vh, (ev.clientY - rect.top) / scale)),
+  ];
+  const addSample = (x, y, pressure) => {
+    points.push([x, y, pressure]);
+    const i = points.length - 1;
+    if (i === 0) strokeDot(bctx, points[0], strokeOpts);
+    else strokeSegment(bctx, points[i - 1], points[i], strokeOpts);
+  };
+
+  // The very first point is drawn synchronously (no rAF round-trip) so a
+  // plain tap with no movement still leaves a mark immediately.
+  {
+    const [x, y] = eventXY(e);
+    addSample(x, y, pressureOf(e));
+    compositeRect(x - pad, y - pad, x + pad, y + pad);
+  }
+
+  // Batches the (potentially very high-frequency, on mobile) pointermove
+  // stream down to one canvas update per animation frame, via
+  // getCoalescedEvents() so no in-between hardware sample is lost.
+  const move = rafPointerBatcher((events) => {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const ev of events) {
+      const [x, y] = eventXY(ev);
+      minX = Math.min(minX, x); minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
+      addSample(x, y, pressureOf(ev));
+    }
+    compositeRect(minX - pad, minY - pad, maxX + pad, maxY + pad);
+  });
   const up = () => {
     window.removeEventListener('pointermove', move);
     window.removeEventListener('pointerup', up);
+    move.flush(); // don't drop a batch still waiting on its rAF when the pointer lifts
     preview.remove();
     finishFreehand(points, page, wrap, toolId, settings);
   };
@@ -1184,11 +1222,18 @@ const BRUSH_STYLES = {
 };
 let sigStyleId = 'pen';
 let clearSignatureLayers = () => {};
+let resizeSigCanvases = () => {};
 
 export function initSignatureModal(onReady) {
   const modal = $('#sig-modal');
   const canvas = $('#sig-canvas');
   const ctx = canvas.getContext('2d');
+  // The <canvas> tag's own width/height attributes (500x200) set the
+  // authoritative aspect ratio; the backing store is then resized up to
+  // match its actual displayed CSS size (see resizeSigCanvases below), so
+  // the exported signature is crisp on any screen/DPI instead of always
+  // being a fixed, often-upscaled, 500x200 bitmap.
+  const aspect = canvas.height / canvas.width;
 
   // Two offscreen layers: `base` accumulates every finished stroke (each
   // composited once, at its own style's opacity/blend mode); `stroke`
@@ -1205,21 +1250,46 @@ export function initSignatureModal(onReady) {
   strokeCtx.lineCap = 'round';
   strokeCtx.lineJoin = 'round';
 
+  resizeSigCanvases = () => {
+    const cssW = canvas.getBoundingClientRect().width || canvas.width;
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    const w = Math.max(1, Math.round(cssW * dpr));
+    const h = Math.max(1, Math.round(w * aspect));
+    if (canvas.width === w && canvas.height === h) return;
+    canvas.width = w; canvas.height = h;
+    base.width = w; base.height = h;
+    strokeLayer.width = w; strokeLayer.height = h;
+    strokeCtx.lineCap = 'round';
+    strokeCtx.lineJoin = 'round';
+  };
+
   let drawing = false;
   let last = null; // { x, y, pressure }
   let activeStyle = BRUSH_STYLES.pen;
 
-  const redraw = () => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Re-composites only the sub-rectangle a batch of new segments actually
+  // touched (padded for stroke width + antialiasing) instead of the whole
+  // canvas -- with the higher-resolution backing store above, redrawing
+  // everything on every frame would be exactly the kind of full-canvas
+  // clear+composite that made mobile drawing feel slow elsewhere in this
+  // app (see startFreehandDraw's comment).
+  const redrawRect = (x0, y0, x1, y1) => {
+    const rx = Math.max(0, Math.floor(x0));
+    const ry = Math.max(0, Math.floor(y0));
+    const rw = Math.min(canvas.width, Math.ceil(x1)) - rx;
+    const rh = Math.min(canvas.height, Math.ceil(y1)) - ry;
+    if (rw <= 0 || rh <= 0) return;
+    ctx.clearRect(rx, ry, rw, rh);
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
-    ctx.drawImage(base, 0, 0);
+    ctx.drawImage(base, rx, ry, rw, rh, rx, ry, rw, rh);
     ctx.globalAlpha = activeStyle.opacity;
     ctx.globalCompositeOperation = activeStyle.composite;
-    ctx.drawImage(strokeLayer, 0, 0);
+    ctx.drawImage(strokeLayer, rx, ry, rw, rh, rx, ry, rw, rh);
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
   };
+  const redrawFull = () => redrawRect(0, 0, canvas.width, canvas.height);
 
   const pos = (e) => {
     const r = canvas.getBoundingClientRect();
@@ -1239,24 +1309,39 @@ export function initSignatureModal(onReady) {
     const p = pos(e);
     last = p;
     // A tap with no movement still leaves a dot.
+    const r = widthFor(p.pressure) / 2;
     strokeCtx.beginPath();
-    strokeCtx.arc(p.x, p.y, widthFor(p.pressure) / 2, 0, Math.PI * 2);
+    strokeCtx.arc(p.x, p.y, r, 0, Math.PI * 2);
     strokeCtx.fill();
-    redraw();
+    redrawRect(p.x - r - 2, p.y - r - 2, p.x + r + 2, p.y + r + 2);
   });
-  canvas.addEventListener('pointermove', (e) => {
+  // Batches the (potentially very high-frequency, on mobile) pointermove
+  // stream down to one canvas update per animation frame, via
+  // getCoalescedEvents() so no in-between hardware sample is lost.
+  const move = rafPointerBatcher((events) => {
     if (!drawing) return;
-    const p = pos(e);
-    strokeCtx.lineWidth = widthFor((last.pressure + p.pressure) / 2);
-    strokeCtx.beginPath();
-    strokeCtx.moveTo(last.x, last.y);
-    strokeCtx.lineTo(p.x, p.y);
-    strokeCtx.stroke();
-    last = p;
-    redraw();
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const ev of events) {
+      const p = pos(ev);
+      const w = widthFor((last.pressure + p.pressure) / 2);
+      const pad = w / 2 + 2;
+      strokeCtx.lineWidth = w;
+      strokeCtx.beginPath();
+      strokeCtx.moveTo(last.x, last.y);
+      strokeCtx.lineTo(p.x, p.y);
+      strokeCtx.stroke();
+      minX = Math.min(minX, last.x - pad, p.x - pad);
+      minY = Math.min(minY, last.y - pad, p.y - pad);
+      maxX = Math.max(maxX, last.x + pad, p.x + pad);
+      maxY = Math.max(maxY, last.y + pad, p.y + pad);
+      last = p;
+    }
+    redrawRect(minX, minY, maxX, maxY);
   });
+  canvas.addEventListener('pointermove', move);
   const endStroke = () => {
     if (!drawing) return;
+    move.flush(); // process any batch still waiting on its rAF before ending, so the last segment isn't dropped
     drawing = false;
     // Bake the finished stroke into the base layer at its own style's
     // opacity/blend mode, exactly once, then clear it for the next stroke.
@@ -1266,7 +1351,7 @@ export function initSignatureModal(onReady) {
     baseCtx.globalAlpha = 1;
     baseCtx.globalCompositeOperation = 'source-over';
     strokeCtx.clearRect(0, 0, strokeLayer.width, strokeLayer.height);
-    redraw();
+    redrawFull();
   };
   canvas.addEventListener('pointerup', endStroke);
   canvas.addEventListener('pointercancel', endStroke);
@@ -1304,8 +1389,11 @@ export function initSignatureModal(onReady) {
 }
 
 export function openSignatureModal() {
-  clearSignatureLayers();
+  // Unhide first: sizing needs layout, and the modal's box (hence the
+  // canvas's actual displayed CSS width) isn't measurable while hidden.
   $('#sig-modal').hidden = false;
+  resizeSigCanvases();
+  clearSignatureLayers();
 }
 
 function trimCanvas(canvas) {

@@ -150,6 +150,35 @@ export function strokeFullPath(ctx, points, opts) {
   for (let i = 1; i < points.length; i++) strokeSegment(ctx, points[i - 1], points[i], opts);
 }
 
+// Coalesces a fast stream of pointermove events (mobile touch/pen can fire
+// far more often than the screen can redraw) down to at most one callback
+// per animation frame, without dropping precision: each raw event's
+// getCoalescedEvents() sub-samples (the OS/browser's own higher-frequency
+// hardware samples between rendered frames) are still passed through in
+// full, just batched into one array delivered once per frame instead of
+// triggering canvas work synchronously on every single event. Returns a
+// pointermove listener; call cancel() to drop a still-pending frame (e.g.
+// on pointerup, after a final manual flush).
+export function rafPointerBatcher(onFrame) {
+  let pending = [];
+  let rafId = null;
+  const flush = () => {
+    rafId = null;
+    if (!pending.length) return;
+    const events = pending;
+    pending = [];
+    onFrame(events);
+  };
+  const listener = (ev) => {
+    const samples = ev.getCoalescedEvents ? ev.getCoalescedEvents() : null;
+    if (samples && samples.length) pending.push(...samples); else pending.push(ev);
+    if (rafId === null) rafId = requestAnimationFrame(flush);
+  };
+  listener.flush = flush;
+  listener.cancel = () => { if (rafId !== null) cancelAnimationFrame(rafId); rafId = null; pending = []; };
+  return listener;
+}
+
 export const state = {
   // Open documents, one per tab. Each holds its own sources/pages/scroll
   // position so switching tabs restores exactly what you left.

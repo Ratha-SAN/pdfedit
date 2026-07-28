@@ -21,7 +21,10 @@ support. No backend, no accounts — documents never leave your machine.
   mode), not just a color — and the stroke width responds to real pointer
   pressure from a stylus or force-sensitive touch (mouse/plain touch falls
   back to a fixed mid-range width, since there's no pressure signal to
-  read).
+  read). The canvas renders at the display's actual pixel density (not a
+  fixed low-res bitmap), so the signature stays crisp at any screen size,
+  and drawing stays smooth on mobile since each frame only redraws the
+  small area a stroke actually touched rather than the whole canvas.
 - **Draw** — a sidebar section (tools arranged in a compact grid) with Pen,
   Pencil, Marker, Highlighter, Shapes (rectangle/ellipse/line/arrow, with
   optional fill), and an Eraser. Color, thickness, and line style
@@ -34,7 +37,9 @@ support. No backend, no accounts — documents never leave your machine.
   touch (mouse/plain touch falls back to a fixed mid-range width), and each
   tool varies by a different amount — pencil swings widest (a soft point
   goes from a hairline to a smudge), a highlighter's chisel tip stays
-  closest to one width regardless of pressure. Unlike the one-shot Insert
+  closest to one width regardless of pressure. Each frame only redraws the
+  small area a stroke actually touched (not the whole page), keeping
+  drawing smooth on mobile. Unlike the one-shot Insert
   tools, a Draw tool stays active across multiple strokes until you turn it
   off. The Eraser deletes by touching a stroke or shape's actual drawn
   shape (not just its bounding box) — dragging through the empty middle of
