@@ -1,4 +1,4 @@
-import { state, $, showBusy, hideBusy, FONT_STACKS, FONT_FAMILY_NAME, normalizeFontId, DRAW_TOOL_STYLES, dashPattern } from './state.js';
+import { state, $, showBusy, hideBusy, FONT_STACKS, FONT_FAMILY_NAME, normalizeFontId, DRAW_TOOL_STYLES, dashPattern, strokeFullPath } from './state.js';
 import { t } from './i18n.js';
 
 const { PDFDocument, degrees, rgb, BlendMode } = PDFLib;
@@ -240,20 +240,22 @@ const DRAW_SUPERSAMPLE = 2;
 function rasterizeDraw(item) {
   const SS = DRAW_SUPERSAMPLE;
   const style = DRAW_TOOL_STYLES[item.tool] || DRAW_TOOL_STYLES.pen;
+  const w = Math.max(1, Math.ceil(item.natW * SS));
+  const h = Math.max(1, Math.ceil(item.natH * SS));
+
+  const buf = document.createElement('canvas');
+  buf.width = w; buf.height = h;
+  const bctx = buf.getContext('2d');
+  bctx.scale(SS, SS);
+  const minWidth = item.size * style.minRatio;
+  const dash = dashPattern(item.dash, item.size);
+  strokeFullPath(bctx, item.points, { color: item.color, minWidth, maxWidth: item.size, cap: style.cap, dash });
+
   const canvas = document.createElement('canvas');
-  canvas.width = Math.max(1, Math.ceil(item.natW * SS));
-  canvas.height = Math.max(1, Math.ceil(item.natH * SS));
+  canvas.width = w; canvas.height = h;
   const ctx = canvas.getContext('2d');
-  ctx.scale(SS, SS);
   ctx.globalAlpha = style.opacity;
-  ctx.lineCap = style.cap;
-  ctx.lineJoin = style.cap === 'round' ? 'round' : 'miter';
-  ctx.strokeStyle = item.color;
-  ctx.lineWidth = item.size;
-  ctx.setLineDash(dashPattern(item.dash, item.size) || []);
-  ctx.beginPath();
-  item.points.forEach(([x, y], i) => { if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); });
-  ctx.stroke();
+  ctx.drawImage(buf, 0, 0);
   return canvas;
 }
 

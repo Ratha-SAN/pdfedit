@@ -64,15 +64,20 @@ export function normalizeFontId(id) {
 }
 
 // Each freehand draw tool is a distinct feel, not just a line -- opacity,
-// blend mode, and cap style are fixed per tool (what makes a marker read as
-// a marker and not a thin pen), while color/size/dash stay user-editable via
-// state.draw. Shared by editor.js (live SVG rendering) and exporter.js
-// (canvas rasterization for the exported PDF) so both draw identically.
+// blend mode, cap style, and how much a stroke's width reacts to pointer
+// pressure are all fixed per tool (what makes a marker read as a marker and
+// not a thin pen), while color/size/dash stay user-editable via state.draw.
+// minRatio is the stroke's thinnest point as a fraction of the user's
+// thickness setting (the fattest point, at full pressure) -- pencil varies
+// the most (a soft point can go from a hairline to a smudge), highlighter
+// the least (a real chisel tip stays close to one width regardless of how
+// hard you press). Shared by editor.js (live canvas rendering) and
+// exporter.js (rasterization for the exported PDF) so both draw identically.
 export const DRAW_TOOL_STYLES = {
-  pen:         { opacity: 1,    composite: 'source-over', cap: 'round' },
-  pencil:      { opacity: 0.75, composite: 'source-over', cap: 'round' },
-  marker:      { opacity: 0.55, composite: 'multiply',    cap: 'square' },
-  highlighter: { opacity: 0.35, composite: 'multiply',    cap: 'square' },
+  pen:         { opacity: 1,    composite: 'source-over', cap: 'round',  minRatio: 0.55 },
+  pencil:      { opacity: 0.75, composite: 'source-over', cap: 'round',  minRatio: 0.35 },
+  marker:      { opacity: 0.55, composite: 'multiply',    cap: 'square', minRatio: 0.65 },
+  highlighter: { opacity: 0.35, composite: 'multiply',    cap: 'square', minRatio: 0.8 },
 };
 
 // Suggested starting color/thickness for each tool -- applied whenever the
@@ -94,6 +99,55 @@ export function dashPattern(dash, size) {
   if (dash === 'dashed') return [size * 3, size * 2];
   if (dash === 'dotted') return [size * 0.01, size * 1.8]; // paired with a round/square cap, renders as dots
   return null;
+}
+
+/* ---------- pressure-sensitive freehand strokes ----------
+   A stroke's points are [x, y, pressure] triples (pressure 0-1; a real
+   stylus or force-sensitive touch reports one, mouse/plain touch falls
+   back to a fixed mid-range value so drawing still gets a reasonable
+   width rather than the thinnest possible line -- same convention the
+   signature pad already established). Every segment between two
+   consecutive points is stroked individually with its own interpolated
+   width (averaging the two endpoints' pressure), which is the standard
+   technique for a variable-width line in Canvas 2D. Shared by editor.js
+   (live drawing + rendering placed items) and exporter.js (rasterizing
+   for the exported PDF) so both produce the same stroke. */
+
+function widthAt(pressure, minWidth, maxWidth) {
+  return minWidth + (maxWidth - minWidth) * pressure;
+}
+
+export function strokeSegment(ctx, a, b, opts) {
+  const { color, minWidth, maxWidth, cap = 'round', dash = null } = opts;
+  const pressure = ((a[2] ?? 0.5) + (b[2] ?? 0.5)) / 2;
+  ctx.strokeStyle = color;
+  ctx.lineCap = cap;
+  ctx.lineJoin = cap === 'round' ? 'round' : 'miter';
+  ctx.lineWidth = widthAt(pressure, minWidth, maxWidth);
+  ctx.setLineDash(dash || []);
+  ctx.beginPath();
+  ctx.moveTo(a[0], a[1]);
+  ctx.lineTo(b[0], b[1]);
+  ctx.stroke();
+}
+
+export function strokeDot(ctx, p, opts) {
+  const { color, minWidth, maxWidth } = opts;
+  const r = widthAt(p[2] ?? 0.5, minWidth, maxWidth) / 2;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(p[0], p[1], r, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// Strokes every segment of a complete (already-finished) stroke in one
+// call -- used wherever the whole path is drawn at once (a placed item's
+// canvas, or export rasterization), as opposed to the live preview which
+// draws incrementally as new points arrive.
+export function strokeFullPath(ctx, points, opts) {
+  if (!points.length) return;
+  if (points.length === 1) { strokeDot(ctx, points[0], opts); return; }
+  for (let i = 1; i < points.length; i++) strokeSegment(ctx, points[i - 1], points[i], opts);
 }
 
 export const state = {
