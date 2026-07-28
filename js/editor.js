@@ -1,4 +1,4 @@
-import { state, newId, $, setHint, FONT_STACKS, FONT_FAMILY_NAME, KHMER_FONTS, LATIN_FONTS, DEFAULT_FONT, normalizeFontId, DRAW_TOOL_STYLES, dashPattern } from './state.js';
+import { state, newId, $, setHint, FONT_STACKS, FONT_FAMILY_NAME, KHMER_FONTS, LATIN_FONTS, DEFAULT_FONT, normalizeFontId, DRAW_TOOL_STYLES, dashPattern, strokeSegment, strokeDot, strokeFullPath } from './state.js';
 import { t } from './i18n.js';
 import { recognizeArea } from './ocr.js';
 
@@ -381,37 +381,64 @@ function startOcrAreaSelect(e, page, wrap) {
 // a drawing tool is meant to draw many strokes in a row, stopping only when
 // the user picks another tool (or clicks the same one again to toggle off,
 // wired in app.js).
+//
+// The live preview is a canvas, not SVG, because a pressure-variable-width
+// line has to be built from many individually-stroked segments (Canvas 2D
+// has no notion of a single path with a width that changes along its
+// length) -- the same technique the signature pad already uses. Segments
+// are stroked once onto a full-opacity scratch buffer as they arrive (so
+// self-overlapping segments within one stroke, e.g. a loop crossing
+// itself, never double-blend against each other), and the visible canvas
+// is just a cheap re-composite of that buffer with the tool's own
+// opacity/blend-mode applied exactly once per frame.
 function startFreehandDraw(e, page, wrap) {
   const scale = pageScale(page);
   const rect = wrap.getBoundingClientRect();
   const settings = state.draw;
   const toolId = settings.tool;
   const style = DRAW_TOOL_STYLES[toolId] || DRAW_TOOL_STYLES.pen;
+  const maxWidth = settings.size;
+  const minWidth = maxWidth * style.minRatio;
+  const dash = dashPattern(settings.dash, maxWidth);
+  const strokeOpts = { color: settings.color, minWidth, maxWidth, cap: style.cap, dash };
 
-  // The live preview is drawn directly in absolute page-space (spanning the
-  // whole page) so growing the stroke never requires recomputing a bounding
-  // box mid-gesture -- that only happens once, in finishFreehand(), when the
-  // final item's tight box and locally-relative points are known.
-  const preview = document.createElementNS(SVG_NS, 'svg');
-  preview.setAttribute('viewBox', `0 0 ${page.vw} ${page.vh}`);
-  preview.style.cssText = `position:absolute; left:0; top:0; width:${page.vw * scale}px; height:${page.vh * scale}px; pointer-events:none; opacity:${style.opacity}; mix-blend-mode:${style.composite === 'multiply' ? 'multiply' : 'normal'};`;
-  const path = document.createElementNS(SVG_NS, 'path');
-  path.setAttribute('fill', 'none');
-  path.setAttribute('stroke', settings.color);
-  path.setAttribute('stroke-width', settings.size);
-  path.setAttribute('stroke-linecap', style.cap);
-  path.setAttribute('stroke-linejoin', style.cap === 'round' ? 'round' : 'miter');
-  const dash = dashPattern(settings.dash, settings.size);
-  if (dash) path.setAttribute('stroke-dasharray', dash.join(' '));
-  preview.appendChild(path);
+  const SS = Math.min(window.devicePixelRatio || 1, 2) * 1.5;
+  const pxScale = scale * SS;
+  const pxW = Math.max(1, Math.round(page.vw * pxScale));
+  const pxH = Math.max(1, Math.round(page.vh * pxScale));
+
+  const buffer = document.createElement('canvas');
+  buffer.width = pxW; buffer.height = pxH;
+  const bctx = buffer.getContext('2d');
+  bctx.scale(pxScale, pxScale);
+
+  const preview = document.createElement('canvas');
+  preview.width = pxW; preview.height = pxH;
+  preview.style.cssText = `position:absolute; left:0; top:0; width:${page.vw * scale}px; height:${page.vh * scale}px; pointer-events:none;`;
   wrap.appendChild(preview);
+  const pctx = preview.getContext('2d');
 
   const points = [];
+  let drawnUpTo = 0;
+  const compositePreview = () => {
+    pctx.clearRect(0, 0, pxW, pxH);
+    pctx.globalAlpha = style.opacity;
+    pctx.globalCompositeOperation = style.composite === 'multiply' ? 'multiply' : 'source-over';
+    pctx.drawImage(buffer, 0, 0);
+    pctx.globalAlpha = 1;
+    pctx.globalCompositeOperation = 'source-over';
+  };
+  const pressureOf = (ev) => (ev.pressure > 0 ? ev.pressure : 0.5); // no force sensor -> a reasonable mid-range default
   const addPoint = (ev) => {
     const x = Math.max(0, Math.min(page.vw, (ev.clientX - rect.left) / scale));
     const y = Math.max(0, Math.min(page.vh, (ev.clientY - rect.top) / scale));
-    points.push([x, y]);
-    path.setAttribute('d', 'M ' + points.map(([px, py]) => `${px},${py}`).join(' L '));
+    points.push([x, y, pressureOf(ev)]);
+    if (points.length === 1) strokeDot(bctx, points[0], strokeOpts);
+    while (drawnUpTo < points.length - 1) {
+      strokeSegment(bctx, points[drawnUpTo], points[drawnUpTo + 1], strokeOpts);
+      drawnUpTo++;
+    }
+    compositePreview();
   };
   addPoint(e);
 
@@ -441,7 +468,7 @@ function finishFreehand(points, page, wrap, toolId, settings) {
     id: newId(), type: 'draw', tool: toolId,
     color: settings.color, size: settings.size, dash: settings.dash,
     x: minX, y: minY, w, h, natW: w, natH: h,
-    points: points.map(([x, y]) => [x - minX, y - minY]),
+    points: points.map(([x, y, p]) => [x - minX, y - minY, p]),
   };
   page.items.push(item);
   wrap.appendChild(buildItemEl(item, page, wrap));
@@ -811,27 +838,41 @@ function buildItemEl(item, page, wrap) {
   } else if (item.type === 'draw') {
     el.classList.add('item-draw');
     const style = DRAW_TOOL_STYLES[item.tool] || DRAW_TOOL_STYLES.pen;
-    const svg = document.createElementNS(SVG_NS, 'svg');
-    svg.setAttribute('viewBox', `0 0 ${item.natW} ${item.natH}`);
-    svg.style.opacity = style.opacity;
-    svg.style.mixBlendMode = style.composite === 'multiply' ? 'multiply' : 'normal';
-    const path = document.createElementNS(SVG_NS, 'path');
-    path.setAttribute('fill', 'none');
-    path.setAttribute('stroke-linejoin', style.cap === 'round' ? 'round' : 'miter');
-    svg.appendChild(path);
-    el.appendChild(svg);
+    const canvas = document.createElement('canvas');
+    el.appendChild(canvas);
     el.style.width = item.w * scale + 'px';
     el.style.height = item.h * scale + 'px';
 
-    const syncDraw = () => {
-      path.setAttribute('d', 'M ' + item.points.map(([x, y]) => `${x},${y}`).join(' L '));
-      path.setAttribute('stroke', item.color);
-      path.setAttribute('stroke-width', item.size);
-      path.setAttribute('stroke-linecap', style.cap);
+    // Rebuilds the whole bitmap at the page's current scale -- cheap enough
+    // to call on every toolbar edit (color/thickness/style), and correct
+    // for zoom changes since renderEditView() already reconstructs every
+    // item from scratch on those. A pure CSS stretch during an active
+    // resize drag (not calling this per pointermove) matches how images
+    // already behave here: briefly a little soft, sharp again once
+    // startResize's move handler finishes and this item is next rebuilt.
+    const redrawDraw = () => {
+      const SS = Math.min(window.devicePixelRatio || 1, 2) * 1.5;
+      const pxScale = scale * SS;
+      canvas.width = Math.max(1, Math.round(item.natW * pxScale));
+      canvas.height = Math.max(1, Math.round(item.natH * pxScale));
+      const ctx = canvas.getContext('2d');
+      // Stroke the full (possibly self-overlapping) path onto a full-
+      // opacity scratch buffer first, then composite that buffer once --
+      // same reasoning as the live preview's buffer/visible split.
+      const buf = document.createElement('canvas');
+      buf.width = canvas.width; buf.height = canvas.height;
+      const bctx = buf.getContext('2d');
+      bctx.scale(pxScale, pxScale);
+      const minWidth = item.size * style.minRatio;
       const dash = dashPattern(item.dash, item.size);
-      if (dash) path.setAttribute('stroke-dasharray', dash.join(' ')); else path.removeAttribute('stroke-dasharray');
+      strokeFullPath(bctx, item.points, { color: item.color, minWidth, maxWidth: item.size, cap: style.cap, dash });
+      ctx.globalAlpha = style.opacity;
+      ctx.globalCompositeOperation = style.composite === 'multiply' ? 'multiply' : 'source-over';
+      ctx.drawImage(buf, 0, 0);
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'source-over';
     };
-    syncDraw();
+    redrawDraw();
 
     const tb = document.createElement('div');
     tb.className = 'item-toolbar';
@@ -846,9 +887,9 @@ function buildItemEl(item, page, wrap) {
     const sizeInput = tb.querySelector('input[type=range]');
     const styleSelect = tb.querySelector('select');
     styleSelect.value = item.dash;
-    colorInput.addEventListener('input', () => { item.color = colorInput.value; syncDraw(); });
-    sizeInput.addEventListener('input', () => { item.size = Number(sizeInput.value) || 1; syncDraw(); });
-    styleSelect.addEventListener('change', () => { item.dash = styleSelect.value; syncDraw(); });
+    colorInput.addEventListener('input', () => { item.color = colorInput.value; redrawDraw(); });
+    sizeInput.addEventListener('input', () => { item.size = Number(sizeInput.value) || 1; redrawDraw(); });
+    styleSelect.addEventListener('change', () => { item.dash = styleSelect.value; redrawDraw(); });
     tb.addEventListener('pointerdown', (e) => e.stopPropagation());
     el.appendChild(tb);
   } else if (item.type === 'shape') {

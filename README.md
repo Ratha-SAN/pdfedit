@@ -22,18 +22,24 @@ support. No backend, no accounts — documents never leave your machine.
   pressure from a stylus or force-sensitive touch (mouse/plain touch falls
   back to a fixed mid-range width, since there's no pressure signal to
   read).
-- **Draw** — a sidebar section with Pen, Pencil, Marker, Highlighter,
-  Shapes (rectangle/ellipse/line/arrow, with optional fill), and an Eraser.
-  Color, thickness, and line style (solid/dashed/dotted) are all adjustable
-  before drawing and again afterward from each stroke's own toolbar once
-  selected. Each freehand tool keeps its own look (marker and highlighter
-  darken where strokes overlap, matching a real marker/highlighter) via
-  opacity and blend mode, not just width. Unlike the one-shot Insert tools,
-  a Draw tool stays active across multiple strokes until you turn it off.
-  The Eraser deletes by touching a stroke or shape's actual drawn shape
-  (not just its bounding box) — dragging through the empty middle of an
-  unfilled rectangle leaves it alone, but touching its outline (or anywhere
-  inside a filled one) removes it.
+- **Draw** — a sidebar section (tools arranged in a compact grid) with Pen,
+  Pencil, Marker, Highlighter, Shapes (rectangle/ellipse/line/arrow, with
+  optional fill), and an Eraser. Color, thickness, and line style
+  (solid/dashed/dotted) are all adjustable before drawing and again
+  afterward from each stroke's own toolbar once selected. Each freehand
+  tool keeps its own look (marker and highlighter darken where strokes
+  overlap, matching a real marker/highlighter) via opacity and blend mode,
+  not just width. The four freehand tools are pressure-sensitive: stroke
+  width responds to real pointer pressure from a stylus or force-sensitive
+  touch (mouse/plain touch falls back to a fixed mid-range width), and each
+  tool varies by a different amount — pencil swings widest (a soft point
+  goes from a hairline to a smudge), a highlighter's chisel tip stays
+  closest to one width regardless of pressure. Unlike the one-shot Insert
+  tools, a Draw tool stays active across multiple strokes until you turn it
+  off. The Eraser deletes by touching a stroke or shape's actual drawn
+  shape (not just its bounding box) — dragging through the empty middle of
+  an unfilled rectangle leaves it alone, but touching its outline (or
+  anywhere inside a filled one) removes it.
 - **Left sidebar** — tools live in collapsible sections (File, Insert,
   Recognize text, Pages) rather than one long toolbar row, flush against the
   top bar; document tabs sit above the page area, not the sidebar. In Pages
