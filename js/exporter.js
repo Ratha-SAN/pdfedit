@@ -125,15 +125,36 @@ async function addRasterizedPage(out, page, preset) {
   return outPage;
 }
 
-function outputName() {
+export function outputName() {
   return (state.sources[0]?.name || 'document.pdf').replace(/\.pdf$/i, '') + '-edited.pdf';
 }
 
-export async function exportPdf() {
+export async function exportPdf(filename) {
   showBusy(currentCompression() ? t('compressing') : t('buildingPdf'));
   try {
     const bytes = await buildPdfBytes();
-    download(bytes, outputName());
+    download(bytes, filename || outputName());
+  } finally {
+    hideBusy();
+  }
+}
+
+// Lets the user pick the exact folder + filename via the browser's native
+// Save-As dialog (Chrome/Edge only -- no such API exists for Firefox/Safari,
+// which fall back to exportPdf()'s plain download instead). Asks for the
+// destination *before* building the PDF so cancelling the picker (throws
+// AbortError, left for the caller to swallow) never pays for the build.
+export async function exportPdfToFileHandle(filename) {
+  const handle = await window.showSaveFilePicker({
+    suggestedName: filename,
+    types: [{ description: 'PDF document', accept: { 'application/pdf': ['.pdf'] } }],
+  });
+  showBusy(currentCompression() ? t('compressing') : t('buildingPdf'));
+  try {
+    const bytes = await buildPdfBytes();
+    const writable = await handle.createWritable();
+    await writable.write(bytes);
+    await writable.close();
   } finally {
     hideBusy();
   }

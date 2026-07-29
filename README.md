@@ -7,11 +7,10 @@ support. No backend, no accounts — documents never leave your machine.
 
 - **Upload** a PDF by drag-and-drop or file picker.
 - **Top bar** — a single row, left to right: brand, language, theme, mode
-  tabs, page view (continuous/single/double + zoom), and (in Edit mode) a
-  compression picker with a live estimated output size; only **Save PDF** and
-  **Print** sit on the right, grouped together. Flush against the sidebar
-  below it, with no gap. On narrow screens the whole bar scrolls horizontally
-  instead of wrapping onto extra lines.
+  tabs, and (in Edit mode) page view (continuous/single/double + zoom); only
+  **Save PDF** and **Print** sit on the right, grouped together. Flush
+  against the sidebar below it, with no gap. On narrow screens the whole bar
+  scrolls horizontally instead of wrapping onto extra lines.
 - **Edit mode** — add text boxes (Khmer or English), insert PNG/JPEG images,
   and place a signature (drawn on a canvas or uploaded as PNG) anywhere on any
   page. Drag to move, corner handle to resize, × to delete, and an **Edit**
@@ -56,10 +55,8 @@ support. No backend, no accounts — documents never leave your machine.
   anywhere inside a filled one) removes it.
 - **Left sidebar** — tools live in collapsible sections (File, Insert,
   Recognize text, Pages) rather than one long toolbar row, flush against the
-  top bar; document tabs sit above the page area, not the sidebar. In Pages
-  mode the compression picker moves down into the Pages section (the top
-  bar's view controls aren't relevant there). On phones the sidebar stacks
-  above the document instead of taking width. A **Features** button pinned to
+  top bar; document tabs sit above the page area, not the sidebar. On phones
+  the sidebar stacks above the document instead of taking width. A **Features** button pinned to
   the bottom of the sidebar opens a bilingual (English/Khmer) page describing
   everything the app can do, as an in-page modal (an embedded iframe, not a
   separate tab or window), so the current document is never disturbed.
@@ -73,11 +70,14 @@ support. No backend, no accounts — documents never leave your machine.
   new one no longer replaces what you were working on.
 - **Opens images too** — PNG/JPEG/WebP files open as a one-page document, so a
   photographed page can be annotated, OCR'd or exported like any PDF.
-- **Save PDF** — downloads the modified document, with an optional compression
-  level (original / high quality / balanced / smallest). Picking a level
-  samples a couple of representative pages at that level's resolution/quality
-  and extrapolates, so the top bar shows an estimated output size (e.g. `~7
-  MB`) before you commit to exporting.
+- **Save PDF** — opens a popup to edit the filename, pick an output size
+  (original / high quality / balanced / smallest — picking a level samples a
+  couple of representative pages at that level's resolution/quality and
+  extrapolates to a live estimate, e.g. `~7 MB`, before you commit), and
+  choose where it goes: **Save** downloads to the browser's default
+  downloads folder, while **Choose location…** opens the browser's native
+  Save-As dialog to pick the exact folder and filename (Chrome/Edge only —
+  browsers without that API just get **Save**, with a note explaining why).
 - **Khmer text** renders correctly (subscript consonants, vowel reordering)
   in both the editor and the exported PDF.
 - **Recognize text (OCR)** — one *Recognize text* menu picks both the scope
