@@ -1,5 +1,5 @@
 import { state, $, showBusy, hideBusy, setHint, addSource, addDoc, closeDoc, activeDoc, isImageFile, DRAW_TOOL_DEFAULT_COLOR, DRAW_TOOL_DEFAULT_SIZE } from './state.js';
-import { renderEditView, armTool, initSignatureModal, openSignatureModal, initViewControls, currentPage, fileToDataUrl, loadImage, deselectAll, refreshEditI18n, signatureUndo, signatureRedo } from './editor.js';
+import { renderEditView, armTool, initSignatureModal, openSignatureModal, initViewControls, currentPage, fileToDataUrl, loadImage, deselectAll, refreshEditI18n, signatureUndo, signatureRedo, refreshPageItems } from './editor.js';
 import { renderPagesView, initPagesMode, refreshPagesI18n } from './pagesMode.js';
 import { exportPdf, exportPdfToFileHandle, printPdf, estimateExportSize, formatBytes, outputName } from './exporter.js';
 import { recognizePage, initOcr } from './ocr.js';
@@ -393,18 +393,18 @@ document.querySelectorAll('.modal').forEach((m) =>
 
 /* ---------- undo/redo ---------- */
 
-async function runUndo() {
+function runUndo() {
   const page = undo();
   if (!page) return;
   deselectAll();
-  await renderEditView();
+  refreshPageItems(page);
   refreshUndoRedoButtons();
 }
-async function runRedo() {
+function runRedo() {
   const page = redo();
   if (!page) return;
   deselectAll();
-  await renderEditView();
+  refreshPageItems(page);
   refreshUndoRedoButtons();
 }
 $('#btn-undo').addEventListener('click', runUndo);

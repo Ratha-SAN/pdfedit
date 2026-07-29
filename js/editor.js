@@ -64,6 +64,18 @@ export async function renderEditView() {
   updatePlacingCursor();
 }
 
+// Re-renders just one page's item overlay (used by undo/redo) without
+// touching its canvas -- calling the full renderEditView() there would
+// tear down and lazily re-rasterize every visible page's bitmap for a
+// change that's almost always confined to a single page's items, which
+// visibly flashed the page blank for a moment while it re-rendered.
+export function refreshPageItems(page) {
+  const wrap = document.querySelector(`.page-wrap[data-page-id="${page.id}"]`);
+  if (!wrap) return; // not currently rendered (different page in single/double view, or Pages mode)
+  wrap.querySelectorAll(':scope > .item').forEach((el) => el.remove());
+  for (const item of page.items) wrap.appendChild(buildItemEl(item, page, wrap));
+}
+
 function buildPageWrap(page, index) {
   const scale = pageScale(page);
   const wrap = document.createElement('div');
