@@ -1,6 +1,7 @@
 import { state, newId, $, setHint, FONT_STACKS, FONT_FAMILY_NAME, KHMER_FONTS, LATIN_FONTS, DEFAULT_FONT, normalizeFontId, DRAW_TOOL_STYLES, dashPattern, strokeSegment, strokeDot, strokeFullPath, rafPointerBatcher } from './state.js';
 import { t } from './i18n.js';
 import { recognizeArea } from './ocr.js';
+import { pushHistory } from './history.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -232,6 +233,7 @@ export function armTool(tool, hint) {
   $('#draw-shape-kinds').hidden = !tool || tool.type !== 'shape';
   $('#draw-settings').hidden = !tool || (tool.type !== 'draw' && tool.type !== 'shape');
   $('#draw-fill-row').hidden = !tool || tool.type !== 'shape' || (tool.shape !== 'rect' && tool.shape !== 'ellipse');
+  $('#draw-color-swatches').hidden = !tool || tool.type !== 'draw' || tool.tool !== 'highlighter';
   updatePlacingCursor();
 }
 
@@ -282,6 +284,7 @@ function onPagePointerDown(e, page, wrap) {
     let h = w * (t.natH / t.natW);
     item = { id: newId(), type: t.kind, x: Math.min(x, page.vw - w), y: Math.min(y, page.vh - h), w, h, dataUrl: t.dataUrl, natW: t.natW, natH: t.natH };
   }
+  pushHistory(page);
   page.items.push(item);
   const el = buildItemEl(item, page, wrap);
   wrap.appendChild(el);
@@ -299,6 +302,7 @@ function startHighlightDraw(e, page, wrap) {
   const startX = (e.clientX - rect.left) / scale;
   const startY = (e.clientY - rect.top) / scale;
   const item = { id: newId(), type: 'highlight', x: startX, y: startY, w: 0, h: 0, color: state.tool.color };
+  pushHistory(page);
   page.items.push(item);
   const el = buildItemEl(item, page, wrap);
   wrap.appendChild(el);
@@ -508,6 +512,7 @@ function finishFreehand(points, page, wrap, toolId, settings) {
     x: minX, y: minY, w, h, natW: w, natH: h,
     points: points.map(([x, y, p]) => [x - minX, y - minY, p]),
   };
+  pushHistory(page);
   page.items.push(item);
   wrap.appendChild(buildItemEl(item, page, wrap));
 }
@@ -638,6 +643,7 @@ function finishShape(x1, y1, x2, y2, page, wrap, settings) {
     item.p1 = [x1 - minX, y1 - minY];
     item.p2 = [x2 - minX, y2 - minY];
   }
+  pushHistory(page);
   page.items.push(item);
   wrap.appendChild(buildItemEl(item, page, wrap));
 }
@@ -718,6 +724,11 @@ function startErase(e, page, wrap) {
   const rect = wrap.getBoundingClientRect();
   const idToEl = new Map();
   wrap.querySelectorAll('.item').forEach((el) => idToEl.set(Number(el.dataset.itemId), el));
+  // Erasing several items across one drag is still a single undo step --
+  // only the first actual removal in the gesture records history, and only
+  // if the gesture ever hits anything (a drag that touches nothing shouldn't
+  // add a no-op undo entry).
+  let historyPushed = false;
 
   const eraseAt = (ev) => {
     const px = (ev.clientX - rect.left) / scale;
@@ -728,6 +739,7 @@ function startErase(e, page, wrap) {
       if (eraseDistance(it, px, py) <= ERASE_RADIUS) hitIds.add(it.id);
     }
     if (!hitIds.size) return;
+    if (!historyPushed) { pushHistory(page); historyPushed = true; }
     for (const id of hitIds) {
       const el = idToEl.get(id);
       if (el) el.remove();
@@ -825,7 +837,8 @@ function buildItemEl(item, page, wrap) {
     };
     editBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (tc.isContentEditable) stopTextEdit(tc); else startTextEdit(tc);
+      if (tc.isContentEditable) stopTextEdit(tc);
+      else { pushHistory(page); startTextEdit(tc); }
       syncEditBtn();
     });
     tc.addEventListener('focus', syncEditBtn);
@@ -1032,6 +1045,7 @@ function buildItemEl(item, page, wrap) {
       // Already selected (this is at least the second mouse interaction
       // with it): let the browser's own mousedown-drag select the text,
       // like any ordinary text, instead of moving the box again.
+      pushHistory(page);
       startTextEdit(tc);
       return;
     }
@@ -1045,6 +1059,7 @@ function buildItemEl(item, page, wrap) {
       const startX = e.clientX, startY = e.clientY;
       const timer = setTimeout(() => {
         cleanup();
+        pushHistory(page);
         startTextEdit(tc);
         if (navigator.vibrate) navigator.vibrate(10);
       }, 450);
@@ -1071,7 +1086,7 @@ function buildItemEl(item, page, wrap) {
   });
   el.addEventListener('dblclick', () => {
     const tc = el.querySelector('.text-content');
-    if (tc) startTextEdit(tc);
+    if (tc) { pushHistory(page); startTextEdit(tc); }
   });
 
   if (item.type === 'text') {
@@ -1128,6 +1143,7 @@ function syncTextSize(item, el, scale) {
 }
 
 function removeItem(item, page, el) {
+  pushHistory(page);
   page.items = page.items.filter((i) => i !== item);
   el.remove();
 }
@@ -1136,7 +1152,12 @@ function startDrag(e, item, page, el) {
   const scale = pageScale(page);
   const startX = e.clientX, startY = e.clientY;
   const origX = item.x, origY = item.y;
+  // Pushed lazily, on the first actual movement -- a plain click-to-select
+  // (pointerdown+pointerup with no movement in between) shouldn't cost an
+  // undo step for a no-op "move."
+  let historyPushed = false;
   const move = (ev) => {
+    if (!historyPushed) { pushHistory(page); historyPushed = true; }
     item.x = Math.max(0, Math.min(page.vw - (item.w || 20), origX + (ev.clientX - startX) / scale));
     item.y = Math.max(0, Math.min(page.vh - (item.h || 20), origY + (ev.clientY - startY) / scale));
     el.style.left = item.x * scale + 'px';
@@ -1158,7 +1179,9 @@ function startResize(e, item, page, el) {
   const origW = item.w, origH = item.h, origFs = item.fontSize;
   const tc = el.querySelector('.text-content');
   const sizeInput = el.querySelector('.item-toolbar input[type=number]');
+  let historyPushed = false;
   const move = (ev) => {
+    if (!historyPushed) { pushHistory(page); historyPushed = true; }
     if (item.type === 'text') {
       const factor = Math.max(0.1, (origW + (ev.clientX - startX) / scale) / origW);
       item.fontSize = Math.max(6, Math.min(120, Math.round(origFs * factor)));
@@ -1221,8 +1244,16 @@ const BRUSH_STYLES = {
   brush:  { color: '#161616', minWidth: 2,   maxWidth: 14,   opacity: 0.85, composite: 'source-over' },
 };
 let sigStyleId = 'pen';
+// Independent of brush style -- picking Marker over Pen changes the width
+// range/opacity/blend, not the ink color, so switching styles doesn't reset
+// whatever color the user has chosen.
+let sigColor = BRUSH_STYLES.pen.color;
 let clearSignatureLayers = () => {};
 let resizeSigCanvases = () => {};
+let sigUndoFn = () => {};
+let sigRedoFn = () => {};
+export function signatureUndo() { sigUndoFn(); }
+export function signatureRedo() { sigRedoFn(); }
 
 export function initSignatureModal(onReady) {
   const modal = $('#sig-modal');
@@ -1262,6 +1293,49 @@ export function initSignatureModal(onReady) {
     strokeCtx.lineCap = 'round';
     strokeCtx.lineJoin = 'round';
   };
+
+  // Per-stroke undo/redo: since strokes are baked into `base` as pixels (not
+  // kept as separate replayable shapes), each undo step is a full snapshot
+  // of `base` taken right before the stroke that's about to be baked in --
+  // undo restores the previous snapshot, redo re-applies the one moved away
+  // from. A handful of ImageData snapshots for a signature (a few strokes at
+  // most) is negligible memory, capped defensively in case of a very long
+  // scribble.
+  const SIG_MAX_HISTORY = 30;
+  let sigUndoStack = [];
+  let sigRedoStack = [];
+  const hasVisiblePixels = (imageData) => {
+    const { data } = imageData;
+    for (let i = 3; i < data.length; i += 4) if (data[i] > 0) return true;
+    return false;
+  };
+  const refreshSigButtons = () => {
+    $('#sig-undo').disabled = !sigUndoStack.length;
+    $('#sig-redo').disabled = !sigRedoStack.length;
+  };
+  const sigUndo = () => {
+    if (!sigUndoStack.length) return;
+    const prev = sigUndoStack.pop();
+    sigRedoStack.push(baseCtx.getImageData(0, 0, base.width, base.height));
+    baseCtx.putImageData(prev, 0, 0);
+    sigDirty = hasVisiblePixels(prev);
+    redrawFull();
+    refreshSigButtons();
+  };
+  const sigRedo = () => {
+    if (!sigRedoStack.length) return;
+    const next = sigRedoStack.pop();
+    sigUndoStack.push(baseCtx.getImageData(0, 0, base.width, base.height));
+    baseCtx.putImageData(next, 0, 0);
+    sigDirty = hasVisiblePixels(next);
+    redrawFull();
+    refreshSigButtons();
+  };
+  sigUndoFn = sigUndo;
+  sigRedoFn = sigRedo;
+  $('#sig-undo').addEventListener('click', sigUndo);
+  $('#sig-redo').addEventListener('click', sigRedo);
+  $('#sig-color').addEventListener('input', (e) => { sigColor = e.target.value; });
 
   let drawing = false;
   // Rolling window of the last two accepted points -- quadratic-curve-
@@ -1334,8 +1408,8 @@ export function initSignatureModal(onReady) {
     activeStyle = BRUSH_STYLES[sigStyleId] || BRUSH_STYLES.pen;
     try { canvas.setPointerCapture(e.pointerId); } catch {}
     strokeCtx.clearRect(0, 0, strokeLayer.width, strokeLayer.height);
-    strokeCtx.fillStyle = activeStyle.color;
-    strokeCtx.strokeStyle = activeStyle.color;
+    strokeCtx.fillStyle = sigColor;
+    strokeCtx.strokeStyle = sigColor;
     const p = pos(e);
     smoothPressure = rawPressureOf(e);
     p0 = p1 = { x: p.x, y: p.y, pressure: smoothPressure };
@@ -1394,6 +1468,12 @@ export function initSignatureModal(onReady) {
     if (!drawing) return;
     move.flush(); // process any batch still waiting on its rAF before ending, so the last segment isn't dropped
     drawing = false;
+    // Snapshot the base layer as it was *before* this stroke, so undo can
+    // restore exactly that; a new stroke invalidates any redo history.
+    sigUndoStack.push(baseCtx.getImageData(0, 0, base.width, base.height));
+    if (sigUndoStack.length > SIG_MAX_HISTORY) sigUndoStack.shift();
+    sigRedoStack = [];
+    refreshSigButtons();
     // Bake the finished stroke into the base layer at its own style's
     // opacity/blend mode, exactly once, then clear it for the next stroke.
     baseCtx.globalAlpha = activeStyle.opacity;
@@ -1419,6 +1499,9 @@ export function initSignatureModal(onReady) {
     strokeCtx.clearRect(0, 0, strokeLayer.width, strokeLayer.height);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     sigDirty = false;
+    sigUndoStack = [];
+    sigRedoStack = [];
+    refreshSigButtons();
   };
   $('#sig-clear').addEventListener('click', clearSignatureLayers);
   $('#sig-upload').addEventListener('click', () => $('#sig-upload-input').click());

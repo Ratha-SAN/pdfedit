@@ -1,10 +1,11 @@
 import { state, $, showBusy, hideBusy, setHint, addSource, addDoc, closeDoc, activeDoc, isImageFile, DRAW_TOOL_DEFAULT_COLOR, DRAW_TOOL_DEFAULT_SIZE } from './state.js';
-import { renderEditView, armTool, initSignatureModal, openSignatureModal, initViewControls, currentPage, fileToDataUrl, loadImage, deselectAll, refreshEditI18n } from './editor.js';
+import { renderEditView, armTool, initSignatureModal, openSignatureModal, initViewControls, currentPage, fileToDataUrl, loadImage, deselectAll, refreshEditI18n, signatureUndo, signatureRedo } from './editor.js';
 import { renderPagesView, initPagesMode, refreshPagesI18n } from './pagesMode.js';
 import { exportPdf, exportPdfToFileHandle, printPdf, estimateExportSize, formatBytes, outputName } from './exporter.js';
 import { recognizePage, initOcr } from './ocr.js';
 import { t, initLang } from './i18n.js';
 import { initTheme } from './theme.js';
+import { undo, redo, refreshButtons as refreshUndoRedoButtons } from './history.js';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('vendor/pdf.worker.min.js', location.href).href;
 
@@ -145,11 +146,16 @@ async function setMode(mode) {
   $('#edit-view').hidden = mode !== 'edit';
   $('#pages-view').hidden = mode !== 'pages';
   $('#topbar-view').hidden = mode !== 'edit';
+  // Undo/redo only tracks item edits (see history.js), which only exist in
+  // Edit mode -- hidden in Pages mode so it doesn't imply Pages-mode
+  // operations (reorder/remove/append/split) are undoable too.
+  $('#topbar-undo-redo').hidden = mode !== 'edit';
   $('#edit-tools').hidden = mode !== 'edit';
   $('#ocr-tools').hidden = mode !== 'edit';
   $('#pages-tools').hidden = mode !== 'pages';
   if (mode === 'edit') await renderEditView();
   else await renderPagesView();
+  refreshUndoRedoButtons();
 }
 
 $('#tab-edit').addEventListener('click', () => setMode('edit'));
@@ -210,7 +216,17 @@ function syncDrawSettingsInputs() {
   $('#draw-size').value = state.draw.size;
   $('#draw-style').value = state.draw.dash;
   $('#draw-fill').checked = state.draw.fill;
+  document.querySelectorAll('#draw-color-swatches .color-swatch').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.color.toLowerCase() === state.draw.color.toLowerCase());
+  });
 }
+
+document.querySelectorAll('#draw-color-swatches .color-swatch').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    state.draw.color = btn.dataset.color;
+    syncDrawSettingsInputs();
+  });
+});
 
 ['pen', 'pencil', 'marker', 'highlighter'].forEach((toolId) => {
   $('#btn-draw-' + toolId).addEventListener('click', () => {
@@ -374,6 +390,49 @@ document.querySelectorAll('.modal-close').forEach((btn) =>
 document.querySelectorAll('.modal').forEach((m) =>
   m.addEventListener('pointerdown', (e) => { if (e.target === m) m.hidden = true; })
 );
+
+/* ---------- undo/redo ---------- */
+
+async function runUndo() {
+  const page = undo();
+  if (!page) return;
+  deselectAll();
+  await renderEditView();
+  refreshUndoRedoButtons();
+}
+async function runRedo() {
+  const page = redo();
+  if (!page) return;
+  deselectAll();
+  await renderEditView();
+  refreshUndoRedoButtons();
+}
+$('#btn-undo').addEventListener('click', runUndo);
+$('#btn-redo').addEventListener('click', runRedo);
+
+// Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z (or Ctrl+Y) -- routed to the signature
+// panel's own undo/redo while that modal is open, to the main document's
+// otherwise, and left alone entirely while a text field/contentEditable box
+// has focus so the browser's own native text-undo still works there.
+document.addEventListener('keydown', (e) => {
+  const mod = e.ctrlKey || e.metaKey;
+  const key = e.key.toLowerCase();
+  const isUndo = mod && key === 'z' && !e.shiftKey;
+  const isRedo = mod && ((key === 'z' && e.shiftKey) || key === 'y');
+  if (!isUndo && !isRedo) return;
+
+  if (!$('#sig-modal').hidden) {
+    e.preventDefault();
+    if (isUndo) signatureUndo(); else signatureRedo();
+    return;
+  }
+
+  const active = document.activeElement;
+  const isTextInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+  if (isTextInput || state.mode !== 'edit') return;
+  e.preventDefault();
+  if (isUndo) runUndo(); else runRedo();
+});
 
 initPagesMode();
 initOcr();
