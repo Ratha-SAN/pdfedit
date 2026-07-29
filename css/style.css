@@ -168,6 +168,16 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 #draw-settings select { font: inherit; padding: 4px 6px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
 #draw-settings input[type=range] { flex: 1; }
 #draw-fill-row { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+#draw-color-swatches { display: flex; gap: 6px; flex-wrap: wrap; }
+.color-swatch {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  cursor: pointer;
+}
+.color-swatch.active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
 
 
 #view-mode { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
@@ -444,6 +454,8 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   z-index: 1;
 }
 .modal-close { border: none; background: none; color: var(--text); font-size: 22px; padding: 0 4px; }
+#sig-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+#sig-toolbar input[type=color] { width: 36px; height: 32px; padding: 0; border: 1px solid var(--border); border-radius: 8px; }
 #sig-canvas {
   width: 100%;
   border: 1px solid var(--border);

@@ -7,28 +7,42 @@ support. No backend, no accounts — documents never leave your machine.
 
 - **Upload** a PDF by drag-and-drop or file picker.
 - **Top bar** — a single row, left to right: brand, language, theme, mode
-  tabs, and (in Edit mode) page view (continuous/single/double + zoom); only
-  **Save PDF** and **Print** sit on the right, grouped together. Flush
-  against the sidebar below it, with no gap. On narrow screens the whole bar
-  scrolls horizontally instead of wrapping onto extra lines.
+  tabs, and (in Edit mode) undo/redo and page view (continuous/single/double
+  + zoom); only **Save PDF** and **Print** sit on the right, grouped
+  together. Flush against the sidebar below it, with no gap. On narrow
+  screens the whole bar scrolls horizontally instead of wrapping onto extra
+  lines.
+- **Undo/redo** (Edit mode) — Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z (or Ctrl+Y),
+  or the top bar's buttons. Covers adding, moving, resizing, and deleting
+  any item (text/image/signature/highlight/draw stroke/shape), erasing, and
+  each text-editing session — a drag or an erase gesture is one undo step
+  regardless of how many pointermove events or items it touched, and a
+  plain click-to-select costs nothing. History is per document tab, so
+  closing a tab or switching to another one doesn't mix up histories. It
+  doesn't cover per-field toolbar tweaks (color/thickness/style/font on an
+  already-placed item) or Pages-mode operations (reorder/remove/append/
+  split) — see Known limitations.
 - **Edit mode** — add text boxes (Khmer or English), insert PNG/JPEG images,
   and place a signature (drawn on a canvas or uploaded as PNG) anywhere on any
   page. Drag to move, corner handle to resize, × to delete, and an **Edit**
   button (or double-click / long-press) to type into a text box in place.
   Drawing a signature offers 5 brush styles (Pen, Ink, Stylus, Marker,
   Brush) — each a genuinely different look (width range, opacity, blend
-  mode), not just a color — and the stroke width responds to real pointer
-  pressure from a stylus. Touch and mouse, which almost never report real
-  pressure, instead get it simulated from how fast the pointer is moving
-  (slower = a harder press, faster = a lighter one, the way a real ink pen
-  behaves), so the signature still looks natural when signed with a finger.
-  Every stroke is smoothed through a curve rather than straight segments
-  between raw samples, so it stays smooth regardless of how coarsely the
-  touchscreen samples the gesture. The canvas renders at the display's
-  actual pixel density (not a fixed low-res bitmap), so the signature stays
-  crisp at any screen size, and drawing stays smooth on mobile since each
-  frame only redraws the small area a stroke actually touched rather than
-  the whole canvas.
+  mode) — plus its own color picker, independent of style, so picking
+  Marker over Pen changes the texture without resetting a chosen ink color.
+  Stroke width responds to real pointer pressure from a stylus. Touch and
+  mouse, which almost never report real pressure, instead get it simulated
+  from how fast the pointer is moving (slower = a harder press, faster = a
+  lighter one, the way a real ink pen behaves), so the signature still looks
+  natural when signed with a finger. Every stroke is smoothed through a
+  curve rather than straight segments between raw samples, so it stays
+  smooth regardless of how coarsely the touchscreen samples the gesture.
+  The canvas renders at the display's actual pixel density (not a fixed
+  low-res bitmap), so the signature stays crisp at any screen size, drawing
+  stays smooth on mobile since each frame only redraws the small area a
+  stroke actually touched rather than the whole canvas, and its own
+  undo/redo (buttons or Ctrl/Cmd+Z) removes or restores one stroke at a
+  time, separate from the main document's history.
 - **Draw** — a sidebar section (tools arranged in a compact grid) with Pen,
   Pencil, Marker, Highlighter, Shapes (rectangle/ellipse/line/arrow, with
   optional fill), and an Eraser. Color, thickness, and line style
@@ -45,9 +59,10 @@ support. No backend, no accounts — documents never leave your machine.
   touch (mouse/plain touch falls back to a fixed mid-range width), and each
   tool varies by a different amount — pencil swings widest (a soft point
   goes from a hairline to a smudge), a highlighter's chisel tip stays
-  closest to one width regardless of pressure. Each frame only redraws the
-  small area a stroke actually touched (not the whole page), keeping
-  drawing smooth on mobile. Unlike the one-shot Insert
+  closest to one width regardless of pressure. The Highlighter also has 6
+  preset colors as one-click swatches, alongside the free-form color picker.
+  Each frame only redraws the small area a stroke actually touched (not the
+  whole page), keeping drawing smooth on mobile. Unlike the one-shot Insert
   tools, a Draw tool stays active across multiple strokes until you turn it
   off. The Eraser deletes by touching a stroke or shape's actual drawn
   shape (not just its bounding box) — dragging through the empty middle of
@@ -143,6 +158,11 @@ loads in ~0.4s. Thumbnails in Pages mode are lazy for the same reason.
 
 ## Known limitations
 
+- Undo/redo covers item edits in Edit mode only. It does not cover per-field
+  edits from an already-placed item's own toolbar (changing its color,
+  thickness, dash style, or font after the fact), nor Pages-mode operations
+  (reorder, remove, append, split) — those take effect immediately with no
+  undo step.
 - Added text, and any Draw-section stroke or shape, becomes an image in the
   exported PDF (see above) — not selectable, searchable, or vector-editable.
 - Overlay placement on pages with `/Rotate` 90/270 is implemented but has
