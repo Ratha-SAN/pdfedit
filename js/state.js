@@ -86,7 +86,7 @@ export const DRAW_TOOL_STYLES = {
 // than requiring the user to re-tune color/size by hand every time. Both
 // remain freely user-editable afterwards via state.draw.
 export const DRAW_TOOL_DEFAULT_COLOR = {
-  pen: '#1a1a2e', pencil: '#3a3a3a', marker: '#e63946', highlighter: '#ffeb3b',
+  pen: '#1a1a2e', pencil: '#3a3a3a', marker: '#e63946', highlighter: '#fff200',
 };
 export const DRAW_TOOL_DEFAULT_SIZE = {
   pen: 2.5, pencil: 1.5, marker: 8, highlighter: 16,

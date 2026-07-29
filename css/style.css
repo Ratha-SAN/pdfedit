@@ -146,7 +146,7 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 #mode-tabs .tab:first-child, #lang-toggle .tab:first-child, #theme-toggle .tab:first-child, #sig-styles .tab:first-child { border-radius: 999px 0 0 999px; }
 #mode-tabs .tab:last-child, #lang-toggle .tab:last-child, #theme-toggle .tab:last-child, #sig-styles .tab:last-child { border-radius: 0 999px 999px 0; margin-left: -1px; }
 #mode-tabs .tab.active, #lang-toggle .tab.active, #theme-toggle .tab.active, #sig-styles .tab.active, #draw-shape-kinds .tab.active { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; }
-#sig-styles { display: flex; flex-wrap: wrap; margin-bottom: 10px; }
+#sig-styles { display: flex; flex-wrap: wrap; }
 #sig-styles .tab { border-radius: 0; }
 #sig-styles .tab:not(:first-child) { margin-left: -1px; }
 #sig-styles .tab:first-child { border-radius: 999px 0 0 999px; }
@@ -454,8 +454,16 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   z-index: 1;
 }
 .modal-close { border: none; background: none; color: var(--text); font-size: 22px; padding: 0 4px; }
-#sig-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
-#sig-toolbar input[type=color] { width: 36px; height: 32px; padding: 0; border: 1px solid var(--border); border-radius: 8px; }
+#sig-toolbar { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+#sig-color-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+#sig-color-swatches { display: flex; gap: 4px; }
+/* Undo/redo icon buttons -- plain Unicode arrow glyphs (↶ ↷) render
+   inconsistently across platforms/fonts, some barely legible; an inline SVG
+   (currentColor stroke, so it follows the button's own text/disabled color)
+   looks the same everywhere and matches the weight of the app's other UI. */
+.icon-btn { display: inline-flex; align-items: center; justify-content: center; }
+.icon-btn svg { display: block; }
+.icon-flip { transform: scaleX(-1); }
 #sig-canvas {
   width: 100%;
   border: 1px solid var(--border);

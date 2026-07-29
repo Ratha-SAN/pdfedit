@@ -1246,14 +1246,11 @@ let sigDirty = false;
 // value where the device reports one, else a fixed mid-range default so
 // mouse/finger drawing still gets a reasonable width rather than the
 // thinnest possible line), an overall opacity, and a composite mode.
-// Marker uses "multiply" plus reduced opacity so overlapping passes darken
-// the way a real highlighter/marker does; the rest use plain source-over.
 const BRUSH_STYLES = {
   pen:    { color: '#1a1a2e', minWidth: 1.6, maxWidth: 3.0,  opacity: 1,    composite: 'source-over' },
   ink:    { color: '#0b1d4d', minWidth: 1.0, maxWidth: 4.2,  opacity: 0.92, composite: 'source-over' },
   stylo:  { color: '#101010', minWidth: 1.8, maxWidth: 2.3,  opacity: 1,    composite: 'source-over' },
-  marker: { color: '#1a1a2e', minWidth: 6,   maxWidth: 10,   opacity: 0.55, composite: 'multiply' },
-  brush:  { color: '#161616', minWidth: 2,   maxWidth: 14,   opacity: 0.85, composite: 'source-over' },
+  brush:  { color: '#161616', minWidth: 1.8, maxWidth: 11,   opacity: 0.85, composite: 'source-over' },
 };
 let sigStyleId = 'pen';
 // Independent of brush style -- picking Marker over Pen changes the width
@@ -1347,7 +1344,18 @@ export function initSignatureModal(onReady) {
   sigRedoFn = sigRedo;
   $('#sig-undo').addEventListener('click', sigUndo);
   $('#sig-redo').addEventListener('click', sigRedo);
-  $('#sig-color').addEventListener('input', (e) => { sigColor = e.target.value; });
+  const syncSigColorSwatches = () => {
+    document.querySelectorAll('#sig-color-swatches .color-swatch').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.color.toLowerCase() === sigColor.toLowerCase());
+    });
+  };
+  document.querySelectorAll('#sig-color-swatches .color-swatch').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      sigColor = btn.dataset.color;
+      syncSigColorSwatches();
+    });
+  });
+  syncSigColorSwatches();
 
   let drawing = false;
   // Rolling window of the last two accepted points -- quadratic-curve-
@@ -1380,8 +1388,17 @@ export function initSignatureModal(onReady) {
   // Exponential smoothing on the (simulated) pressure signal, since raw
   // velocity is noisy sample-to-sample -- pulls a fraction of the way from
   // the last value toward each new one, reading as a natural, gently damped
-  // change in width rather than a jittery one.
-  const PRESSURE_SMOOTHING = 0.3;
+  // change in width rather than a jittery one. Touch gets the calmest
+  // factor: a finger's contact point wobbles more between samples than a
+  // mouse cursor or a stylus tip does, which without extra damping reads
+  // as a faint flicker in stroke width on a real touchscreen.
+  const PRESSURE_SMOOTHING = { touch: 0.1, mouse: 0.22, pen: 0.22 };
+  // Light position smoothing before the curve-through-midpoints step below
+  // -- that step already smooths the stroke's overall shape at any sample
+  // density, but doesn't filter out small per-sample jitter in the input
+  // itself. Touch gets the most damping (a finger has the most jitter),
+  // pen the least (already a precise digitizer), mouse in between.
+  const POSITION_SMOOTHING = { touch: 0.32, mouse: 0.55, pen: 0.7 };
   const smooth = (prev, raw, factor) => prev + (raw - prev) * factor;
 
   // Re-composites only the sub-rectangle a batch of new segments actually
@@ -1440,9 +1457,11 @@ export function initSignatureModal(onReady) {
     if (!drawing) return;
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const ev of events) {
-      const raw = pos(ev);
+      const raw0 = pos(ev);
+      const posFactor = POSITION_SMOOTHING[ev.pointerType] ?? 0.55;
+      const raw = { x: smooth(p1.x, raw0.x, posFactor), y: smooth(p1.y, raw0.y, posFactor) };
       const rawPressure = rawPressureOf(ev);
-      smoothPressure = smooth(smoothPressure, rawPressure, PRESSURE_SMOOTHING);
+      smoothPressure = smooth(smoothPressure, rawPressure, PRESSURE_SMOOTHING[ev.pointerType] ?? 0.22);
       const p2 = { x: raw.x, y: raw.y, pressure: smoothPressure };
 
       // Quadratic curve from the midpoint of (p0,p1) to the midpoint of
