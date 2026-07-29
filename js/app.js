@@ -1,7 +1,7 @@
 import { state, $, showBusy, hideBusy, setHint, addSource, addDoc, closeDoc, activeDoc, isImageFile, DRAW_TOOL_DEFAULT_COLOR, DRAW_TOOL_DEFAULT_SIZE } from './state.js';
 import { renderEditView, armTool, initSignatureModal, openSignatureModal, initViewControls, currentPage, fileToDataUrl, loadImage, deselectAll, refreshEditI18n } from './editor.js';
 import { renderPagesView, initPagesMode, refreshPagesI18n } from './pagesMode.js';
-import { exportPdf, printPdf, estimateExportSize, formatBytes } from './exporter.js';
+import { exportPdf, exportPdfToFileHandle, printPdf, estimateExportSize, formatBytes, outputName } from './exporter.js';
 import { recognizePage, initOcr } from './ocr.js';
 import { t, initLang } from './i18n.js';
 import { initTheme } from './theme.js';
@@ -148,11 +148,6 @@ async function setMode(mode) {
   $('#edit-tools').hidden = mode !== 'edit';
   $('#ocr-tools').hidden = mode !== 'edit';
   $('#pages-tools').hidden = mode !== 'pages';
-  // The compression control is the same element either way -- just moved
-  // bodily between the top bar and the Pages sidebar section, so its
-  // selected value and live estimate survive the move untouched.
-  if (mode === 'pages') $('#pages-compress-anchor').appendChild($('#topbar-compress'));
-  else $('#topbar-tools').appendChild($('#topbar-compress'));
   if (mode === 'edit') await renderEditView();
   else await renderPagesView();
 }
@@ -304,11 +299,42 @@ async function updateCompressEstimate() {
 }
 $('#compress-level').addEventListener('change', updateCompressEstimate);
 
-$('#btn-export').addEventListener('click', async () => {
+/* ---------- save modal ---------- */
+
+function resolveSaveFilename() {
+  let name = $('#save-filename').value.trim() || outputName();
+  if (!/\.pdf$/i.test(name)) name += '.pdf';
+  return name;
+}
+
+$('#btn-export').addEventListener('click', () => {
   deselectAll();
+  $('#save-filename').value = outputName();
+  // showSaveFilePicker() only exists in Chromium browsers -- Firefox/Safari
+  // fall back to a plain download instead, with a note explaining why.
+  const canPickLocation = typeof window.showSaveFilePicker === 'function';
+  $('#save-choose-location').hidden = !canPickLocation;
+  $('#save-picker-note').hidden = canPickLocation;
+  $('#save-modal').hidden = false;
+  updateCompressEstimate();
+});
+
+$('#save-confirm').addEventListener('click', async () => {
   try {
-    await exportPdf();
+    await exportPdf(resolveSaveFilename());
+    $('#save-modal').hidden = true;
   } catch (err) {
+    hideBusy();
+    alert(t('exportFailed', { err: err && err.message ? err.message : err }));
+  }
+});
+
+$('#save-choose-location').addEventListener('click', async () => {
+  try {
+    await exportPdfToFileHandle(resolveSaveFilename());
+    $('#save-modal').hidden = true;
+  } catch (err) {
+    if (err && err.name === 'AbortError') return; // user cancelled the picker
     hideBusy();
     alert(t('exportFailed', { err: err && err.message ? err.message : err }));
   }

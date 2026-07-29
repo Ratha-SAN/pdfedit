@@ -182,11 +182,7 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 
 .compress-field { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
 .compress-estimate { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
-/* Moved bodily between the top bar (edit mode) and the sidebar's Pages
-   section (pages mode) by setMode() in app.js -- same element either way,
-   just relocated, so its value/listeners/estimate text are never lost. */
 .topbar-compress { display: flex; align-items: center; gap: 8px; }
-#pages-compress-anchor { display: block; }
 button {
   font: inherit;
   padding: 6px 12px;
@@ -463,6 +459,12 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
    the default 16px padding it's compensating for. */
 #features-modal .modal-box { max-width: min(1000px, 96vw); width: 1000px; padding: 0; }
 #features-modal .modal-head { margin: 0; top: 0; padding: 12px 16px; }
+
+/* ---------- Save modal ---------- */
+.save-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; font-size: 13px; }
+.save-field input[type=text] { font: inherit; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+#save-modal .menu-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+#save-modal .menu-note { font-size: 11px; color: var(--text-muted); line-height: 1.4; margin: 0 0 12px; }
 #features-frame { display: block; width: 100%; height: 80vh; border: 0; }
 #ocr-output {
   width: 100%;
