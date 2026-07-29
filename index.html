@@ -53,8 +53,8 @@
 
   <div class="topbar-tools" id="topbar-tools" hidden>
     <span id="topbar-undo-redo" class="zoom-group">
-      <button id="btn-undo" data-i18n-title="btnUndoTitle" title="Undo" disabled>↶</button>
-      <button id="btn-redo" data-i18n-title="btnRedoTitle" title="Redo" disabled>↷</button>
+      <button id="btn-undo" class="icon-btn" data-i18n-title="btnUndoTitle" title="Undo" disabled><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 1 1 0 11H11"/></svg></button>
+      <button id="btn-redo" class="icon-btn" data-i18n-title="btnRedoTitle" title="Redo" disabled><svg class="icon-flip" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 1 1 0 11H11"/></svg></button>
     </span>
     <div class="topbar-view" id="topbar-view">
       <select id="view-mode" data-i18n-title="viewModeTitle" title="Page view">
@@ -128,12 +128,12 @@
           <input type="color" id="draw-color" value="#1a1a2e" data-i18n-title="drawColorTitle" title="Color">
         </label>
         <div id="draw-color-swatches" hidden data-i18n-title="drawSwatchesTitle" title="Preset highlighter colors">
-          <button type="button" class="color-swatch" data-color="#ffeb3b" style="background:#ffeb3b" data-i18n-title="swatchYellow" title="Yellow"></button>
-          <button type="button" class="color-swatch" data-color="#66bb6a" style="background:#66bb6a" data-i18n-title="swatchGreen" title="Green"></button>
-          <button type="button" class="color-swatch" data-color="#42a5f5" style="background:#42a5f5" data-i18n-title="swatchBlue" title="Blue"></button>
-          <button type="button" class="color-swatch" data-color="#ec407a" style="background:#ec407a" data-i18n-title="swatchPink" title="Pink"></button>
-          <button type="button" class="color-swatch" data-color="#ffa726" style="background:#ffa726" data-i18n-title="swatchOrange" title="Orange"></button>
-          <button type="button" class="color-swatch" data-color="#ab47bc" style="background:#ab47bc" data-i18n-title="swatchPurple" title="Purple"></button>
+          <button type="button" class="color-swatch" data-color="#fff200" style="background:#fff200" data-i18n-title="swatchYellow" title="Yellow"></button>
+          <button type="button" class="color-swatch" data-color="#aeea00" style="background:#aeea00" data-i18n-title="swatchGreen" title="Green"></button>
+          <button type="button" class="color-swatch" data-color="#00e5ff" style="background:#00e5ff" data-i18n-title="swatchBlue" title="Blue"></button>
+          <button type="button" class="color-swatch" data-color="#ff4fa3" style="background:#ff4fa3" data-i18n-title="swatchPink" title="Pink"></button>
+          <button type="button" class="color-swatch" data-color="#ff9100" style="background:#ff9100" data-i18n-title="swatchOrange" title="Orange"></button>
+          <button type="button" class="color-swatch" data-color="#d500f9" style="background:#d500f9" data-i18n-title="swatchPurple" title="Purple"></button>
         </div>
         <label>
           <span data-i18n="drawSizeLabel">Thickness</span>
@@ -212,19 +212,25 @@
       <span data-i18n="sigModalTitle">Signature</span>
       <button class="modal-close" data-close="sig-modal">&times;</button>
     </div>
-    <div id="sig-styles" data-i18n-title="sigStylesTitle" title="Brush style — pressure from a stylus or touch varies the stroke width">
-      <button type="button" class="tab active" data-style="pen" data-i18n="sigStylePen">Pen</button>
-      <button type="button" class="tab" data-style="ink" data-i18n="sigStyleInk">Ink</button>
-      <button type="button" class="tab" data-style="stylo" data-i18n="sigStyleStylo">Stylus</button>
-      <button type="button" class="tab" data-style="marker" data-i18n="sigStyleMarker">Marker</button>
-      <button type="button" class="tab" data-style="brush" data-i18n="sigStyleBrush">Brush</button>
-    </div>
     <div id="sig-toolbar">
-      <input type="color" id="sig-color" value="#1a1a2e" data-i18n-title="sigColorTitle" title="Ink color">
-      <span class="zoom-group">
-        <button type="button" id="sig-undo" data-i18n-title="sigUndoTitle" title="Undo last stroke" disabled>↶</button>
-        <button type="button" id="sig-redo" data-i18n-title="sigRedoTitle" title="Redo" disabled>↷</button>
-      </span>
+      <div id="sig-styles" data-i18n-title="sigStylesTitle" title="Brush style — pressure from a stylus or touch varies the stroke width">
+        <button type="button" class="tab active" data-style="pen" data-i18n="sigStylePen">Pen</button>
+        <button type="button" class="tab" data-style="ink" data-i18n="sigStyleInk">Ink</button>
+        <button type="button" class="tab" data-style="stylo" data-i18n="sigStyleStylo">Stylus</button>
+        <button type="button" class="tab" data-style="brush" data-i18n="sigStyleBrush">Brush</button>
+      </div>
+      <div id="sig-color-group">
+        <span id="sig-color-swatches" data-i18n-title="sigSwatchesTitle" title="Preset signature colors">
+          <button type="button" class="color-swatch" data-color="#1a1a2e" style="background:#1a1a2e" data-i18n-title="swatchBlack" title="Black"></button>
+          <button type="button" class="color-swatch" data-color="#1d4ed8" style="background:#1d4ed8" data-i18n-title="swatchBlue" title="Blue"></button>
+          <button type="button" class="color-swatch" data-color="#b91c1c" style="background:#b91c1c" data-i18n-title="swatchRed" title="Red"></button>
+          <button type="button" class="color-swatch" data-color="#15803d" style="background:#15803d" data-i18n-title="swatchGreen" title="Green"></button>
+        </span>
+        <span class="zoom-group">
+          <button type="button" id="sig-undo" class="icon-btn" data-i18n-title="sigUndoTitle" title="Undo last stroke" disabled><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 1 1 0 11H11"/></svg></button>
+          <button type="button" id="sig-redo" class="icon-btn" data-i18n-title="sigRedoTitle" title="Redo" disabled><svg class="icon-flip" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 1 1 0 11H11"/></svg></button>
+        </span>
+      </div>
     </div>
     <canvas id="sig-canvas" width="500" height="200"></canvas>
     <div class="modal-actions">
