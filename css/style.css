@@ -38,51 +38,55 @@ html.lang-pending body { visibility: hidden; }
 @font-face { font-family: 'Taprom'; src: url('../fonts/taprom-khmer-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
 @font-face { font-family: 'Noto Sans Khmer'; src: url('../fonts/noto-sans-khmer-khmer-700-normal.woff2') format('woff2'); font-weight: 700; font-display: swap; }
 
+/* Teal/coral theme -- a bright cyan-teal accent for primary actions, a warm
+   coral for destructive ones, both themes sharing the same underlying hue
+   (light is a tinted-white take on the dark theme's deep teal, rather than
+   two unrelated palettes) so switching themes feels like the same product. */
 :root {
-  --bg: #e8eaed;
+  --bg: #eef5f5;
   --surface: #ffffff;
-  --surface-alt: #f4f5f7;
-  --border: #c7ccd1;
-  --border-strong: #d0d4d9;
-  --text: #1f2328;
-  --text-muted: #6b7280;
-  --accent: #2563eb;
-  --accent-hover: #1d4ed8;
+  --surface-alt: #e6f2f2;
+  --border: #cfe3e3;
+  --border-strong: #b9d8d8;
+  --text: #10282b;
+  --text-muted: #5b7d80;
+  --accent: #0e93a1;
+  --accent-hover: #0b7883;
   --accent-fg: #ffffff;
-  --accent-soft: #eff6ff;
-  --danger: #dc2626;
-  --hint-bg: #fef3c7;
-  --hint-border: #d4a017;
-  --armed-bg: #fde68a;
-  --armed-border: #d4a017;
-  --shadow: rgba(0, 0, 0, 0.25);
-  --shadow-soft: rgba(0, 0, 0, 0.15);
-  --overlay: rgba(0, 0, 0, 0.5);
-  --busy-overlay: rgba(255, 255, 255, 0.7);
+  --accent-soft: #e0f7f8;
+  --danger: #e2653a;
+  --hint-bg: #fff2d1;
+  --hint-border: #d9a441;
+  --armed-bg: #ffe7a8;
+  --armed-border: #d9a441;
+  --shadow: rgba(15, 40, 45, 0.18);
+  --shadow-soft: rgba(15, 40, 45, 0.10);
+  --overlay: rgba(10, 30, 33, 0.45);
+  --busy-overlay: rgba(255, 255, 255, 0.75);
   --label-badge-bg: rgba(255, 255, 255, 0.85);
 }
 [data-theme='dark'] {
-  --bg: #17181c;
-  --surface: #232428;
-  --surface-alt: #2b2d33;
-  --border: #3a3d44;
-  --border-strong: #3a3d44;
-  --text: #e7e9ea;
-  --text-muted: #9aa0a6;
-  --accent: #3b82f6;
-  --accent-hover: #2563eb;
+  --bg: #0c1e21;
+  --surface: #152d31;
+  --surface-alt: #1c3a3f;
+  --border: #2a4a4f;
+  --border-strong: #35595f;
+  --text: #e8f5f4;
+  --text-muted: #8fb0b3;
+  --accent: #16a8b3;
+  --accent-hover: #0e8791;
   --accent-fg: #ffffff;
-  --accent-soft: #1e2a44;
-  --danger: #ef4444;
-  --hint-bg: #4a3b0f;
-  --hint-border: #a67c1a;
-  --armed-bg: #5c4a12;
-  --armed-border: #a67c1a;
-  --shadow: rgba(0, 0, 0, 0.6);
-  --shadow-soft: rgba(0, 0, 0, 0.4);
-  --overlay: rgba(0, 0, 0, 0.7);
-  --busy-overlay: rgba(23, 24, 28, 0.85);
-  --label-badge-bg: rgba(35, 36, 40, 0.85);
+  --accent-soft: #123d42;
+  --danger: #f2794d;
+  --hint-bg: #3f3313;
+  --hint-border: #c99a2e;
+  --armed-bg: #4a3b16;
+  --armed-border: #c99a2e;
+  --shadow: rgba(2, 14, 16, 0.6);
+  --shadow-soft: rgba(2, 14, 16, 0.4);
+  --overlay: rgba(2, 14, 16, 0.75);
+  --busy-overlay: rgba(12, 30, 33, 0.85);
+  --label-badge-bg: rgba(21, 45, 49, 0.85);
 }
 
 * { box-sizing: border-box; }
@@ -96,6 +100,9 @@ body {
   flex-direction: column;
 }
 body.lang-km { font-family: 'Noto Sans Khmer', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+/* Native checkboxes/radios (OCR language picker, shape-fill toggle, etc.)
+   otherwise render in the browser's default blue regardless of theme. */
+input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 /* This button's own label is always "ខ្មែរ" regardless of the active UI
    language (a language switcher conventionally names each option in its
    own script), so it needs the Khmer font even when body.lang-km isn't
@@ -133,19 +140,22 @@ body.lang-km { font-family: 'Noto Sans Khmer', system-ui, -apple-system, 'Segoe 
   padding: 6px 10px;
   cursor: pointer;
 }
-#mode-tabs .tab:first-child, #lang-toggle .tab:first-child, #theme-toggle .tab:first-child, #sig-styles .tab:first-child { border-radius: 6px 0 0 6px; }
-#mode-tabs .tab:last-child, #lang-toggle .tab:last-child, #theme-toggle .tab:last-child, #sig-styles .tab:last-child { border-radius: 0 6px 6px 0; margin-left: -1px; }
+/* Full pill ends, matching the theme's rounder buttons/badges -- the whole
+   segmented group reads as one pill-shaped control rather than a row of
+   square tabs with only faintly rounded outer corners. */
+#mode-tabs .tab:first-child, #lang-toggle .tab:first-child, #theme-toggle .tab:first-child, #sig-styles .tab:first-child { border-radius: 999px 0 0 999px; }
+#mode-tabs .tab:last-child, #lang-toggle .tab:last-child, #theme-toggle .tab:last-child, #sig-styles .tab:last-child { border-radius: 0 999px 999px 0; margin-left: -1px; }
 #mode-tabs .tab.active, #lang-toggle .tab.active, #theme-toggle .tab.active, #sig-styles .tab.active, #draw-shape-kinds .tab.active { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; }
 #sig-styles { display: flex; flex-wrap: wrap; margin-bottom: 10px; }
 #sig-styles .tab { border-radius: 0; }
 #sig-styles .tab:not(:first-child) { margin-left: -1px; }
-#sig-styles .tab:first-child { border-radius: 6px 0 0 6px; }
-#sig-styles .tab:last-child { border-radius: 0 6px 6px 0; }
+#sig-styles .tab:first-child { border-radius: 999px 0 0 999px; }
+#sig-styles .tab:last-child { border-radius: 0 999px 999px 0; }
 /* Wraps to a 2x2 grid at the sidebar's width, so each button just gets a
    uniform radius rather than the single-row first/last-child scheme above
    (which would round only the outer two corners of the whole 2x2 block). */
 #draw-shape-kinds { display: flex; flex-wrap: wrap; gap: 1px; margin: 4px 0; }
-#draw-shape-kinds .tab { border-radius: 4px; flex: 1 0 calc(50% - 1px); text-align: center; margin-left: 0; }
+#draw-shape-kinds .tab { border-radius: 8px; flex: 1 0 calc(50% - 1px); text-align: center; margin-left: 0; }
 
 /* The 6 tool buttons as a 2-column grid instead of stacked full-width --
    keeps the section compact and groups the 4 freehand tools visually
@@ -155,12 +165,12 @@ body.lang-km { font-family: 'Noto Sans Khmer', system-ui, -apple-system, 'Segoe 
 
 #draw-settings { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--border); }
 #draw-settings label:not(#draw-fill-row) { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; }
-#draw-settings select { font: inherit; padding: 4px 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); }
+#draw-settings select { font: inherit; padding: 4px 6px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
 #draw-settings input[type=range] { flex: 1; }
 #draw-fill-row { display: flex; align-items: center; gap: 6px; font-size: 13px; }
 
 
-#view-mode { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); }
+#view-mode { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
 .zoom-group { display: flex; align-items: center; }
 .zoom-group button { padding: 6px 10px; }
 .zoom-group button:first-child { border-radius: 6px 0 0 6px; }
@@ -170,7 +180,7 @@ body.lang-km { font-family: 'Noto Sans Khmer', system-ui, -apple-system, 'Segoe 
 #page-nav { display: flex; align-items: center; gap: 6px; }
 #page-indicator { font-variant-numeric: tabular-nums; color: var(--text-muted); min-width: 64px; text-align: center; }
 
-.compress-field { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); }
+.compress-field { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
 .compress-estimate { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 /* Moved bodily between the top bar (edit mode) and the sidebar's Pages
    section (pages mode) by setMode() in app.js -- same element either way,
@@ -181,7 +191,7 @@ button {
   font: inherit;
   padding: 6px 12px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 10px;
   background: var(--surface);
   color: var(--text);
   cursor: pointer;
@@ -204,7 +214,7 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
 #dropzone.dragover .dz-inner { border-color: var(--accent); background: var(--accent-soft); }
 .dz-inner {
   border: 2px dashed var(--text-muted);
-  border-radius: 12px;
+  border-radius: 18px;
   padding: 60px 80px;
   text-align: center;
   background: var(--surface);
@@ -230,7 +240,7 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   /* Always white, regardless of theme: this represents the actual page
      background of the document being edited, not app chrome. */
   background: #fff;
-  box-shadow: 0 1px 6px var(--shadow);
+  box-shadow: 0 4px 18px var(--shadow);
 }
 #edit-view.view-double {
   display: flex;
@@ -331,11 +341,11 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   gap: 4px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 10px;
   padding: 3px 6px;
   align-items: center;
   white-space: nowrap;
-  box-shadow: 0 2px 6px var(--shadow-soft);
+  box-shadow: 0 4px 14px var(--shadow-soft);
 }
 .item.selected .item-toolbar { display: flex; }
 .item-toolbar input[type=number] { width: 54px; font: inherit; padding: 2px 4px; }
@@ -348,8 +358,11 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
    not a saved item, just visual feedback during the drag. */
 .ocr-select-box {
   position: absolute;
-  border: 2px dashed #2563eb;
-  background: rgba(37, 99, 235, 0.12);
+  border: 2px dashed var(--accent);
+  /* Translucent, not the opaque --accent-soft, since this sits directly
+     over the page (always white -- see .page-wrap) and needs to still show
+     the content underneath while the selection is being dragged out. */
+  background: rgba(20, 168, 179, 0.15);
   pointer-events: none;
   z-index: 5;
 }
@@ -367,7 +380,7 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   /* Always white, same reasoning as .page-wrap above. */
   background: #fff;
   border: 2px solid var(--border-strong);
-  border-radius: 6px;
+  border-radius: 10px;
   padding: 6px 6px 24px;
   cursor: grab;
   user-select: none;
@@ -414,11 +427,12 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
 .modal-box {
   background: var(--surface);
   color: var(--text);
-  border-radius: 10px;
+  border-radius: 16px;
   padding: 16px;
   max-width: min(640px, 92vw);
   width: 560px;
   margin: auto 0; /* keeps it centered when it fits, scrolled-to-top when it doesn't */
+  box-shadow: 0 12px 40px var(--shadow);
 }
 .modal-head {
   display: flex;
@@ -430,14 +444,14 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   position: sticky;
   top: -16px;
   background: var(--surface);
-  border-radius: 10px 10px 0 0;
+  border-radius: 16px 16px 0 0;
   z-index: 1;
 }
 .modal-close { border: none; background: none; color: var(--text); font-size: 22px; padding: 0 4px; }
 #sig-canvas {
   width: 100%;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   touch-action: none;
   background: #fff;
 }
@@ -456,12 +470,12 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   font: 15px/1.8 'Noto Sans Khmer', 'Khmer OS', system-ui, sans-serif;
   padding: 8px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   resize: vertical;
   background: var(--surface);
   color: var(--text);
 }
-#ocr-progress { margin-bottom: 10px; background: var(--surface-alt); border-radius: 6px; position: relative; height: 22px; overflow: hidden; }
+#ocr-progress { margin-bottom: 10px; background: var(--surface-alt); border-radius: 8px; position: relative; height: 22px; overflow: hidden; }
 #ocr-progress-bar { position: absolute; inset: 0 100% 0 0; background: var(--accent); opacity: 0.55; transition: inset 0.2s; }
 #ocr-progress-label { position: relative; display: block; text-align: center; font-size: 12px; line-height: 22px; }
 
@@ -522,7 +536,7 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 6px;
   box-shadow: 0 6px 20px var(--shadow);
 }
@@ -539,7 +553,7 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   text-align: left;
   border: none;
   background: none;
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 8px;
 }
 #ocr-menu .menu-item:hover { background: var(--surface-alt); }
@@ -549,7 +563,7 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   align-items: center;
   gap: 8px;
   padding: 7px 8px;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
 }
 #ocr-menu .menu-radio:hover { background: var(--surface-alt); }
@@ -576,7 +590,7 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   overflow: auto;
   padding: 12px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--surface);
 }
 #ocr-rendered .math-line { padding: 6px 2px; }
@@ -604,7 +618,7 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   padding: 7px 10px;
   border: 1px solid var(--border);
   border-bottom: none;
-  border-radius: 8px 8px 0 0;
+  border-radius: 12px 12px 0 0;
   background: var(--surface-alt);
   color: var(--text);
   cursor: pointer;
@@ -658,7 +672,7 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   background: none;
   border: none;
   padding: 8px 6px;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 .side-head:hover:not(:disabled) { background: var(--surface-alt); }
 /* Chevron shows collapsed state; rotates when the section is open. */
@@ -675,7 +689,7 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
 .side-body #page-nav { display: flex; align-items: center; gap: 6px; }
 .side-body #page-nav button { flex: 0 0 auto; }
 .side-body #page-indicator { flex: 1; }
-.side-body select { width: 100%; font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); }
+.side-body select { width: 100%; font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
 #sidebar .menu-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); padding: 6px 2px 2px; }
 #sidebar .menu-radio { display: flex; align-items: center; gap: 8px; padding: 5px 2px; cursor: pointer; font-size: 13px; }
 #sidebar .menu-note { font-size: 11px; color: var(--text-muted); line-height: 1.4; padding-top: 4px; }
@@ -710,6 +724,6 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   color: var(--text);
   background: var(--surface-alt);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 999px;
 }
 .side-bottom-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
