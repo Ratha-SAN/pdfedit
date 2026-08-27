@@ -218,7 +218,7 @@ export function initViewControls() {
 }
 
 function setZoom(z) {
-  state.zoom = Math.max(0.25, Math.min(3, Math.round(z * 100) / 100));
+  state.zoom = Math.max(0.25, Math.min(4, Math.round(z * 100) / 100));
   $('#zoom-level').textContent = Math.round(state.zoom * 100) + '%';
   renderEditView();
 }
