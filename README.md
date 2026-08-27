@@ -12,12 +12,15 @@ support. No backend, no accounts — documents never leave your machine.
   together. Flush against the sidebar below it, with no gap. On narrow
   screens the whole bar scrolls horizontally instead of wrapping onto extra
   lines. Each page re-renders at the current zoom level times the display's
-  actual pixel density (up to 3x) every time it changes, so pages stay
-  crisp at any zoom instead of just stretching a fixed-resolution bitmap.
-  Native pinch/double-tap browser zoom is disabled over the document itself
-  for that reason — it would just blur-magnify whatever's already on
-  screen instead of asking the page to re-render — while normal one-finger
-  scrolling is unaffected.
+  actual pixel density (up to 3x) every time either one changes, so pages
+  stay crisp at any zoom instead of just stretching a fixed-resolution
+  bitmap — that includes the browser's own page zoom (Ctrl +/- or
+  Ctrl+scroll), which raises the effective pixel density without touching
+  the app's zoom controls at all, so already-rendered pages are refreshed
+  automatically the moment it changes. Native pinch/double-tap browser zoom
+  is disabled over the document itself for the same reason — it would just
+  blur-magnify whatever's already on screen instead of asking the page to
+  re-render — while normal one-finger scrolling is unaffected.
 - **Undo/redo** (Edit mode) — Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z (or Ctrl+Y),
   or the top bar's buttons. Covers adding, moving, resizing, and deleting
   any item (text/image/signature/highlight/draw stroke/shape), erasing, and
