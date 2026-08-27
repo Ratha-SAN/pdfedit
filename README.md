@@ -12,9 +12,13 @@ support. No backend, no accounts — documents never leave your machine.
   together. Flush against the sidebar below it, with no gap. On narrow
   screens the whole bar scrolls horizontally instead of wrapping onto extra
   lines. Each page re-renders at the current zoom level times the display's
-  actual pixel density (up to 3x) every time either one changes, so pages
-  stay crisp at any zoom instead of just stretching a fixed-resolution
-  bitmap — that includes the browser's own page zoom (Ctrl +/- or
+  actual pixel density (floored at 2x even on a plain 1x monitor, capped at
+  3x) every time either factor changes, so pages stay crisp at any zoom
+  instead of just stretching a fixed-resolution bitmap — the floor exists
+  because a flat 1:1 raster reads as visibly softer than a native viewer
+  like Adobe Acrobat, which anti-aliases PDF text more aggressively than a
+  bitmap matching physical screen pixels one-for-one ever can. That
+  includes the browser's own page zoom (Ctrl +/- or
   Ctrl+scroll), which raises the effective pixel density without touching
   the app's zoom controls at all, so already-rendered pages are refreshed
   automatically the moment it changes. Native pinch/double-tap browser zoom

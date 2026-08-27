@@ -143,11 +143,16 @@ async function renderWrap(wrap) {
     // The view may have been rebuilt (zoom, mode switch, tab change) while
     // this awaited; drop the result rather than painting a stale scale.
     if (!wrap.isConnected || wrap._scale !== scale) return;
-    // Capped at 3 rather than the device's raw devicePixelRatio (which can
-    // run higher on some displays) -- enough to be pixel-perfect on every
-    // common screen (standard 1x, retina 2x, most phones' 2-3x) without an
-    // unbounded memory cost on the rare outlier display that reports more.
-    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    // Floored at 2 even on a plain 1x monitor, not just the device's raw
+    // devicePixelRatio -- a flat 1:1 raster reads as visibly softer than a
+    // native viewer like Adobe Acrobat, which anti-aliases PDF text far more
+    // aggressively than a bitmap matching physical pixels 1-for-1 ever can.
+    // Supersampling at 2x closes most of that gap for a 4x memory cost per
+    // visible page (bounded by the lazy render/release above); capped at 3
+    // rather than the device's raw ratio (which can run higher on some
+    // displays) for the same reason as the floor -- diminishing visual
+    // return past that for a steep additional memory cost.
+    const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 2), 3);
     const vp = pdfPage.getViewport({ scale: scale * dpr });
     canvas.width = vp.width;
     canvas.height = vp.height;
