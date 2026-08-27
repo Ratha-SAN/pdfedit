@@ -143,7 +143,11 @@ async function renderWrap(wrap) {
     // The view may have been rebuilt (zoom, mode switch, tab change) while
     // this awaited; drop the result rather than painting a stale scale.
     if (!wrap.isConnected || wrap._scale !== scale) return;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // Capped at 3 rather than the device's raw devicePixelRatio (which can
+    // run higher on some displays) -- enough to be pixel-perfect on every
+    // common screen (standard 1x, retina 2x, most phones' 2-3x) without an
+    // unbounded memory cost on the rare outlier display that reports more.
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
     const vp = pdfPage.getViewport({ scale: scale * dpr });
     canvas.width = vp.width;
     canvas.height = vp.height;
