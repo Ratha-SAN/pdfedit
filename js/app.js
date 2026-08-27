@@ -434,6 +434,25 @@ document.addEventListener('keydown', (e) => {
   if (isUndo) runUndo(); else runRedo();
 });
 
+// Chrome's own page zoom (Ctrl +/-, or Ctrl+scroll) changes the effective
+// devicePixelRatio without touching the app's own zoom state at all --
+// already-rasterized pages would otherwise just get stretched by the browser
+// onto the new, denser physical pixel grid, blurring exactly the way the
+// app's own zoom controls are designed not to. There's no direct "ratio
+// changed" event, so the standard trick is a `resolution` media query that
+// only matches until the ratio moves, re-subscribed each time it fires.
+function watchDevicePixelRatio() {
+  let mql = matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+  mql.addEventListener('change', function onChange() {
+    mql.removeEventListener('change', onChange);
+    mql = matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+    mql.addEventListener('change', onChange);
+    if (!state.pages.length) return;
+    if (state.mode === 'edit') renderEditView(); else renderPagesView();
+  });
+}
+watchDevicePixelRatio();
+
 initPagesMode();
 initOcr();
 initViewControls();
