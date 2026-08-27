@@ -1,4 +1,4 @@
-import { state, newId, $, setHint, FONT_STACKS, FONT_FAMILY_NAME, KHMER_FONTS, LATIN_FONTS, DEFAULT_FONT, normalizeFontId, DRAW_TOOL_STYLES, dashPattern, strokeSegment, strokeDot, strokeFullPath, rafPointerBatcher } from './state.js';
+import { state, newId, $, setHint, FONT_STACKS, FONT_FAMILY_NAME, KHMER_FONTS, LATIN_FONTS, DEFAULT_FONT, DEFAULT_ZOOM, normalizeFontId, DRAW_TOOL_STYLES, dashPattern, strokeSegment, strokeDot, strokeFullPath, rafPointerBatcher } from './state.js';
 import { t } from './i18n.js';
 import { recognizeArea } from './ocr.js';
 import { pushHistory } from './history.js';
@@ -131,6 +131,34 @@ function ensurePageObserver() {
   return pageObserver;
 }
 
+/* How much to oversample a page's bitmap relative to its on-screen size.
+
+   Floored at 2 even on a plain 1x monitor, not just the device's raw
+   devicePixelRatio -- a flat 1:1 raster reads as visibly softer than a
+   native viewer like Adobe Acrobat, which anti-aliases PDF text far more
+   aggressively than a bitmap matching physical pixels 1-for-1 ever can.
+   Supersampling at 2x closes most of that gap for a 4x memory cost per
+   visible page (bounded by the lazy render/release above); capped at 3
+   rather than the device's raw ratio (which can run higher on some
+   displays) because 3x measured visually indistinguishable from 2x for
+   over twice the memory, so there's nothing to gain above it.
+
+   Then trimmed so the backing store stays inside a fixed pixel budget:
+   zoom multiplies into `scale`, so at 400% on a high-density screen a
+   full page would otherwise ask for a canvas several hundred MB in size,
+   which browsers answer by handing back a blank one (or dropping the tab).
+   Trimming the *oversample* rather than the scale is what makes this
+   cheap: past a certain zoom the scale alone already carries far more
+   detail than the screen can show, so what's given up is redundant. */
+const MAX_CANVAS_PIXELS = 40e6; // ~160MB at 4 bytes/px
+
+function supersampleFor(baseViewport) {
+  const want = Math.min(Math.max(window.devicePixelRatio || 1, 2), 3);
+  const area = baseViewport.width * baseViewport.height;
+  if (!area) return want;
+  return Math.max(1, Math.min(want, Math.sqrt(MAX_CANVAS_PIXELS / area)));
+}
+
 async function renderWrap(wrap) {
   if (wrap._rendered || wrap._rendering) return;
   wrap._rendering = true;
@@ -152,7 +180,7 @@ async function renderWrap(wrap) {
     // rather than the device's raw ratio (which can run higher on some
     // displays) for the same reason as the floor -- diminishing visual
     // return past that for a steep additional memory cost.
-    const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 2), 3);
+    const dpr = supersampleFor(pdfPage.getViewport({ scale }));
     const vp = pdfPage.getViewport({ scale: scale * dpr });
     canvas.width = vp.width;
     canvas.height = vp.height;
@@ -195,9 +223,12 @@ export function initViewControls() {
   });
   $('#zoom-in').addEventListener('click', () => setZoom(state.zoom + 0.1));
   $('#zoom-out').addEventListener('click', () => setZoom(state.zoom - 0.1));
-  $('#zoom-level').addEventListener('click', () => setZoom(1));
+  $('#zoom-level').addEventListener('click', () => setZoom(DEFAULT_ZOOM));
   $('#page-prev').addEventListener('click', () => stepPage(-1));
   $('#page-next').addEventListener('click', () => stepPage(1));
+  // Label the button from the live zoom rather than trusting the static
+  // markup, so the two can't drift apart if the default ever changes again.
+  $('#zoom-level').textContent = Math.round(state.zoom * 100) + '%';
 
   // A two-page spread doesn't fit usefully on a phone-width screen; disable
   // the option there and fall back to continuous if it was active when the

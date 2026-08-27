@@ -179,6 +179,13 @@ export function rafPointerBatcher(onFrame) {
   return listener;
 }
 
+// Pages open at 200% rather than fit-width: at 100% a full page shrunk to
+// the window is small enough that body text in a typical paper or scan is
+// uncomfortable to read, and the renderer draws at zoom x pixel density, so
+// opening in closer means genuinely more detail rather than a magnified
+// bitmap. Also used by the zoom-level button to reset back here.
+export const DEFAULT_ZOOM = 2;
+
 export const state = {
   // Open documents, one per tab. Each holds its own sources/pages/scroll
   // position so switching tabs restores exactly what you left.
@@ -189,7 +196,7 @@ export const state = {
                  // | { type: 'draw', tool } | { type: 'shape', shape } | { type: 'eraser' }
   nextId: 1,
   viewMode: 'continuous', // 'continuous' | 'single' | 'double'
-  zoom: 1,                // 1 = 100%
+  zoom: DEFAULT_ZOOM,     // 1 = 100%
   lang: 'en',             // 'en' | 'km' -- interface language
   lastFont: null,
   // Shared settings for the Draw section's tools -- read when a new stroke/
