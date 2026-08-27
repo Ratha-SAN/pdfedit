@@ -12,7 +12,13 @@
     display: flex; align-items: center; gap: 16px; padding: 8px 16px;
     background: var(--surface); border-bottom: 1px solid var(--border-strong);
     position: sticky; top: 0; z-index: 50;
+    /* Same fix as the main editor's #topbar: on a narrow viewport (or this
+       modal's narrower iframe) brand + lang toggle + theme toggle + back
+       button don't fit one row -- wrapping would look broken with the
+       spacer, so this scrolls horizontally instead. */
+    flex-wrap: nowrap; overflow-x: auto;
   }
+  .feat-topbar .brand, .feat-topbar .feat-back { flex-shrink: 0; }
   .feat-topbar .topbar-spacer { flex: 1; }
   .feat-back {
     font: inherit; color: var(--text); text-decoration: none;
@@ -213,32 +219,19 @@
   document.getElementById('lang-km').addEventListener('click', function () { setLang('km'); });
   setLang(lang);
 
-  // Resume where this window was left, rather than always reopening fresh:
-  // restore scroll position now, and remember size/position/scroll as they
-  // change so the *next* open (a fresh window.open() from the sidebar
-  // button) can be sized/positioned/scrolled to match.
-  var savedScroll = null;
-  try { savedScroll = parseInt(localStorage.getItem('pdfedit-features-scroll'), 10); } catch (e) {}
-  if (savedScroll) window.scrollTo(0, savedScroll);
-
-  function saveGeometry() {
+  // This page now normally lives inside the editor's Features modal
+  // (an iframe), not a separate tab/window -- so "back" means close the
+  // modal rather than navigate. The iframe is same-origin, so the parent's
+  // DOM is reachable directly. Falls back to a real navigation to
+  // index.html if this page is ever opened standalone (e.g. a direct URL).
+  document.getElementById('feat-back').addEventListener('click', function (e) {
+    if (window.parent === window) return;
+    e.preventDefault();
     try {
-      localStorage.setItem('pdfedit-features-geom', JSON.stringify({
-        w: window.outerWidth, h: window.outerHeight,
-        x: window.screenX, y: window.screenY,
-      }));
-    } catch (e) {}
-  }
-  function saveScroll() {
-    try { localStorage.setItem('pdfedit-features-scroll', String(window.scrollY)); } catch (e) {}
-  }
-  var scrollSaveTimer = null;
-  window.addEventListener('resize', saveGeometry);
-  window.addEventListener('scroll', function () {
-    clearTimeout(scrollSaveTimer);
-    scrollSaveTimer = setTimeout(saveScroll, 200);
+      var modal = window.parent.document.getElementById('features-modal');
+      if (modal) modal.hidden = true;
+    } catch (err) {}
   });
-  window.addEventListener('beforeunload', function () { saveGeometry(); saveScroll(); });
 })();
 </script>
 

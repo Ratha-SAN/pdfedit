@@ -63,6 +63,129 @@ export function normalizeFontId(id) {
   return LEGACY_FONT_IDS[id] || DEFAULT_FONT;
 }
 
+// Each freehand draw tool is a distinct feel, not just a line -- opacity,
+// blend mode, cap style, and how much a stroke's width reacts to pointer
+// pressure are all fixed per tool (what makes a marker read as a marker and
+// not a thin pen), while color/size/dash stay user-editable via state.draw.
+// minRatio is the stroke's thinnest point as a fraction of the user's
+// thickness setting (the fattest point, at full pressure) -- pencil varies
+// the most (a soft point can go from a hairline to a smudge), highlighter
+// the least (a real chisel tip stays close to one width regardless of how
+// hard you press). Shared by editor.js (live canvas rendering) and
+// exporter.js (rasterization for the exported PDF) so both draw identically.
+export const DRAW_TOOL_STYLES = {
+  pen:         { opacity: 1,    composite: 'source-over', cap: 'round',  minRatio: 0.55 },
+  pencil:      { opacity: 0.75, composite: 'source-over', cap: 'round',  minRatio: 0.35 },
+  marker:      { opacity: 0.55, composite: 'multiply',    cap: 'square', minRatio: 0.65 },
+  highlighter: { opacity: 0.35, composite: 'multiply',    cap: 'square', minRatio: 0.8 },
+};
+
+// Suggested starting color/thickness for each tool -- applied whenever the
+// tool is (re)selected from the sidebar, so switching tools immediately
+// feels distinct (a thin dark pen vs. a thick yellow highlighter) rather
+// than requiring the user to re-tune color/size by hand every time. Both
+// remain freely user-editable afterwards via state.draw.
+export const DRAW_TOOL_DEFAULT_COLOR = {
+  pen: '#1a1a2e', pencil: '#3a3a3a', marker: '#e63946', highlighter: '#fff200',
+};
+export const DRAW_TOOL_DEFAULT_SIZE = {
+  pen: 2.5, pencil: 1.5, marker: 8, highlighter: 16,
+};
+
+// Dash pattern as a stroke-dasharray-style [on, off] pair, scaled to the
+// current stroke width so dashes/dots stay proportional at any thickness.
+// Returns null for 'solid' (both SVG and Canvas 2D treat that as "no dash").
+export function dashPattern(dash, size) {
+  if (dash === 'dashed') return [size * 3, size * 2];
+  if (dash === 'dotted') return [size * 0.01, size * 1.8]; // paired with a round/square cap, renders as dots
+  return null;
+}
+
+/* ---------- pressure-sensitive freehand strokes ----------
+   A stroke's points are [x, y, pressure] triples (pressure 0-1; a real
+   stylus or force-sensitive touch reports one, mouse/plain touch falls
+   back to a fixed mid-range value so drawing still gets a reasonable
+   width rather than the thinnest possible line -- same convention the
+   signature pad already established). Every segment between two
+   consecutive points is stroked individually with its own interpolated
+   width (averaging the two endpoints' pressure), which is the standard
+   technique for a variable-width line in Canvas 2D. Shared by editor.js
+   (live drawing + rendering placed items) and exporter.js (rasterizing
+   for the exported PDF) so both produce the same stroke. */
+
+function widthAt(pressure, minWidth, maxWidth) {
+  return minWidth + (maxWidth - minWidth) * pressure;
+}
+
+export function strokeSegment(ctx, a, b, opts) {
+  const { color, minWidth, maxWidth, cap = 'round', dash = null } = opts;
+  const pressure = ((a[2] ?? 0.5) + (b[2] ?? 0.5)) / 2;
+  ctx.strokeStyle = color;
+  ctx.lineCap = cap;
+  ctx.lineJoin = cap === 'round' ? 'round' : 'miter';
+  ctx.lineWidth = widthAt(pressure, minWidth, maxWidth);
+  ctx.setLineDash(dash || []);
+  ctx.beginPath();
+  ctx.moveTo(a[0], a[1]);
+  ctx.lineTo(b[0], b[1]);
+  ctx.stroke();
+}
+
+export function strokeDot(ctx, p, opts) {
+  const { color, minWidth, maxWidth } = opts;
+  const r = widthAt(p[2] ?? 0.5, minWidth, maxWidth) / 2;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(p[0], p[1], r, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// Strokes every segment of a complete (already-finished) stroke in one
+// call -- used wherever the whole path is drawn at once (a placed item's
+// canvas, or export rasterization), as opposed to the live preview which
+// draws incrementally as new points arrive.
+export function strokeFullPath(ctx, points, opts) {
+  if (!points.length) return;
+  if (points.length === 1) { strokeDot(ctx, points[0], opts); return; }
+  for (let i = 1; i < points.length; i++) strokeSegment(ctx, points[i - 1], points[i], opts);
+}
+
+// Coalesces a fast stream of pointermove events (mobile touch/pen can fire
+// far more often than the screen can redraw) down to at most one callback
+// per animation frame, without dropping precision: each raw event's
+// getCoalescedEvents() sub-samples (the OS/browser's own higher-frequency
+// hardware samples between rendered frames) are still passed through in
+// full, just batched into one array delivered once per frame instead of
+// triggering canvas work synchronously on every single event. Returns a
+// pointermove listener; call cancel() to drop a still-pending frame (e.g.
+// on pointerup, after a final manual flush).
+export function rafPointerBatcher(onFrame) {
+  let pending = [];
+  let rafId = null;
+  const flush = () => {
+    rafId = null;
+    if (!pending.length) return;
+    const events = pending;
+    pending = [];
+    onFrame(events);
+  };
+  const listener = (ev) => {
+    const samples = ev.getCoalescedEvents ? ev.getCoalescedEvents() : null;
+    if (samples && samples.length) pending.push(...samples); else pending.push(ev);
+    if (rafId === null) rafId = requestAnimationFrame(flush);
+  };
+  listener.flush = flush;
+  listener.cancel = () => { if (rafId !== null) cancelAnimationFrame(rafId); rafId = null; pending = []; };
+  return listener;
+}
+
+// Pages open at 200% rather than fit-width: at 100% a full page shrunk to
+// the window is small enough that body text in a typical paper or scan is
+// uncomfortable to read, and the renderer draws at zoom x pixel density, so
+// opening in closer means genuinely more detail rather than a magnified
+// bitmap. Also used by the zoom-level button to reset back here.
+export const DEFAULT_ZOOM = 2;
+
 export const state = {
   // Open documents, one per tab. Each holds its own sources/pages/scroll
   // position so switching tabs restores exactly what you left.
@@ -70,11 +193,31 @@ export const state = {
   activeDocId: null,
   mode: 'edit',
   tool: null,    // { type: 'text' } | { type: 'stamp', kind, dataUrl, natW, natH } | { type: 'highlight', color }
+                 // | { type: 'draw', tool } | { type: 'shape', shape } | { type: 'eraser' }
   nextId: 1,
   viewMode: 'continuous', // 'continuous' | 'single' | 'double'
-  zoom: 1,                // 1 = 100%
+  zoom: DEFAULT_ZOOM,     // 1 = 100%
   lang: 'en',             // 'en' | 'km' -- interface language
   lastFont: null,
+  // Shared settings for the Draw section's tools -- read when a new stroke/
+  // shape is started, and written by its sidebar controls. Kept separate
+  // from state.tool (which only describes which tool is armed) so switching
+  // between pen/pencil/marker/highlighter/shapes doesn't reset color/size/
+  // style, matching how a real drawing app remembers your last settings.
+  draw: {
+    tool: 'pen',       // 'pen' | 'pencil' | 'marker' | 'highlighter'
+    color: '#1a1a2e',
+    size: 3,
+    dash: 'solid',     // 'solid' | 'dashed' | 'dotted'
+    shape: 'rect',     // 'rect' | 'ellipse' | 'line' | 'arrow'
+    fill: false,
+    // Each freehand tool plus shapes remembers its own last-used thickness
+    // (a thick marker and a thin pencil are both "correct" at once), keyed
+    // separately from the single `size` above -- `size` is just "whatever
+    // the currently-armed tool's slider shows right now"; this is where
+    // each tool's own value persists across switching to a different one.
+    sizeByTool: { ...DRAW_TOOL_DEFAULT_SIZE, shape: 3 },
+  },
 };
 
 export function activeDoc() {

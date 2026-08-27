@@ -52,6 +52,10 @@
   </nav>
 
   <div class="topbar-tools" id="topbar-tools" hidden>
+    <span id="topbar-undo-redo" class="zoom-group">
+      <button id="btn-undo" class="icon-btn" data-i18n-title="btnUndoTitle" title="Undo" disabled><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 1 1 0 11H11"/></svg></button>
+      <button id="btn-redo" class="icon-btn" data-i18n-title="btnRedoTitle" title="Redo" disabled><svg class="icon-flip" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 1 1 0 11H11"/></svg></button>
+    </span>
     <div class="topbar-view" id="topbar-view">
       <select id="view-mode" data-i18n-title="viewModeTitle" title="Page view">
         <option value="continuous" data-i18n="viewContinuous">Continuous</option>
@@ -60,7 +64,7 @@
       </select>
       <span class="zoom-group">
         <button id="zoom-out" data-i18n-title="zoomOutTitle" title="Zoom out">−</button>
-        <button id="zoom-level" data-i18n-title="zoomResetTitle" title="Reset zoom to 100%">100%</button>
+        <button id="zoom-level" data-i18n-title="zoomResetTitle" title="Reset zoom to 200%">200%</button>
         <button id="zoom-in" data-i18n-title="zoomInTitle" title="Zoom in">+</button>
       </span>
       <span id="page-nav" hidden>
@@ -69,15 +73,6 @@
         <button id="page-next" data-i18n-title="pageNextTitle" title="Next page">›</button>
       </span>
     </div>
-    <span class="topbar-compress" id="topbar-compress">
-      <select id="compress-level" class="compress-field" data-i18n-title="compressTitle" title="Output size / quality">
-        <option value="none" data-i18n="compressNone">Original quality</option>
-        <option value="low" data-i18n="compressLow">Compress — high quality</option>
-        <option value="medium" data-i18n="compressMedium">Compress — balanced</option>
-        <option value="high" data-i18n="compressHigh">Compress — smallest</option>
-      </select>
-      <span id="compress-estimate" class="compress-estimate"></span>
-    </span>
   </div>
 
   <div class="topbar-spacer"></div>
@@ -108,6 +103,58 @@
     </div>
   </section>
 
+  <section class="side-sec" id="draw-tools">
+    <button class="side-head" aria-expanded="false" data-i18n="secDraw">Draw</button>
+    <div class="side-body" hidden>
+      <div id="draw-tool-grid">
+        <button id="btn-draw-pen" data-i18n="btnDrawPen" data-i18n-title="btnDrawPenTitle" title="Freehand pen (drag to draw)">Pen</button>
+        <button id="btn-draw-pencil" data-i18n="btnDrawPencil" data-i18n-title="btnDrawPencilTitle" title="Freehand pencil -- thinner, slightly translucent (drag to draw)">Pencil</button>
+        <button id="btn-draw-marker" data-i18n="btnDrawMarker" data-i18n-title="btnDrawMarkerTitle" title="Freehand marker -- thick, darkens where strokes overlap (drag to draw)">Marker</button>
+        <button id="btn-draw-highlighter" data-i18n="btnDrawHighlighter" data-i18n-title="btnDrawHighlighterTitle" title="Freehand highlighter -- very thick and translucent (drag to draw)">Highlighter</button>
+        <button id="btn-draw-shape" data-i18n="btnDrawShape" data-i18n-title="btnDrawShapeTitle" title="Draw a rectangle, ellipse, line, or arrow (drag to draw)">Shapes</button>
+        <button id="btn-draw-eraser" data-i18n="btnDrawEraser" data-i18n-title="btnDrawEraserTitle" title="Drag over a stroke or shape to delete it">Eraser</button>
+      </div>
+
+      <div id="draw-shape-kinds" hidden>
+        <button data-shape="rect" class="tab active" data-i18n="shapeKindRect" title="Rectangle">Rectangle</button>
+        <button data-shape="ellipse" class="tab" data-i18n="shapeKindEllipse" title="Ellipse">Ellipse</button>
+        <button data-shape="line" class="tab" data-i18n="shapeKindLine" title="Line">Line</button>
+        <button data-shape="arrow" class="tab" data-i18n="shapeKindArrow" title="Arrow">Arrow</button>
+      </div>
+
+      <div id="draw-settings" hidden>
+        <label>
+          <span data-i18n="drawColorTitle">Color</span>
+          <input type="color" id="draw-color" value="#1a1a2e" data-i18n-title="drawColorTitle" title="Color">
+        </label>
+        <div id="draw-color-swatches" hidden data-i18n-title="drawSwatchesTitle" title="Preset highlighter colors">
+          <button type="button" class="color-swatch" data-color="#fff200" style="background:#fff200" data-i18n-title="swatchYellow" title="Yellow"></button>
+          <button type="button" class="color-swatch" data-color="#aeea00" style="background:#aeea00" data-i18n-title="swatchGreen" title="Green"></button>
+          <button type="button" class="color-swatch" data-color="#00e5ff" style="background:#00e5ff" data-i18n-title="swatchBlue" title="Blue"></button>
+          <button type="button" class="color-swatch" data-color="#ff4fa3" style="background:#ff4fa3" data-i18n-title="swatchPink" title="Pink"></button>
+          <button type="button" class="color-swatch" data-color="#ff9100" style="background:#ff9100" data-i18n-title="swatchOrange" title="Orange"></button>
+          <button type="button" class="color-swatch" data-color="#d500f9" style="background:#d500f9" data-i18n-title="swatchPurple" title="Purple"></button>
+        </div>
+        <label>
+          <span data-i18n="drawSizeLabel">Thickness</span>
+          <input type="range" id="draw-size" min="1" max="24" step="1" value="3" data-i18n-title="drawSizeLabel" title="Thickness">
+        </label>
+        <label>
+          <span data-i18n="drawStyleTitle">Style</span>
+          <select id="draw-style" data-i18n-title="drawStyleTitle" title="Style">
+            <option value="solid" data-i18n="drawStyleSolid">Solid</option>
+            <option value="dashed" data-i18n="drawStyleDashed">Dashed</option>
+            <option value="dotted" data-i18n="drawStyleDotted">Dotted</option>
+          </select>
+        </label>
+        <label id="draw-fill-row" hidden>
+          <input type="checkbox" id="draw-fill">
+          <span data-i18n="drawFillLabel">Fill</span>
+        </label>
+      </div>
+    </div>
+  </section>
+
   <section class="side-sec" id="ocr-tools">
     <button class="side-head" aria-expanded="false" data-i18n="secRecognize">Recognize text</button>
     <div class="side-body" hidden>
@@ -131,12 +178,10 @@
       <div class="menu-label" data-i18n="splitMenuLabel">Split document (select one page)</div>
       <button id="btn-split-before" data-i18n="btnSplitBefore" data-i18n-title="btnSplitBeforeTitle" title="Split so the selected page starts the second document" disabled>Split before selected page</button>
       <button id="btn-split-after" data-i18n="btnSplitAfter" data-i18n-title="btnSplitAfterTitle" title="Split so the selected page ends the first document" disabled>Split after selected page</button>
-      <div class="menu-label" data-i18n="compressLabelSidebar">Output size</div>
-      <span id="pages-compress-anchor"></span>
     </div>
   </section>
 
-  <a id="btn-features" class="side-bottom-btn" href="features.html" target="_blank" rel="noopener" data-i18n="btnFeatures" data-i18n-title="btnFeaturesTitle" title="See what this app can do (opens in a pop-up window)">✨ Features</a>
+  <button type="button" id="btn-features" class="side-bottom-btn" data-i18n="btnFeatures" data-i18n-title="btnFeaturesTitle" title="See what this app can do">✨ Features</button>
 </aside>
 
 <div id="content-col">
@@ -167,12 +212,25 @@
       <span data-i18n="sigModalTitle">Signature</span>
       <button class="modal-close" data-close="sig-modal">&times;</button>
     </div>
-    <div id="sig-styles" data-i18n-title="sigStylesTitle" title="Brush style — pressure from a stylus or touch varies the stroke width">
-      <button type="button" class="tab active" data-style="pen" data-i18n="sigStylePen">Pen</button>
-      <button type="button" class="tab" data-style="ink" data-i18n="sigStyleInk">Ink</button>
-      <button type="button" class="tab" data-style="stylo" data-i18n="sigStyleStylo">Stylus</button>
-      <button type="button" class="tab" data-style="marker" data-i18n="sigStyleMarker">Marker</button>
-      <button type="button" class="tab" data-style="brush" data-i18n="sigStyleBrush">Brush</button>
+    <div id="sig-toolbar">
+      <div id="sig-styles" data-i18n-title="sigStylesTitle" title="Brush style — pressure from a stylus or touch varies the stroke width">
+        <button type="button" class="tab active" data-style="pen" data-i18n="sigStylePen">Pen</button>
+        <button type="button" class="tab" data-style="ink" data-i18n="sigStyleInk">Ink</button>
+        <button type="button" class="tab" data-style="stylo" data-i18n="sigStyleStylo">Stylus</button>
+        <button type="button" class="tab" data-style="brush" data-i18n="sigStyleBrush">Brush</button>
+      </div>
+      <div id="sig-color-group">
+        <span id="sig-color-swatches" data-i18n-title="sigSwatchesTitle" title="Preset signature colors">
+          <button type="button" class="color-swatch" data-color="#1a1a2e" style="background:#1a1a2e" data-i18n-title="swatchBlack" title="Black"></button>
+          <button type="button" class="color-swatch" data-color="#1d4ed8" style="background:#1d4ed8" data-i18n-title="swatchBlue" title="Blue"></button>
+          <button type="button" class="color-swatch" data-color="#b91c1c" style="background:#b91c1c" data-i18n-title="swatchRed" title="Red"></button>
+          <button type="button" class="color-swatch" data-color="#15803d" style="background:#15803d" data-i18n-title="swatchGreen" title="Green"></button>
+        </span>
+        <span class="zoom-group">
+          <button type="button" id="sig-undo" class="icon-btn" data-i18n-title="sigUndoTitle" title="Undo last stroke" disabled><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 1 1 0 11H11"/></svg></button>
+          <button type="button" id="sig-redo" class="icon-btn" data-i18n-title="sigRedoTitle" title="Redo" disabled><svg class="icon-flip" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 1 1 0 11H11"/></svg></button>
+        </span>
+      </div>
     </div>
     <canvas id="sig-canvas" width="500" height="200"></canvas>
     <div class="modal-actions">
@@ -199,6 +257,46 @@
     <textarea id="ocr-output" spellcheck="false" data-i18n-placeholder="ocrPlaceholder" placeholder="Recognized text will appear here."></textarea>
     <div class="modal-actions">
       <button id="ocr-copy" data-i18n="ocrCopy">Copy text</button>
+    </div>
+  </div>
+</div>
+
+<div id="features-modal" class="modal" hidden>
+  <div class="modal-box">
+    <div class="modal-head">
+      <span data-i18n="btnFeatures">✨ Features</span>
+      <button class="modal-close" data-close="features-modal">&times;</button>
+    </div>
+    <iframe id="features-frame" title="Features"></iframe>
+  </div>
+</div>
+
+<div id="save-modal" class="modal" hidden>
+  <div class="modal-box">
+    <div class="modal-head">
+      <span data-i18n="saveModalTitle">Save PDF</span>
+      <button class="modal-close" data-close="save-modal">&times;</button>
+    </div>
+    <label class="save-field">
+      <span data-i18n="saveFilenameLabel">File name</span>
+      <input type="text" id="save-filename" spellcheck="false">
+    </label>
+    <div class="save-field">
+      <div class="menu-label" data-i18n="compressLabelSidebar">Output size</div>
+      <span class="topbar-compress" id="save-compress">
+        <select id="compress-level" class="compress-field" data-i18n-title="compressTitle" title="Output size / quality">
+          <option value="none" data-i18n="compressNone">Original quality</option>
+          <option value="low" data-i18n="compressLow">Compress — high quality</option>
+          <option value="medium" data-i18n="compressMedium">Compress — balanced</option>
+          <option value="high" data-i18n="compressHigh">Compress — smallest</option>
+        </select>
+        <span id="compress-estimate" class="compress-estimate"></span>
+      </span>
+    </div>
+    <p id="save-picker-note" class="menu-note" hidden data-i18n="savePickerUnsupported">Your browser doesn't support choosing a save location here, so Save downloads to your default downloads folder instead.</p>
+    <div class="modal-actions">
+      <button id="save-choose-location" data-i18n="saveChooseLocation" data-i18n-title="saveChooseLocationTitle" title="Pick the exact folder and filename to save to">Choose location…</button>
+      <button id="save-confirm" class="primary" data-i18n="saveConfirm" data-i18n-title="saveConfirmTitle" title="Save to your browser's default downloads folder">Save</button>
     </div>
   </div>
 </div>
