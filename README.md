@@ -8,7 +8,8 @@ support. No backend, no accounts — documents never leave your machine.
 - **Upload** a PDF by drag-and-drop or file picker.
 - **Top bar** — a single row, left to right: brand, language, theme, mode
   tabs, and (in Edit mode) undo/redo and page view (continuous/single/double
-  + zoom, 25%–400%); only **Save PDF** and **Print** sit on the right,
+  + zoom, 25%–400%, opening at **200%**; the zoom readout doubles as a
+  reset back to it); only **Save PDF** and **Print** sit on the right,
   grouped together. Flush against the sidebar below it, with no gap. On
   narrow screens the whole bar scrolls horizontally instead of wrapping onto
   extra lines. Each page re-renders at the current zoom level times the display's
@@ -17,7 +18,11 @@ support. No backend, no accounts — documents never leave your machine.
   instead of just stretching a fixed-resolution bitmap — the floor exists
   because a flat 1:1 raster reads as visibly softer than a native viewer
   like Adobe Acrobat, which anti-aliases PDF text more aggressively than a
-  bitmap matching physical screen pixels one-for-one ever can. That
+  bitmap matching physical screen pixels one-for-one ever can. Past a
+  budget of ~40 megapixels the oversampling is trimmed back rather than the
+  page asking for a canvas the browser answers with a blank one — at high
+  zoom the scale alone already carries more detail than the screen shows,
+  so what's given up there is redundant. That
   includes the browser's own page zoom (Ctrl +/- or
   Ctrl+scroll), which raises the effective pixel density without touching
   the app's zoom controls at all, so already-rendered pages are refreshed
