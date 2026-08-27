@@ -11,7 +11,13 @@ support. No backend, no accounts — documents never leave your machine.
   + zoom); only **Save PDF** and **Print** sit on the right, grouped
   together. Flush against the sidebar below it, with no gap. On narrow
   screens the whole bar scrolls horizontally instead of wrapping onto extra
-  lines.
+  lines. Each page re-renders at the current zoom level times the display's
+  actual pixel density (up to 3x) every time it changes, so pages stay
+  crisp at any zoom instead of just stretching a fixed-resolution bitmap.
+  Native pinch/double-tap browser zoom is disabled over the document itself
+  for that reason — it would just blur-magnify whatever's already on
+  screen instead of asking the page to re-render — while normal one-finger
+  scrolling is unaffected.
 - **Undo/redo** (Edit mode) — Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z (or Ctrl+Y),
   or the top bar's buttons. Covers adding, moving, resizing, and deleting
   any item (text/image/signature/highlight/draw stroke/shape), erasing, and

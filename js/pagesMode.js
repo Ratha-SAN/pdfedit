@@ -117,10 +117,16 @@ function ensureThumbObserver() {
 async function renderThumb(page, canvas) {
   const src = state.sources[page.srcIndex];
   const pdfPage = await src.pdfjs.getPage(page.srcPageNum);
-  const scale = THUMB_WIDTH / page.vw;
+  // Same dpr-aware rendering as the main edit view's pages, capped the same
+  // way -- without it a thumbnail rendered at exactly THUMB_WIDTH css
+  // pixels looked soft on any retina/high-density screen.
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  const scale = (THUMB_WIDTH / page.vw) * dpr;
   const vp = pdfPage.getViewport({ scale });
   canvas.width = vp.width;
   canvas.height = vp.height;
+  canvas.style.width = vp.width / dpr + 'px';
+  canvas.style.height = vp.height / dpr + 'px';
   await pdfPage.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
 }
 

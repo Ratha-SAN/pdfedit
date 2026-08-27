@@ -208,7 +208,13 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 button.primary:hover:not(:disabled) { background: var(--accent-hover); }
 button.tool-armed { background: var(--armed-bg); border-color: var(--armed-border); }
 
-#main { flex: 1; overflow: auto; }
+/* Blocks native pinch/double-tap zoom over the document area specifically
+   (normal one-finger scrolling in both directions still works) -- the app
+   already has its own zoom (the +/- controls), which re-renders each page
+   at the new zoom x devicePixelRatio for a crisp result, unlike native
+   browser zoom, which just stretches whatever bitmap is already on screen
+   and looks progressively blurrier the further in it goes. */
+#main { flex: 1; overflow: auto; touch-action: pan-x pan-y; }
 
 #dropzone {
   height: 100%;
