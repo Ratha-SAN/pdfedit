@@ -8,10 +8,10 @@ support. No backend, no accounts — documents never leave your machine.
 - **Upload** a PDF by drag-and-drop or file picker.
 - **Top bar** — a single row, left to right: brand, language, theme, mode
   tabs, and (in Edit mode) undo/redo and page view (continuous/single/double
-  + zoom); only **Save PDF** and **Print** sit on the right, grouped
-  together. Flush against the sidebar below it, with no gap. On narrow
-  screens the whole bar scrolls horizontally instead of wrapping onto extra
-  lines. Each page re-renders at the current zoom level times the display's
+  + zoom, 25%–400%); only **Save PDF** and **Print** sit on the right,
+  grouped together. Flush against the sidebar below it, with no gap. On
+  narrow screens the whole bar scrolls horizontally instead of wrapping onto
+  extra lines. Each page re-renders at the current zoom level times the display's
   actual pixel density (floored at 2x even on a plain 1x monitor, capped at
   3x) every time either factor changes, so pages stay crisp at any zoom
   instead of just stretching a fixed-resolution bitmap — the floor exists
