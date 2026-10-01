@@ -254,12 +254,20 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   background: #fff;
   box-shadow: 0 4px 18px var(--shadow);
 }
+/* Sized to the spread itself (max-content) rather than wrapping, so past
+   roughly 100% zoom -- including the 200% default -- the two pages stay side
+   by side and #main scrolls sideways across them, instead of the spread
+   falling onto separate rows and turning into continuous view. min-width
+   keeps it centred when it does fit; centring via the container's own width
+   rather than justify-content alone is what keeps the left page reachable
+   once the spread is wider than the window. */
 #edit-view.view-double {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  flex-wrap: wrap;
   gap: 24px;
+  width: max-content;
+  min-width: 100%;
 }
 #edit-view.view-double .page-wrap { margin: 0; }
 .page-wrap canvas.page-canvas { display: block; }
@@ -675,7 +683,12 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
 /* Doc tabs live above the document only, not the sidebar, so the sidebar's
    top edge sits flush against the top bar instead of being pushed down by
    the tab strip. */
-#content-col { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+/* min-width: 0 so a page wider than the window (any zoom past roughly fit,
+   including the 200% default) scrolls inside #main -- without it this column
+   keeps flex's default min-width: auto, stretches to the page's width, and
+   the whole document scrolls sideways instead, panning the sidebar and top
+   bar off-screen with it. */
+#content-col { flex: 1; display: flex; flex-direction: column; min-height: 0; min-width: 0; }
 #sidebar {
   flex: 0 0 234px;
   display: flex;

@@ -183,8 +183,13 @@ export function rafPointerBatcher(onFrame) {
 // the window is small enough that body text in a typical paper or scan is
 // uncomfortable to read, and the renderer draws at zoom x pixel density, so
 // opening in closer means genuinely more detail rather than a magnified
-// bitmap. Also used by the zoom-level button to reset back here.
-export const DEFAULT_ZOOM = 2;
+// bitmap. Except on phone-width screens, where 100% already means a page as
+// wide as the screen -- 200% there made every line overflow sideways and need
+// panning to read. Same breakpoint the view-mode picker uses to drop the
+// two-page spread. Also used by the zoom-level button to reset back here.
+export function defaultZoom() {
+  return window.matchMedia('(max-width: 640px)').matches ? 1 : 2;
+}
 
 export const state = {
   // Open documents, one per tab. Each holds its own sources/pages/scroll
@@ -196,7 +201,7 @@ export const state = {
                  // | { type: 'draw', tool } | { type: 'shape', shape } | { type: 'eraser' }
   nextId: 1,
   viewMode: 'continuous', // 'continuous' | 'single' | 'double'
-  zoom: DEFAULT_ZOOM,     // 1 = 100%
+  zoom: defaultZoom(),    // 1 = 100%
   lang: 'en',             // 'en' | 'km' -- interface language
   lastFont: null,
   // Shared settings for the Draw section's tools -- read when a new stroke/
