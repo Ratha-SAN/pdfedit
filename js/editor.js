@@ -1,4 +1,4 @@
-import { state, newId, $, setHint, FONT_STACKS, FONT_FAMILY_NAME, KHMER_FONTS, LATIN_FONTS, DEFAULT_FONT, DEFAULT_ZOOM, normalizeFontId, DRAW_TOOL_STYLES, dashPattern, strokeSegment, strokeDot, strokeFullPath, rafPointerBatcher } from './state.js';
+import { state, newId, $, setHint, FONT_STACKS, FONT_FAMILY_NAME, KHMER_FONTS, LATIN_FONTS, DEFAULT_FONT, defaultZoom, normalizeFontId, DRAW_TOOL_STYLES, dashPattern, strokeSegment, strokeDot, strokeFullPath, rafPointerBatcher } from './state.js';
 import { t } from './i18n.js';
 import { recognizeArea } from './ocr.js';
 import { pushHistory } from './history.js';
@@ -223,7 +223,7 @@ export function initViewControls() {
   });
   $('#zoom-in').addEventListener('click', () => setZoom(state.zoom + 0.1));
   $('#zoom-out').addEventListener('click', () => setZoom(state.zoom - 0.1));
-  $('#zoom-level').addEventListener('click', () => setZoom(DEFAULT_ZOOM));
+  $('#zoom-level').addEventListener('click', () => setZoom(defaultZoom()));
   $('#page-prev').addEventListener('click', () => stepPage(-1));
   $('#page-next').addEventListener('click', () => stepPage(1));
   // Label the button from the live zoom rather than trusting the static

@@ -8,8 +8,12 @@ support. No backend, no accounts — documents never leave your machine.
 - **Upload** a PDF by drag-and-drop or file picker.
 - **Top bar** — a single row, left to right: brand, language, theme, mode
   tabs, and (in Edit mode) undo/redo and page view (continuous/single/double
-  + zoom, 25%–400%, opening at **200%**; the zoom readout doubles as a
-  reset back to it); only **Save PDF** and **Print** sit on the right,
+  + zoom, 25%–400%, opening at **200%** — or 100% on phone-width screens,
+  where 100% already fills the screen and 200% would need sideways panning
+  on every line; the zoom readout doubles as a reset back to that default).
+  Past fit-width the page scrolls inside the document pane, leaving the
+  sidebar and top bar in place, and a two-page spread stays side by side
+  rather than falling onto separate rows; only **Save PDF** and **Print** sit on the right,
   grouped together. Flush against the sidebar below it, with no gap. On
   narrow screens the whole bar scrolls horizontally instead of wrapping onto
   extra lines. Each page re-renders at the current zoom level times the display's
