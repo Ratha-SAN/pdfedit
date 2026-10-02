@@ -336,6 +336,7 @@ function onPagePointerDown(e, page, wrap) {
     let w = Math.min(t.natW * 0.75, page.vw * 0.5);
     let h = w * (t.natH / t.natW);
     item = { id: newId(), type: t.kind, x: Math.min(x, page.vw - w), y: Math.min(y, page.vh - h), w, h, dataUrl: t.dataUrl, natW: t.natW, natH: t.natH };
+    if (t.color) item.color = t.color; // a signature fresh off the pad: lets its toolbar show the current ink
   }
   pushHistory(page);
   page.items.push(item);
@@ -1063,6 +1064,10 @@ function buildItemEl(item, page, wrap) {
     el.appendChild(img);
     el.style.width = item.w * scale + 'px';
     el.style.height = item.h * scale + 'px';
+    if (item.type === 'signature') {
+      el.classList.add('item-signature');
+      el.appendChild(buildSignatureToolbar(item, page, img));
+    }
   }
 
   el.style.left = item.x * scale + 'px';
@@ -1148,6 +1153,99 @@ function buildItemEl(item, page, wrap) {
   return el;
 }
 
+/* ---------- recolouring a placed signature ----------
+   A signature item is just a PNG, so changing its colour means repainting
+   the bitmap: every pixel takes the new colour and keeps its own alpha, so
+   antialiased edges and a translucent brush style (Ink, Brush) survive
+   exactly. The result replaces item.dataUrl, which is what the exporter
+   embeds, so the saved PDF gets the new colour with no exporter change.
+
+   An uploaded PNG may have no transparency at all (a scan on white paper);
+   recolouring that by alpha would paint the whole rectangle. For a fully
+   opaque image the mask comes from darkness instead -- paper and light
+   scanner noise clear to transparent, ink keeps a strength matching how
+   dark it was -- after which the image has real alpha, so repeated
+   recolours are lossless. */
+
+// The signature pad's own preset inks.
+const SIGNATURE_INKS = [
+  { color: '#1a1a2e', key: 'swatchBlack' },
+  { color: '#1d4ed8', key: 'swatchBlue' },
+  { color: '#b91c1c', key: 'swatchRed' },
+  { color: '#15803d', key: 'swatchGreen' },
+];
+
+async function recolorSignature(dataUrl, color) {
+  const img = await loadImage(dataUrl);
+  const canvas = document.createElement('canvas');
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+  const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const d = pixels.data;
+  let opaque = true;
+  for (let i = 3; i < d.length; i += 4) if (d[i] < 250) { opaque = false; break; }
+  const r = parseInt(color.slice(1, 3), 16), g = parseInt(color.slice(3, 5), 16), b = parseInt(color.slice(5, 7), 16);
+  for (let i = 0; i < d.length; i += 4) {
+    let a = d[i + 3];
+    if (opaque) {
+      const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+      a = Math.round(255 * Math.min(1, Math.max(0, (230 - lum) / 190)));
+    }
+    d[i] = r; d[i + 1] = g; d[i + 2] = b; d[i + 3] = a;
+  }
+  ctx.putImageData(pixels, 0, 0);
+  return canvas.toDataURL('image/png');
+}
+
+function buildSignatureToolbar(item, page, img) {
+  const tb = document.createElement('div');
+  tb.className = 'item-toolbar';
+  const swatches = SIGNATURE_INKS.map(({ color, key }) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'color-swatch';
+    btn.dataset.color = color;
+    btn.style.background = color;
+    btn.dataset.i18nTitle = key;
+    btn.title = t(key);
+    btn.addEventListener('click', () => apply(color));
+    return btn;
+  });
+  const custom = document.createElement('input');
+  custom.type = 'color';
+  custom.value = item.color || SIGNATURE_INKS[0].color;
+  custom.dataset.i18nTitle = 'itemSigColorTitle';
+  custom.title = t('itemSigColorTitle');
+  // `change`, not `input`: one recolour (and one undo step) per colour
+  // picked, rather than one per pixel the picker's cursor passes over.
+  custom.addEventListener('change', () => apply(custom.value));
+  const markActive = () => swatches.forEach((s) => s.classList.toggle('active', s.dataset.color === item.color));
+
+  let busy = false;
+  async function apply(color) {
+    if (busy || color === item.color) return;
+    busy = true;
+    try {
+      const dataUrl = await recolorSignature(item.dataUrl, color);
+      pushHistory(page);
+      item.dataUrl = dataUrl;
+      item.color = color;
+      img.src = dataUrl;
+      custom.value = color;
+      markActive();
+    } finally {
+      busy = false;
+    }
+  }
+
+  tb.append(...swatches, custom);
+  markActive();
+  tb.addEventListener('pointerdown', (e) => e.stopPropagation());
+  return tb;
+}
+
 // Patches translated text/tooltips on already-placed items in place, rather
 // than re-rendering the whole page (which would rebuild every canvas and
 // drop the current selection/in-progress text edit).
@@ -1155,7 +1253,9 @@ export function refreshEditI18n() {
   document.querySelectorAll('.item.item-text .item-toolbar label').forEach((label) => {
     if (label.firstChild) label.firstChild.textContent = t('itemSizeLabel') + ' ';
   });
-  document.querySelectorAll('.item .item-toolbar input[type=color]').forEach((input) => {
+  // (A signature's controls carry data-i18n-title, already re-applied by
+  // applyTranslations -- skip them rather than overwrite with a text label.)
+  document.querySelectorAll('.item .item-toolbar input[type=color]:not([data-i18n-title])').forEach((input) => {
     const el = input.closest('.item');
     input.title = el.classList.contains('item-highlight') ? t('itemHighlightColorTitle')
       : el.classList.contains('item-draw') || el.classList.contains('item-shape') ? t('itemDrawColorTitle')
@@ -1591,7 +1691,7 @@ export function initSignatureModal(onReady) {
     if (!sigDirty) return;
     const trimmed = trimCanvas(canvas);
     modal.hidden = true;
-    onReady({ dataUrl: trimmed.toDataURL('image/png'), natW: trimmed.width, natH: trimmed.height });
+    onReady({ dataUrl: trimmed.toDataURL('image/png'), natW: trimmed.width, natH: trimmed.height, color: sigColor });
   });
 
   /* Saved signatures -- only where sign-in exists at all (see account.js);
