@@ -6,7 +6,6 @@
     "pdfedit-19051": {
       "hosting": {
         "main": [
-          "modernkhmertyping",
           "pdfedit"
         ]
       }
