@@ -201,7 +201,8 @@ no keys live in this repository. It needs four one-time settings in the
 
 1. **Project settings → Your apps**: a *Web app* must be registered
    (Firebase Hosting serves its config; without one, sign-in stays hidden).
-2. **Authentication → Sign-in method**: enable **Google**.
+2. **Authentication**: click **Get started** (first time only), then on
+   **Sign-in method** enable **Google**.
 3. **Authentication → Settings → Authorized domains**: add the hosting
    address, e.g. `pdfedit.web.app` (the project's own default domains are
    listed automatically; a second hosting site's may not be).
@@ -211,7 +212,9 @@ no keys live in this repository. It needs four one-time settings in the
    workflow deploys hosting only, so rule changes aren't published
    automatically.
 
-If step 2 or 3 is missing, pressing **Sign in** says which setting to
+If Authentication was never switched on (`auth/configuration-not-found`:
+open **Authentication** and click **Get started**), or step 2 or 3 is
+missing, pressing **Sign in** says which setting to
 change rather than failing silently.
 
 ## Large documents

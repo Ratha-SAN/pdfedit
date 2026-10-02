@@ -80,9 +80,10 @@ export const accountReady = () => ready;
 export const currentUser = () => user;
 
 // Interactive: reports failures itself, so callers can just await it. The
-// two setup gaps a fresh Firebase project actually hits (this hostname not
-// yet an authorized domain, Google sign-in not yet enabled) get messages
-// naming the console setting to change, rather than Firebase's raw error.
+// setup gaps a fresh Firebase project actually hits -- Authentication never
+// switched on (configuration-not-found), this hostname not yet an authorized
+// domain, Google sign-in not yet enabled -- get messages naming the console
+// setting to change, rather than Firebase's raw error code.
 export async function signIn() {
   const provider = new firebase.auth.GoogleAuthProvider();
   provider.setCustomParameters({ prompt: 'select_account' });
@@ -92,7 +93,8 @@ export async function signIn() {
     const code = err && err.code;
     // Closing the popup is a normal way to back out, not a failure.
     if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') return;
-    if (code === 'auth/unauthorized-domain') alert(t('signInUnauthorizedDomain', { host: location.hostname }));
+    if (code === 'auth/configuration-not-found') alert(t('signInAuthNotSetUp'));
+    else if (code === 'auth/unauthorized-domain') alert(t('signInUnauthorizedDomain', { host: location.hostname }));
     else if (code === 'auth/operation-not-allowed') alert(t('signInProviderDisabled'));
     else if (code === 'auth/popup-blocked') alert(t('signInPopupBlocked'));
     else alert(t('signInFailed', { err: (err && err.message) || err }));
