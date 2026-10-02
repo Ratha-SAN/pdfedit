@@ -152,7 +152,8 @@ python3 -m http.server 8080
 # then open http://localhost:8080/
 ```
 
-Or use the hosted GitHub Pages deployment (see the repository's Pages URL).
+Or use the hosted version at **https://modernkhmertyping.web.app** (also
+still at `pdfedit.web.app`), or the GitHub Pages deployment (see the repository's Pages URL).
 Opening `index.html` via `file://` will not work (ES modules and workers
 require HTTP).
 
@@ -205,8 +206,10 @@ no keys live in this repository. It needs four one-time settings in the
 2. **[Authentication](https://console.firebase.google.com/project/pdfedit-19051/authentication)**: click **Get started** (first time only), then on
    **[Sign-in method](https://console.firebase.google.com/project/pdfedit-19051/authentication/providers)** enable **Google**.
 3. **[Authentication → Settings → Authorized domains](https://console.firebase.google.com/project/pdfedit-19051/authentication/settings)**: add the hosting
-   address, e.g. `pdfedit.web.app` (the project's own default domains are
-   listed automatically; a second hosting site's may not be).
+   address — the app is published to both `modernkhmertyping.web.app`
+   (main) and `pdfedit.web.app` (kept so old links still work), so add both
+   (the project's own default domains are listed automatically; extra
+   hosting sites' are not).
 4. **[Firestore Database](https://console.firebase.google.com/project/pdfedit-19051/firestore)**: create the database, then publish the rules in
    [`firestore.rules`](firestore.rules) — paste them into the console's
    *Rules* tab, or run `firebase deploy --only firestore:rules`. The CI
