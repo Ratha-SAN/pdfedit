@@ -1,7 +1,10 @@
 # Khmer PDF Editor
 
 A fully client-side, browser-based PDF editor with first-class Khmer Unicode
-support. No backend, no accounts — documents never leave your machine.
+support. Documents never leave your machine. No account is needed for
+anything; signing in is optional and does exactly one thing — keeps the
+signatures you choose to save, so you can reuse them later or on another
+device.
 
 ## Features
 
@@ -68,6 +71,19 @@ support. No backend, no accounts — documents never leave your machine.
   area a stroke actually touched rather than the whole canvas, and its own
   undo/redo (buttons or Ctrl/Cmd+Z) removes or restores one stroke at a
   time, separate from the main document's history.
+- **Sign in & saved signatures** (optional) — a **Sign in** button at the
+  right end of the top bar signs in with Google; once signed in it shows
+  your name, with a menu to sign out. The signature dialog then gains a
+  **My signatures** row (click one to place it, × to delete it) and a
+  **Save to my signatures** button for whatever is on the pad. Signed out,
+  the dialog offers a sign-in link in the same place, and a drawing in
+  progress survives signing in from there. Saved signatures live in your
+  account (Firestore, `users/<uid>/signatures`), readable only by you; the
+  stored copy is capped at 1200px on its long side, and lands on the page
+  at the same size as one drawn fresh. Only shown where the app is served
+  by Firebase Hosting — see [Sign-in setup](#sign-in-setup); on GitHub
+  Pages or a local server the app is unchanged and makes no sign-in
+  requests at all.
 - **Draw** — a sidebar section (tools arranged in a compact grid) with Pen,
   Pencil, Marker, Highlighter, Shapes (rectangle/ellipse/line/arrow, with
   optional fill), and an Eraser. Color, thickness, and line style
@@ -173,6 +189,30 @@ untouched and stays selectable.
 | OCR | [tesseract.js](https://tesseract.projectnaptha.com/) 5.1 + `khm`/`eng` traineddata (tessdata_fast) |
 | Fonts | 16 Khmer + 13 Latin families from [Fontsource](https://fontsource.org/) (OFL/Apache) |
 | Math rendering | [KaTeX](https://katex.org/) 0.16 (woff2 subset) |
+| Sign-in / saved signatures | [Firebase](https://firebase.google.com/) JS SDK 12.19 compat builds (Apache-2.0): app + auth loaded only on Firebase Hosting, Firestore only once a signed-in user opens the signature dialog |
+
+## Sign-in setup
+
+Sign-in switches itself on wherever the app is served by Firebase Hosting,
+which publishes the project's web config at `/__/firebase/init.json` — so
+no keys live in this repository. It needs four one-time settings in the
+[Firebase console](https://console.firebase.google.com/) for the project
+(`pdfedit-19051`):
+
+1. **Project settings → Your apps**: a *Web app* must be registered
+   (Firebase Hosting serves its config; without one, sign-in stays hidden).
+2. **Authentication → Sign-in method**: enable **Google**.
+3. **Authentication → Settings → Authorized domains**: add the hosting
+   address, e.g. `pdfedit.web.app` (the project's own default domains are
+   listed automatically; a second hosting site's may not be).
+4. **Firestore Database**: create the database, then publish the rules in
+   [`firestore.rules`](firestore.rules) — paste them into the console's
+   *Rules* tab, or run `firebase deploy --only firestore:rules`. The CI
+   workflow deploys hosting only, so rule changes aren't published
+   automatically.
+
+If step 2 or 3 is missing, pressing **Sign in** says which setting to
+change rather than failing silently.
 
 ## Large documents
 
@@ -183,6 +223,10 @@ length. Measured on a 300-page file: load `6.0s -> 0.37s`, canvas memory
 loads in ~0.4s. Thumbnails in Pages mode are lazy for the same reason.
 
 ## Known limitations
+
+- Sign-in is Google only, uses a pop-up window, and needs a network
+  connection (everything else works offline). Only signatures drawn on the
+  pad can be saved; an uploaded PNG is used directly, not saved.
 
 - Undo/redo covers item edits in Edit mode only. It does not cover per-field
   edits from an already-placed item's own toolbar (changing its color,

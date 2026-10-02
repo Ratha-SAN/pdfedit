@@ -81,7 +81,21 @@
     <button id="btn-export" class="primary" data-i18n="btnExport" data-i18n-title="btnExportTitle" title="Download the modified PDF">Save PDF</button>
     <button id="btn-print" data-i18n="btnPrint" data-i18n-title="btnPrintTitle" title="Print the document">Print</button>
   </div>
+
+  <div id="account" hidden>
+    <button id="btn-sign-in" data-i18n="btnSignIn" data-i18n-title="btnSignInTitle" title="Sign in to save your signatures" hidden>Sign in</button>
+    <button id="btn-account" class="account-btn" aria-haspopup="menu" aria-expanded="false" hidden>
+      <span id="account-avatar" class="account-avatar" aria-hidden="true"></span>
+      <span id="account-name"></span>
+    </button>
+  </div>
 </header>
+
+<div id="account-menu" role="menu" hidden>
+  <div id="account-menu-name"></div>
+  <div id="account-menu-email"></div>
+  <button id="btn-sign-out" role="menuitem" data-i18n="btnSignOut">Sign out</button>
+</div>
 
 <div id="workspace">
 <aside id="sidebar" hidden>
@@ -232,10 +246,20 @@
         </span>
       </div>
     </div>
+    <section id="sig-saved" hidden>
+      <div id="sig-saved-head" data-i18n="sigSavedTitle">My signatures</div>
+      <div id="sig-saved-signin" hidden>
+        <span data-i18n="sigSavedSignInPrompt">Sign in to save signatures and reuse them on any device.</span>
+        <button id="sig-saved-signin-btn" data-i18n="btnSignIn">Sign in</button>
+      </div>
+      <div id="sig-saved-list"></div>
+      <div id="sig-saved-status" hidden></div>
+    </section>
     <canvas id="sig-canvas" width="500" height="200"></canvas>
     <div class="modal-actions">
       <button id="sig-clear" data-i18n="sigClear">Clear</button>
       <button id="sig-upload" data-i18n="sigUpload">Upload PNG instead</button>
+      <button id="sig-save" data-i18n="sigSave" data-i18n-title="sigSaveTitle" title="Keep this signature in your account to reuse later" hidden disabled>Save to my signatures</button>
       <button id="sig-use" class="primary" data-i18n="sigUse">Use signature</button>
     </div>
   </div>

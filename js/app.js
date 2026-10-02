@@ -6,6 +6,7 @@ import { recognizePage, initOcr } from './ocr.js';
 import { t, initLang } from './i18n.js';
 import { initTheme } from './theme.js';
 import { undo, redo, refreshButtons as refreshUndoRedoButtons } from './history.js';
+import { initAccount, accountReady, currentUser, signIn, signOut } from './account.js';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('vendor/pdf.worker.min.js', location.href).href;
 
@@ -168,7 +169,70 @@ $('#tab-pages').addEventListener('click', () => setMode('pages'));
 document.addEventListener('langchange', () => {
   refreshEditI18n();
   refreshPagesI18n();
+  if (accountReady()) renderAccount(currentUser());
 });
+
+/* ---------- account (optional sign-in; see account.js) ---------- */
+
+function renderAccount(user) {
+  $('#account').hidden = false;
+  $('#btn-sign-in').hidden = !!user;
+  $('#btn-account').hidden = !user;
+  if (!user) {
+    closeAccountMenu();
+    return;
+  }
+  const name = user.displayName || user.email || '';
+  $('#account-name').textContent = name.split(/\s+/)[0];
+  $('#btn-account').title = t('accountTitle', { name: user.email || name });
+  $('#account-menu-name').textContent = user.displayName || '';
+  $('#account-menu-email').textContent = user.email || '';
+  const avatar = $('#account-avatar');
+  const initial = (name.trim()[0] || '?').toUpperCase();
+  avatar.textContent = initial;
+  if (user.photoURL) {
+    const img = new Image();
+    img.alt = '';
+    img.referrerPolicy = 'no-referrer'; // Google's avatar host rejects some referrers
+    img.onload = () => { avatar.textContent = ''; avatar.appendChild(img); };
+    img.src = user.photoURL;
+  }
+}
+
+// Positioned with `fixed` rather than inside the top bar, which scrolls
+// sideways on narrow screens (overflow-x: auto) and would clip a dropdown.
+function openAccountMenu() {
+  const btn = $('#btn-account');
+  const r = btn.getBoundingClientRect();
+  const menu = $('#account-menu');
+  menu.style.top = r.bottom + 6 + 'px';
+  menu.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
+  menu.hidden = false;
+  btn.setAttribute('aria-expanded', 'true');
+}
+function closeAccountMenu() {
+  $('#account-menu').hidden = true;
+  $('#btn-account').setAttribute('aria-expanded', 'false');
+}
+
+$('#btn-sign-in').addEventListener('click', () => signIn());
+$('#btn-account').addEventListener('click', () => {
+  if ($('#account-menu').hidden) openAccountMenu(); else closeAccountMenu();
+});
+$('#btn-sign-out').addEventListener('click', async () => {
+  closeAccountMenu();
+  await signOut();
+});
+document.addEventListener('pointerdown', (e) => {
+  if ($('#account-menu').hidden) return;
+  if (e.target.closest('#account-menu, #btn-account')) return;
+  closeAccountMenu();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAccountMenu(); });
+window.addEventListener('resize', closeAccountMenu);
+$('#topbar').addEventListener('scroll', closeAccountMenu);
+document.addEventListener('accountchange', (e) => renderAccount(e.detail));
+initAccount();
 
 /* ---------- edit tools ---------- */
 

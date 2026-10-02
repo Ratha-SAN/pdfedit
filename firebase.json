@@ -5,6 +5,7 @@
     "ignore": [
       "firebase.json",
       ".firebaserc",
+      "firestore.rules",
       ".git/**",
       ".github/**",
       "README.md",
@@ -20,5 +21,8 @@
         "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
       }
     ]
+  },
+  "firestore": {
+    "rules": "firestore.rules"
   }
 }
