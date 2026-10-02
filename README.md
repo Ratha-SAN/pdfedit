@@ -36,7 +36,10 @@ device.
   automatically the moment it changes. Native pinch/double-tap browser zoom
   is disabled over the document itself for the same reason — it would just
   blur-magnify whatever's already on screen instead of asking the page to
-  re-render — while normal one-finger scrolling is unaffected.
+  re-render — while normal one-finger scrolling is unaffected. On a phone
+  the app supplies its own two-finger pinch instead: the page scales live
+  under your fingers, then re-renders sharp at the new zoom on release,
+  keeping the spot between your fingers in place.
 - **Undo/redo** (Edit mode) — Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z (or Ctrl+Y),
   or the top bar's buttons. Covers adding, moving, resizing, and deleting
   any item (text/image/signature/highlight/draw stroke/shape), erasing, and
@@ -119,11 +122,33 @@ device.
   anywhere inside a filled one) removes it.
 - **Left sidebar** — tools live in collapsible sections (File, Insert,
   Recognize text, Pages) rather than one long toolbar row, flush against the
-  top bar; document tabs sit above the page area, not the sidebar. On phones
-  the sidebar stacks above the document instead of taking width. A **Features** button pinned to
+  top bar; document tabs sit above the page area, not the sidebar. (On
+  phones the sections open as bottom sheets instead — see below.) A **Features** button pinned to
   the bottom of the sidebar opens a bilingual (English/Khmer) page describing
   everything the app can do, as an in-page modal (an embedded iframe, not a
   separate tab or window), so the current document is never disturbed.
+- **Phone app (iOS & Android)** — at phone width (≤640px) the layout
+  becomes an app's: a compact app bar (title, undo/redo, **Save PDF**, and
+  **⋯**), a bottom tab bar (**Open · Insert · Draw · Scan text · Pages**),
+  and tools in bottom sheets that slide up over the document and close by
+  tapping outside, swiping down, **Done**, or the Android Back button. Picking
+  something to place (text, image, highlight, eraser…) closes its sheet so
+  the page is free to tap; picking a drawing tool keeps the sheet open,
+  since that's what reveals its color/thickness/style. **⋯** holds language,
+  theme, page view and zoom, Print, sign-in and Features. Dialogs
+  (signature, save, OCR) open as bottom sheets too. The document gets ~76%
+  of the screen (it had ~44% when the sidebar stacked above it), and
+  padding keeps everything clear of the notch and home indicator. On wider
+  screens none of this appears — the same controls are moved back to their
+  desktop places, never duplicated.
+- **Installable & offline** — add it to the home screen (Safari: Share →
+  *Add to Home Screen*; Chrome/Android: *Install app*) and it opens
+  full-screen with its own icon, like a native app. A service worker caches
+  what the app loads, so it then opens and edits PDFs with no network
+  (OCR's language data joins the cache the first time OCR is used). Online,
+  app code is always fetched fresh, so a new deploy shows up on the next
+  launch. Installed on a desktop browser that supports it, it can also be
+  the system's *Open with…* handler for PDFs and images.
 - **Pages mode** — thumbnail grid of all pages: select, drag to reorder,
   remove pages, and append pages from a second PDF. **Split** breaks the
   document into two tabs at a chosen page: select exactly one page, then
@@ -234,6 +259,11 @@ length. Measured on a 300-page file: load `6.0s -> 0.37s`, canvas memory
 loads in ~0.4s. Thumbnails in Pages mode are lazy for the same reason.
 
 ## Known limitations
+
+- On a phone, the two-finger pinch works while no tool is armed (with a
+  drawing tool armed, fingers draw); zoom is also in **⋯**. Sign-in uses a
+  pop-up window; in an app opened from the iOS home screen that pop-up path
+  is untested here and may not complete — if so, sign in once from Safari.
 
 - Sign-in is Google only, uses a pop-up window, and needs a network
   connection (everything else works offline). Only signatures drawn on the

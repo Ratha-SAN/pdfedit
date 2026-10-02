@@ -249,7 +249,7 @@ export function initViewControls() {
   applyNarrowConstraint();
 }
 
-function setZoom(z) {
+export function setZoom(z) {
   state.zoom = Math.max(0.25, Math.min(4, Math.round(z * 100) / 100));
   $('#zoom-level').textContent = Math.round(state.zoom * 100) + '%';
   renderEditView();
@@ -288,6 +288,8 @@ export function armTool(tool, hint) {
   $('#draw-fill-row').hidden = !tool || tool.type !== 'shape' || (tool.shape !== 'rect' && tool.shape !== 'ellipse');
   $('#draw-color-swatches').hidden = !tool || tool.type !== 'draw' || tool.tool !== 'highlighter';
   updatePlacingCursor();
+  // The phone layout's tab bar highlights whichever tool group is armed.
+  document.dispatchEvent(new CustomEvent('toolchange', { detail: tool }));
 }
 
 function updatePlacingCursor() {

@@ -790,17 +790,6 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
 .item-toolbar .item-edit.editing { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
 .item .text-content[contenteditable="plaintext-only"] { box-shadow: 0 0 0 2px var(--accent) inset; }
 
-@media (max-width: 640px) {
-  /* Sidebar becomes a horizontal strip above the document on phones, so the
-     page still gets the full width. */
-  #workspace { flex-direction: column; }
-  #sidebar {
-    flex: 0 0 auto;
-    max-height: 42vh;
-    border-right: none;
-    border-bottom: 1px solid var(--border-strong);
-  }
-}
 .item-toolbar .item-edit { font-size: 12px; padding: 3px 8px; border-radius: 4px; }
 
 /* Pinned to the sidebar's bottom edge (margin-top:auto in a flex column);
@@ -819,3 +808,145 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   border-radius: 999px;
 }
 .side-bottom-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
+
+/* ---------- Phone app layout (≤640px; behaviour in js/mobile.js) ----------
+   An app bar on top, a tab bar at the bottom, tools and dialogs in bottom
+   sheets, and padding for the notch / home indicator (viewport-fit=cover).
+   Wider screens never see any of it. */
+#mobile-nav, #more-sheet, #sheet-backdrop, #btn-mobile-more, .sheet-grabber, .sheet-done, .brand-short { display: none; }
+
+@media (max-width: 640px) {
+  @supports (height: 100dvh) { body { height: 100dvh; } }
+  html, body { overscroll-behavior: none; }
+  button { -webkit-tap-highlight-color: transparent; }
+  /* iOS zooms the whole page into any focused field smaller than 16px. */
+  input, select, textarea { font-size: 16px; }
+  #main { overscroll-behavior: contain; }
+
+  /* App bar: title, undo/redo, Save, ⋯ -- everything else moves to More. */
+  #topbar {
+    min-height: 52px;
+    padding: calc(6px + env(safe-area-inset-top)) calc(8px + env(safe-area-inset-right)) 6px calc(14px + env(safe-area-inset-left));
+    gap: 4px;
+  }
+  #topbar .brand { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 17px; }
+  #topbar .brand-full { display: none; }
+  #topbar .brand-short { display: inline; }
+  .topbar-spacer, #mode-tabs { display: none !important; }
+  #topbar-undo-redo button { width: 38px; height: 38px; padding: 0; }
+  #btn-export { padding: 8px 14px; border-radius: 999px; font-weight: 600; }
+  #btn-mobile-more {
+    display: inline-flex; flex-shrink: 0;
+    width: 40px; height: 40px; padding: 0;
+    border: none; border-radius: 50%; background: transparent;
+  }
+  #btn-mobile-more:hover:not(:disabled) { background: var(--surface-alt); }
+  #doc-tabs { padding: 4px 10px 0; }
+
+  /* Bottom tab bar */
+  #mobile-nav:not([hidden]) {
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    flex: 0 0 auto; position: relative; z-index: 60;
+    background: var(--surface);
+    border-top: 1px solid var(--border-strong);
+    padding: 4px calc(4px + env(safe-area-inset-right)) env(safe-area-inset-bottom) calc(4px + env(safe-area-inset-left));
+  }
+  .nav-btn {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    min-height: 58px; padding: 6px 2px;
+    border: none; border-radius: 14px; background: none;
+    color: var(--text-muted); font-size: 11px; font-weight: 600;
+  }
+  .nav-btn:hover:not(:disabled) { background: none; }
+  .nav-btn svg { width: 24px; height: 24px; padding: 3px 14px; border-radius: 14px; box-sizing: content-box; transition: background .2s; }
+  .nav-btn span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nav-btn.active { color: var(--accent); }
+  .nav-btn.active svg { background: var(--accent-soft); }
+
+  /* Bottom sheets: the sidebar (one section at a time) and More. */
+  #sidebar, .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 96;
+    display: block; width: auto; flex: none;
+    max-height: min(80dvh, 640px); overflow-y: auto; overscroll-behavior: contain;
+    padding: 0 calc(16px + env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+    background: var(--surface); color: var(--text);
+    border: none; border-radius: 22px 22px 0 0;
+    box-shadow: 0 -12px 40px var(--shadow);
+    transform: translateY(105%); visibility: hidden;
+    transition: transform .3s cubic-bezier(.2, .8, .2, 1), visibility 0s linear .3s;
+  }
+  #sidebar.sheet-open, .sheet.sheet-open { transform: none; visibility: visible; transition: transform .3s cubic-bezier(.2, .8, .2, 1); }
+  #sidebar.dragging, .sheet.dragging { transition: none; }
+  #more-sheet { display: block; } /* beats the id-level hide rule above */
+  #sheet-backdrop {
+    display: block; position: fixed; inset: 0; z-index: 95;
+    background: var(--overlay); opacity: 0; pointer-events: none; transition: opacity .3s;
+  }
+  #sheet-backdrop.show { opacity: 1; pointer-events: auto; }
+  .sheet-grabber {
+    display: block; position: sticky; top: 0; z-index: 1;
+    height: 22px; margin: 0 -16px; background: var(--surface); cursor: grab; touch-action: none;
+  }
+  .sheet-grabber::before { content: ''; display: block; width: 40px; height: 5px; margin: 8px auto 0; border-radius: 3px; background: var(--border-strong); }
+  .sheet-title { font-size: 17px; font-weight: 700; padding: 2px 2px 12px; touch-action: none; }
+  .sheet-done {
+    display: block; width: 100%; min-height: 48px; margin-top: 14px;
+    font-size: 16px; font-weight: 600; border-radius: 14px;
+    background: var(--accent); border-color: var(--accent); color: var(--accent-fg);
+  }
+  .sheet-done:hover:not(:disabled) { background: var(--accent-hover); }
+
+  #sidebar .side-sec, #sidebar .side-bottom-btn { display: none; }
+  #sidebar .side-sec.sheet-current:not([hidden]) { display: block; }
+  #sidebar .side-sec + .side-sec { margin-top: 0; }
+  #sidebar .sheet-current > .side-head {
+    padding: 2px 2px 12px; background: none; border: none; cursor: default; touch-action: none;
+    font-size: 17px; font-weight: 700; letter-spacing: 0; text-transform: none; color: var(--text);
+  }
+  #sidebar .sheet-current > .side-head::after { display: none; }
+  #sidebar .side-body { gap: 8px; padding: 0; }
+  #sidebar .side-body > button, #draw-tool-grid button { min-height: 50px; font-size: 16px; border-radius: 14px; padding: 10px 14px; }
+  #draw-tool-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  #draw-tool-grid button { padding: 10px 4px; text-align: center; }
+  #draw-settings label:not(#draw-fill-row) { font-size: 15px; min-height: 40px; }
+  #draw-settings input[type=range] { flex: 1; max-width: 60%; }
+  #draw-settings select { min-height: 40px; }
+  #draw-settings .color-swatch, #draw-color-swatches .color-swatch { width: 32px; height: 32px; }
+
+  /* More sheet */
+  .more-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 2px; border-top: 1px solid var(--border); font-size: 15px; }
+  .more-group { padding: 12px 2px; border-top: 1px solid var(--border); }
+  .more-group:empty, #more-account-slot:has(> #account[hidden]) { display: none; }
+  .more-label { font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; }
+  #more-sheet .tab { min-height: 40px; padding: 8px 16px; font-size: 15px; }
+  #more-view-slot .topbar-view { display: flex; flex-wrap: wrap; gap: 8px; }
+  #more-view-slot #view-mode { flex: 1 1 100%; min-height: 44px; padding: 8px 10px; border-radius: 12px; }
+  #more-view-slot .zoom-group { display: flex; flex: 1 1 100%; }
+  #more-view-slot .zoom-group button { flex: 1; min-height: 44px; font-size: 17px; }
+  #more-view-slot #page-nav:not([hidden]) { display: flex; flex: 1 1 100%; align-items: center; gap: 8px; }
+  #more-view-slot #page-nav button { min-width: 48px; min-height: 44px; }
+  #more-view-slot #page-indicator { flex: 1; text-align: center; }
+  #more-account-slot #account { display: block; }
+  #more-account-slot #btn-sign-in, #more-account-slot .account-btn { width: 100%; min-height: 48px; justify-content: center; font-size: 16px; border-radius: 14px; }
+  #more-account-slot #account-name { max-width: none; }
+  .more-actions { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .more-actions > button { width: 100%; min-height: 48px; margin: 0; font-size: 16px; border-radius: 14px; }
+  #more-sheet.no-doc #btn-print { display: none; }
+
+  /* Dialogs become bottom sheets too. */
+  .modal { padding: env(safe-area-inset-top) 0 0; }
+  .modal-box, #sig-modal .modal-box {
+    width: 100%; max-width: 100%;
+    margin: auto 0 0;
+    border-radius: 22px 22px 0 0;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    animation: sheet-up .3s cubic-bezier(.2, .8, .2, 1);
+  }
+  .modal-head { border-radius: 22px 22px 0 0; }
+  .modal-actions > button { flex: 1 1 auto; min-height: 46px; }
+  #features-modal .modal-box { border-radius: 22px 22px 0 0; }
+}
+@keyframes sheet-up { from { transform: translateY(30%); opacity: .5; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  #sidebar, .sheet, #sheet-backdrop, .modal-box { transition: none !important; animation: none !important; }
+}
