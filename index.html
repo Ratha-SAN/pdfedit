@@ -2,9 +2,21 @@
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- viewport-fit=cover lets the app draw under the notch / home indicator
+     (padded back in with env(safe-area-inset-*)); maximum-scale=1 stops iOS
+     from zooming the whole UI whenever a small input gets focus. The
+     document itself has its own crisp pinch-zoom (js/mobile.js). -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
 <title>Khmer PDF Editor</title>
-<link rel="icon" href="data:,">
+<meta name="description" content="Edit, sign and OCR PDFs with first-class Khmer support — fully in your browser.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#152d31">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Khmer PDF">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <!-- Applies the theme before any CSS loads or paints, so there is no
      dark-then-light (or light-then-dark) flash on load. js/app.js's module
      script only runs after the document is parsed -- by then a flash would
@@ -27,6 +39,8 @@
     var saved = null;
     try { saved = localStorage.getItem('pdfedit-theme'); } catch (e) {}
     document.documentElement.dataset.theme = saved === 'light' ? 'light' : 'dark';
+    // The installed app's status bar / Android task colour follows the theme.
+    if (saved === 'light') document.querySelector('meta[name="theme-color"]').content = '#ffffff';
     var lang = null;
     try { lang = localStorage.getItem('pdfedit-lang'); } catch (e) {}
     if (lang === 'km') document.documentElement.classList.add('lang-pending');
@@ -37,7 +51,7 @@
 </head>
 <body>
 <header id="topbar">
-  <div class="brand" data-i18n="appTitle">Khmer PDF Editor</div>
+  <div class="brand"><span class="brand-full" data-i18n="appTitle">Khmer PDF Editor</span><span class="brand-short" data-i18n="appTitleShort">Khmer PDF</span></div>
   <span id="lang-toggle">
     <button id="lang-en" class="tab active">English</button>
     <button id="lang-km" class="tab">ខ្មែរ</button>
@@ -89,6 +103,11 @@
       <span id="account-name"></span>
     </button>
   </div>
+  <!-- Phones only (css): opens the More sheet, which the language/theme
+       toggles, view controls, Print, account and Features move into. -->
+  <button id="btn-mobile-more" class="icon-btn" data-i18n-title="btnMoreTitle" title="More options" aria-haspopup="dialog">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+  </button>
 </header>
 
 <div id="account-menu" role="menu" hidden>
@@ -326,6 +345,32 @@
 </div>
 
 </div>
+
+<!-- Phones only (css): the app's bottom tab bar. Each tab either acts
+     directly (Open, Pages) or opens the matching sidebar section as a bottom
+     sheet, so every tool keeps its one set of controls and handlers. -->
+<nav id="mobile-nav" hidden>
+  <button class="nav-btn" data-nav="open"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H9l2 2h7.5A2.5 2.5 0 0 1 21 9.5v8a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"/><path d="M12 11v6M9 14h6"/></svg><span data-i18n="btnUpload">Open</span></button>
+  <button class="nav-btn" data-nav="insert"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8.5v7M8.5 12h7"/></svg><span data-i18n="secInsert">Insert</span></button>
+  <button class="nav-btn" data-nav="draw"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.83 2.83 0 0 0-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg><span data-i18n="secDraw">Draw</span></button>
+  <button class="nav-btn" data-nav="ocr"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M8 9.5h8M8 12.5h8M8 15.5h5"/></svg><span data-i18n="navOcr">Scan text</span></button>
+  <button class="nav-btn" data-nav="pages"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4" width="7" height="9" rx="1.5"/><rect x="13.5" y="4" width="7" height="9" rx="1.5"/><path d="M3.5 17h17M3.5 20h11"/></svg><span data-i18n="secPages">Pages</span></button>
+</nav>
+
+<div id="sheet-backdrop" hidden></div>
+
+<!-- Phones only: settings that don't fit the app bar. Its slots are filled
+     by moving the real controls in (js/mobile.js) and back out on wider
+     screens, so there is still exactly one of each. -->
+<section id="more-sheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="more-sheet-title" hidden>
+  <div class="sheet-grabber" aria-hidden="true"></div>
+  <div class="sheet-title" id="more-sheet-title" data-i18n="moreTitle">More</div>
+  <div class="more-group" id="more-account-slot"></div>
+  <div class="more-row"><span data-i18n="moreLanguage">Language</span><div id="more-lang-slot"></div></div>
+  <div class="more-row"><span data-i18n="moreTheme">Theme</span><div id="more-theme-slot"></div></div>
+  <div class="more-group" id="more-view-group"><div class="more-label" data-i18n="moreView">View</div><div id="more-view-slot"></div></div>
+  <div class="more-actions" id="more-actions-slot"></div>
+</section>
 
 <div id="busy" hidden><div class="spinner"></div><span id="busy-label">Working…</span></div>
 

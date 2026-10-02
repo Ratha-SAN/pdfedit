@@ -6,6 +6,9 @@ export function setTheme(theme) {
   try { localStorage.setItem('pdfedit-theme', theme); } catch {}
   $('#theme-light').classList.toggle('active', theme === 'light');
   $('#theme-dark').classList.toggle('active', theme === 'dark');
+  // Status bar / task-switcher colour of the installed app (matches --surface).
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = theme === 'light' ? '#ffffff' : '#152d31';
 }
 
 export function initTheme() {

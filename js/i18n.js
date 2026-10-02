@@ -3,6 +3,7 @@ import { state, $ } from './state.js';
 const translations = {
   en: {
     appTitle: 'Khmer PDF Editor',
+    appTitleShort: 'Khmer PDF',
     tabEdit: 'Edit',
     tabPages: 'Pages',
 
@@ -114,6 +115,14 @@ const translations = {
     confirmDeleteSignature: 'Delete this saved signature? This can’t be undone.',
     sigDeleteFailed: 'Could not delete the signature: {err}',
 
+    navOcr: 'Scan text',
+    btnMoreTitle: 'More options',
+    moreTitle: 'More',
+    moreLanguage: 'Language',
+    moreTheme: 'Theme',
+    moreView: 'Page view',
+    sheetDone: 'Done',
+
     btnSignIn: 'Sign in',
     btnSignInTitle: 'Sign in with Google to save your signatures',
     btnSignOut: 'Sign out',
@@ -210,6 +219,7 @@ const translations = {
   },
   km: {
     appTitle: 'កម្មវិធីកែសម្រួល PDF ខ្មែរ',
+    appTitleShort: 'PDF ខ្មែរ',
     tabEdit: 'កែសម្រួល',
     tabPages: 'ទំព័រ',
 
@@ -320,6 +330,14 @@ const translations = {
     sigDeleteSavedTitle: 'លុបហត្ថលេខាដែលបានរក្សាទុកនេះ',
     confirmDeleteSignature: 'លុបហត្ថលេខាដែលបានរក្សាទុកនេះមែនទេ? មិនអាចយកមកវិញបានទេ។',
     sigDeleteFailed: 'មិនអាចលុបហត្ថលេខាបានទេ៖ {err}',
+
+    navOcr: 'ស្កេនអក្សរ',
+    btnMoreTitle: 'ជម្រើសបន្ថែម',
+    moreTitle: 'ផ្សេងៗ',
+    moreLanguage: 'ភាសា',
+    moreTheme: 'ពណ៌ផ្ទៃ',
+    moreView: 'ការបង្ហាញទំព័រ',
+    sheetDone: 'រួចរាល់',
 
     btnSignIn: 'ចូលគណនី',
     btnSignInTitle: 'ចូលគណនីតាម Google ដើម្បីរក្សាទុកហត្ថលេខារបស់អ្នក',

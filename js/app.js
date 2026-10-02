@@ -7,6 +7,7 @@ import { t, initLang } from './i18n.js';
 import { initTheme } from './theme.js';
 import { undo, redo, refreshButtons as refreshUndoRedoButtons } from './history.js';
 import { initAccount, accountReady, currentUser, signIn, signOut } from './account.js';
+import { initMobile, closeSheets } from './mobile.js';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('vendor/pdf.worker.min.js', location.href).href;
 
@@ -75,6 +76,7 @@ async function openFiles(files) {
     dropzone.hidden = true;
     $('#mode-tabs').hidden = false;
     $('#sidebar').hidden = false;
+    $('#mobile-nav').hidden = false;
     $('#topbar-tools').hidden = false;
     $('#topbar-actions').hidden = false;
     renderDocTabs();
@@ -83,6 +85,14 @@ async function openFiles(files) {
   } finally {
     hideBusy();
   }
+}
+
+// The installed app can be the system's "Open with…" handler for PDFs and
+// images (manifest.webmanifest file_handlers); files arrive here.
+if ('launchQueue' in window) {
+  window.launchQueue.setConsumer(async ({ files }) => {
+    if (files && files.length) openFiles(await Promise.all(files.map((handle) => handle.getFile())));
+  });
 }
 
 /* ---------- document tabs ---------- */
@@ -115,6 +125,8 @@ export function renderDocTabs() {
         dropzone.hidden = false;
         $('#mode-tabs').hidden = true;
         $('#sidebar').hidden = true;
+        $('#mobile-nav').hidden = true;
+        closeSheets();
         $('#topbar-tools').hidden = true;
         $('#topbar-actions').hidden = true;
         $('#edit-view').hidden = true;
@@ -157,6 +169,7 @@ async function setMode(mode) {
   if (mode === 'edit') await renderEditView();
   else await renderPagesView();
   refreshUndoRedoButtons();
+  document.dispatchEvent(new CustomEvent('modechange', { detail: mode }));
 }
 
 $('#tab-edit').addEventListener('click', () => setMode('edit'));
@@ -205,9 +218,12 @@ function openAccountMenu() {
   const btn = $('#btn-account');
   const r = btn.getBoundingClientRect();
   const menu = $('#account-menu');
-  menu.style.top = r.bottom + 6 + 'px';
   menu.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
   menu.hidden = false;
+  // Below the button normally; above it when that would run off the screen
+  // (on a phone the account button lives in the More sheet at the bottom).
+  const h = menu.offsetHeight;
+  menu.style.top = (r.bottom + 6 + h > window.innerHeight ? Math.max(8, r.top - 6 - h) : r.bottom + 6) + 'px';
   btn.setAttribute('aria-expanded', 'true');
 }
 function closeAccountMenu() {
@@ -520,6 +536,13 @@ watchDevicePixelRatio();
 initPagesMode();
 initOcr();
 initViewControls();
+initMobile();
+
+// Installable app (home-screen icon, full-screen, works offline): the
+// service worker caches what the app loads so it opens without a network.
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  navigator.serviceWorker.register('sw.js').catch((err) => console.warn('Service worker not registered:', err));
+}
 
 // Pre-warm the default font so canvas measurement is correct on first use.
 // The rest load on demand (font-display: swap) rather than pulling ~850KB of
