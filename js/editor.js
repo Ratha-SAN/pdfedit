@@ -2,6 +2,7 @@ import { state, newId, $, setHint, FONT_STACKS, FONT_FAMILY_NAME, KHMER_FONTS, L
 import { t } from './i18n.js';
 import { recognizeArea } from './ocr.js';
 import { pushHistory } from './history.js';
+import { accountReady, currentUser, signIn, listSignatures, saveSignature, deleteSignature } from './account.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -1361,6 +1362,7 @@ export function initSignatureModal(onReady) {
   const refreshSigButtons = () => {
     $('#sig-undo').disabled = !sigUndoStack.length;
     $('#sig-redo').disabled = !sigRedoStack.length;
+    $('#sig-save').disabled = !sigDirty || sigSaving;
   };
   const sigUndo = () => {
     if (!sigUndoStack.length) return;
@@ -1591,6 +1593,125 @@ export function initSignatureModal(onReady) {
     modal.hidden = true;
     onReady({ dataUrl: trimmed.toDataURL('image/png'), natW: trimmed.width, natH: trimmed.height });
   });
+
+  /* Saved signatures -- only where sign-in exists at all (see account.js);
+     elsewhere the whole section and the Save button stay hidden. */
+  const savedList = $('#sig-saved-list');
+  const setSavedStatus = (text) => {
+    $('#sig-saved-status').hidden = !text;
+    $('#sig-saved-status').textContent = text || '';
+  };
+  const useSaved = (sig) => {
+    modal.hidden = true;
+    onReady({ dataUrl: sig.png, natW: sig.w, natH: sig.h });
+  };
+  const renderSaved = (items) => {
+    savedList.innerHTML = '';
+    for (const sig of items) {
+      const tile = document.createElement('div');
+      tile.className = 'sig-saved-item';
+      const use = document.createElement('button');
+      use.type = 'button';
+      use.className = 'sig-saved-use';
+      use.title = t('sigUseSavedTitle');
+      const img = document.createElement('img');
+      img.src = sig.png;
+      img.alt = '';
+      use.appendChild(img);
+      use.addEventListener('click', () => useSaved(sig));
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'sig-saved-delete';
+      del.textContent = '×';
+      del.title = t('sigDeleteSavedTitle');
+      del.addEventListener('click', async () => {
+        if (!confirm(t('confirmDeleteSignature'))) return;
+        del.disabled = true;
+        try {
+          await deleteSignature(sig.id);
+          tile.remove();
+          if (!savedList.children.length) setSavedStatus(t('sigSavedEmpty'));
+        } catch (err) {
+          del.disabled = false;
+          alert(t('sigDeleteFailed', { err: err.message || err }));
+        }
+      });
+      tile.append(use, del);
+      savedList.appendChild(tile);
+    }
+    setSavedStatus(items.length ? '' : t('sigSavedEmpty'));
+  };
+  // Each refresh gets a token so a slow response from an earlier one (say,
+  // the account switched mid-load) can't overwrite a newer list.
+  let savedToken = 0;
+  refreshSavedSignatures = async () => {
+    const token = ++savedToken;
+    const available = accountReady();
+    const user = currentUser();
+    $('#sig-saved').hidden = !available;
+    $('#sig-saved-signin').hidden = !available || !!user;
+    $('#sig-save').hidden = !user;
+    savedList.innerHTML = '';
+    setSavedStatus('');
+    refreshSigButtons();
+    if (!user || modal.hidden) return;
+    setSavedStatus(t('sigSavedLoading'));
+    try {
+      const items = await listSignatures();
+      if (token === savedToken) renderSaved(items);
+    } catch (err) {
+      if (token === savedToken) setSavedStatus(t('sigSavedLoadFailed', { err: err.message || err }));
+    }
+  };
+  $('#sig-saved-signin-btn').addEventListener('click', () => signIn());
+  document.addEventListener('accountchange', () => refreshSavedSignatures());
+  // Tile tooltips and the status line are generated text, not data-i18n.
+  document.addEventListener('langchange', () => { if (!modal.hidden) refreshSavedSignatures(); });
+
+  $('#sig-save').addEventListener('click', async () => {
+    if (!sigDirty || sigSaving) return;
+    const trimmed = trimCanvas(canvas);
+    sigSaving = true;
+    refreshSigButtons();
+    const btn = $('#sig-save');
+    btn.textContent = t('sigSaving');
+    try {
+      // natW/natH stay the drawn size so a saved signature lands on the
+      // page exactly as large as the same one used straight from the pad;
+      // only the stored bitmap is capped (see savedSignaturePng).
+      await saveSignature({ png: savedSignaturePng(trimmed), w: trimmed.width, h: trimmed.height });
+      await refreshSavedSignatures();
+    } catch (err) {
+      alert(t('sigSaveFailed', { err: err.message || err }));
+    } finally {
+      sigSaving = false;
+      btn.textContent = t('sigSave');
+      refreshSigButtons();
+    }
+  });
+}
+
+let sigSaving = false;
+let refreshSavedSignatures = async () => {};
+
+// A Firestore document holds at most 1 MiB, and the pad renders at up to 3x
+// pixel density, so the stored copy is capped at 1200px on its long side --
+// still sharper than a signature is ever placed on a page -- and stepped
+// down further in the (practically unreachable) case it's still too big.
+function savedSignaturePng(src) {
+  let max = 1200;
+  for (;;) {
+    const scale = Math.min(1, max / Math.max(src.width, src.height));
+    const out = document.createElement('canvas');
+    out.width = Math.max(1, Math.round(src.width * scale));
+    out.height = Math.max(1, Math.round(src.height * scale));
+    const ctx = out.getContext('2d');
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(src, 0, 0, out.width, out.height);
+    const png = out.toDataURL('image/png');
+    if (png.length < 900_000 || max <= 200) return png;
+    max = Math.round(max * 0.7);
+  }
 }
 
 export function openSignatureModal() {
@@ -1599,6 +1720,7 @@ export function openSignatureModal() {
   $('#sig-modal').hidden = false;
   resizeSigCanvases();
   clearSignatureLayers();
+  refreshSavedSignatures();
 }
 
 function trimCanvas(canvas) {
