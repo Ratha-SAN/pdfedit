@@ -45,7 +45,8 @@ device.
   plain click-to-select costs nothing. History is per document tab, so
   closing a tab or switching to another one doesn't mix up histories. It
   doesn't cover per-field toolbar tweaks (color/thickness/style/font on an
-  already-placed item) or Pages-mode operations (reorder/remove/append/
+  already-placed item — except a signature's color, which is undoable) or
+  Pages-mode operations (reorder/remove/append/
   split) — see Known limitations.
 - **Edit mode** — add text boxes (Khmer or English), insert PNG/JPEG images,
   and place a signature (drawn on a canvas or uploaded as PNG) anywhere on any
@@ -70,7 +71,13 @@ device.
   drawing stays smooth on mobile since each frame only redraws the small
   area a stroke actually touched rather than the whole canvas, and its own
   undo/redo (buttons or Ctrl/Cmd+Z) removes or restores one stroke at a
-  time, separate from the main document's history.
+  time, separate from the main document's history. A placed signature's
+  color can be changed afterwards from its toolbar (select it): the pad's 4
+  ink presets or any custom color. Every pixel takes the new color and keeps
+  its own transparency, so smooth edges and the Ink/Brush translucency are
+  untouched; an uploaded PNG with no transparency (a scan on white paper)
+  has its paper cleared to transparent and its ink recolored. The change
+  carries into the saved PDF and is one undo step.
 - **Sign in & saved signatures** (optional) — a **Sign in** button at the
   right end of the top bar signs in with Google; once signed in it shows
   your name, with a menu to sign out. The signature dialog then gains a
@@ -234,7 +241,8 @@ loads in ~0.4s. Thumbnails in Pages mode are lazy for the same reason.
 
 - Undo/redo covers item edits in Edit mode only. It does not cover per-field
   edits from an already-placed item's own toolbar (changing its color,
-  thickness, dash style, or font after the fact), nor Pages-mode operations
+  thickness, dash style, or font after the fact — a signature's color is the
+  exception), nor Pages-mode operations
   (reorder, remove, append, split) — those take effect immediately with no
   undo step.
 - Added text, and any Draw-section stroke or shape, becomes an image in the
