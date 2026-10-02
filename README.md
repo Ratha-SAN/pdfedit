@@ -197,16 +197,17 @@ Sign-in switches itself on wherever the app is served by Firebase Hosting,
 which publishes the project's web config at `/__/firebase/init.json` — so
 no keys live in this repository. It needs four one-time settings in the
 [Firebase console](https://console.firebase.google.com/) for the project
-(`pdfedit-19051`):
+(`pdfedit-19051`). The console's menu layout changes between versions
+(there may be no *Build* section), so each step links straight to its page:
 
-1. **Project settings → Your apps**: a *Web app* must be registered
+1. **[Project settings → Your apps](https://console.firebase.google.com/project/pdfedit-19051/settings/general)**: a *Web app* must be registered
    (Firebase Hosting serves its config; without one, sign-in stays hidden).
-2. **Authentication**: click **Get started** (first time only), then on
-   **Sign-in method** enable **Google**.
-3. **Authentication → Settings → Authorized domains**: add the hosting
+2. **[Authentication](https://console.firebase.google.com/project/pdfedit-19051/authentication)**: click **Get started** (first time only), then on
+   **[Sign-in method](https://console.firebase.google.com/project/pdfedit-19051/authentication/providers)** enable **Google**.
+3. **[Authentication → Settings → Authorized domains](https://console.firebase.google.com/project/pdfedit-19051/authentication/settings)**: add the hosting
    address, e.g. `pdfedit.web.app` (the project's own default domains are
    listed automatically; a second hosting site's may not be).
-4. **Firestore Database**: create the database, then publish the rules in
+4. **[Firestore Database](https://console.firebase.google.com/project/pdfedit-19051/firestore)**: create the database, then publish the rules in
    [`firestore.rules`](firestore.rules) — paste them into the console's
    *Rules* tab, or run `firebase deploy --only firestore:rules`. The CI
    workflow deploys hosting only, so rule changes aren't published
