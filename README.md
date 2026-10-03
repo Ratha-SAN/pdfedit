@@ -102,14 +102,13 @@ device.
   by Firebase Hosting — see [Sign-in setup](#sign-in-setup); on GitHub
   Pages or a local server the app is unchanged and makes no sign-in
   requests at all.
-- **Saved names** (with sign-in) — a text box's **☆** saves its text with
-  its font, color and size to **My names** (Firestore, `users/<uid>/names`,
-  only yours); **Insert → + Saved name** lists them, each shown in its own
-  style, and placing one is a single tap, like a saved signature. Names can
-  also be typed straight into that dialog, and deleted there. Inside a text
-  box, the **names** button next to 📅 opens the same list as a popover:
-  tap a name to insert it at the cursor (an empty box also takes on the
-  name's font, color and size).
+- **Saved names** (with sign-in) — kept right in the text box: its
+  **names** button (next to 📅) opens **My names** (Firestore,
+  `users/<uid>/names`, only yours), each name shown in its own style. Tap
+  one to insert it at the cursor (an empty box also takes on the name's
+  font, color and size), **×** to delete it, or type a new one at the
+  bottom to save it in the box's current style. The box's **☆** saves
+  whatever it holds, with its font, color and size.
 - **Draw** — a sidebar section (tools arranged in a compact grid) with Pen,
   Pencil, Marker, Highlighter, Shapes (rectangle/ellipse/line/arrow, with
   optional fill), and an Eraser. Color, thickness, and line style

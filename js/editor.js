@@ -2,7 +2,7 @@ import { state, newId, $, setHint, FONT_STACKS, FONT_FAMILY_NAME, KHMER_FONTS, L
 import { t } from './i18n.js';
 import { recognizeArea } from './ocr.js';
 import { pushHistory } from './history.js';
-import { accountReady, currentUser, signIn, listSignatures, saveSignature, deleteSignature, saveName, listNames } from './account.js';
+import { accountReady, currentUser, signIn, listSignatures, saveSignature, deleteSignature, saveName, listNames, deleteName } from './account.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -273,7 +273,7 @@ export function armTool(tool, hint) {
   setHint(hint || null);
   document.querySelectorAll('#edit-tools button, #ocr-tools button, #draw-tools button').forEach((b) => b.classList.remove('tool-armed'));
   if (tool) {
-    if (tool.type === 'text') $(tool.preset ? '#btn-add-saved-name' : '#btn-add-text').classList.add('tool-armed');
+    if (tool.type === 'text') $('#btn-add-text').classList.add('tool-armed');
     if (tool.type === 'stamp' && tool.kind === 'image') $('#btn-add-image').classList.add('tool-armed');
     if (tool.type === 'stamp' && tool.kind === 'signature') $('#btn-add-signature').classList.add('tool-armed');
     if (tool.type === 'highlight') $('#btn-add-highlight').classList.add('tool-armed');
@@ -334,11 +334,7 @@ function onPagePointerDown(e, page, wrap) {
   const y = (e.clientY - rect.top) / scale;
   let item;
   if (state.tool.type === 'text') {
-    // A saved name arrives as a preset: its text and the style it was saved in.
-    const p = state.tool.preset;
-    item = p
-      ? { id: newId(), type: 'text', x, y, text: p.text, fontSize: p.fontSize, color: p.color, fontFamily: p.fontFamily }
-      : { id: newId(), type: 'text', x, y, text: '', fontSize: 16, color: '#000000', fontFamily: state.lastFont || DEFAULT_FONT };
+    item = { id: newId(), type: 'text', x, y, text: '', fontSize: 16, color: '#000000', fontFamily: state.lastFont || DEFAULT_FONT };
   } else {
     const t = state.tool;
     let w = Math.min(t.natW * 0.75, page.vw * 0.5);
@@ -351,7 +347,7 @@ function onPagePointerDown(e, page, wrap) {
   const el = buildItemEl(item, page, wrap);
   wrap.appendChild(el);
   selectItem(el);
-  if (item.type === 'text' && !item.text) {
+  if (item.type === 'text') {
     const tc = el.querySelector('.text-content');
     startTextEdit(tc);
   }
@@ -992,35 +988,68 @@ function openDatePopover(target, anchor) {
 
 const insertDate = (date) => insertIntoBox(formatDate(date));
 
-// The saved-names list, filled after it opens (the names live in the account).
+// "My names" lives here, in the text box: the list is filled after it opens
+// (the names live in the account); tap a name to insert it, × to delete
+// it, or type a new one at the bottom (saved in this box's current style).
 let namesToken = 0;
+let namesAnchor = null;
+
+function setNamesStatus(text) {
+  $('#names-pop-status').hidden = !text;
+  $('#names-pop-status').textContent = text || '';
+}
+
+function nameRow(n) {
+  const row = document.createElement('div');
+  row.className = 'name-item';
+  const use = document.createElement('button');
+  use.type = 'button';
+  use.className = 'name-use';
+  use.title = t('nameUseTitle');
+  use.textContent = n.text;
+  use.style.fontFamily = FONT_STACKS[normalizeFontId(n.fontFamily)];
+  use.style.color = n.color;
+  use.addEventListener('click', () => insertIntoBox(n.text, n));
+  const del = document.createElement('button');
+  del.type = 'button';
+  del.className = 'name-delete';
+  del.textContent = '×';
+  del.title = t('nameDeleteTitle');
+  del.addEventListener('click', async () => {
+    if (!confirm(t('confirmDeleteName', { name: n.text }))) return;
+    del.disabled = true;
+    try {
+      await deleteName(n.id);
+      row.remove();
+      if (!$('#names-pop-list').children.length) setNamesStatus(t('namesEmpty'));
+      if (namesAnchor) placePopover($('#names-popover'), namesAnchor);
+    } catch (err) {
+      del.disabled = false;
+      alert(t('nameDeleteFailed', { err: err.message || err }));
+    }
+  });
+  row.append(use, del);
+  return row;
+}
+
 async function openNamesPopover(target, anchor) {
   const list = $('#names-pop-list');
-  const status = $('#names-pop-status');
-  const setStatus = (text) => { status.hidden = !text; status.textContent = text || ''; };
   const mine = ++namesToken;
+  namesAnchor = anchor;
   list.innerHTML = '';
   const signedIn = !!currentUser();
   $('#names-pop-signin').hidden = signedIn;
-  setStatus(signedIn ? t('sigSavedLoading') : '');
+  $('#names-pop-add').hidden = !signedIn;
+  setNamesStatus(signedIn ? t('sigSavedLoading') : '');
   showPopover('#names-popover', target, anchor);
   if (!signedIn) return;
   try {
     const names = await listNames();
     if (mine !== namesToken || openPop !== '#names-popover') return;
-    for (const n of names) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'name-use';
-      btn.textContent = n.text;
-      btn.style.fontFamily = FONT_STACKS[normalizeFontId(n.fontFamily)];
-      btn.style.color = n.color;
-      btn.addEventListener('click', () => insertIntoBox(n.text, n));
-      list.appendChild(btn);
-    }
-    setStatus(names.length ? '' : t('namesPopEmpty'));
+    for (const n of names) list.appendChild(nameRow(n));
+    setNamesStatus(names.length ? '' : t('namesEmpty'));
   } catch (err) {
-    if (mine === namesToken) setStatus(t('namesLoadFailed', { err: err.message || err }));
+    if (mine === namesToken) setNamesStatus(t('namesLoadFailed', { err: err.message || err }));
   }
   placePopover($('#names-popover'), anchor); // its height changed once filled
 }
@@ -1040,6 +1069,25 @@ export function initDatePopover() {
     const anchor = target && target.el.querySelector('.item-names');
     await signIn();
     if (currentUser() && target && anchor) openNamesPopover(target, anchor);
+  });
+  $('#names-pop-add').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = $('#names-pop-input');
+    const text = input.value.trim();
+    const target = popTarget;
+    if (!text || !target) return;
+    const btn = e.target.querySelector('button');
+    btn.disabled = true;
+    try {
+      const { item } = target;
+      await saveName({ text, fontFamily: item.fontFamily, color: item.color, fontSize: item.fontSize });
+      input.value = '';
+      if (popTarget === target) await openNamesPopover(target, namesAnchor);
+    } catch (err) {
+      alert(t('nameSaveFailed', { err: err.message || err }));
+    } finally {
+      btn.disabled = false;
+    }
   });
   document.addEventListener('pointerdown', (e) => {
     if (!popTarget || e.target.closest('#date-popover, #names-popover, .item-date, .item-names')) return;

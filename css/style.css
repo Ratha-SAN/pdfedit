@@ -829,9 +829,8 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
 .item-toolbar .item-save-name.saved { color: var(--accent); }
 .item-toolbar .item-save-name.saved svg { fill: currentColor; }
 /* Saved names need sign-in, which only exists on Firebase Hosting. */
-.item-save-name, .item-names, #btn-add-saved-name { display: none !important; }
+.item-save-name, .item-names { display: none !important; }
 .account-on .item-save-name, .account-on .item-names { display: inline-flex !important; }
-.account-on #btn-add-saved-name { display: block !important; }
 
 .text-popover {
   position: fixed; z-index: 110;
@@ -853,8 +852,6 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
 .date-format-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--text-muted); }
 .date-format-row select { flex: 1; min-width: 0; font: inherit; color: var(--text); padding: 6px 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
 
-#names-signin { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
-#names-list { display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow-y: auto; }
 .name-item { display: flex; align-items: center; gap: 8px; }
 .name-use {
   flex: 1; min-width: 0; min-height: 52px; padding: 8px 14px;
@@ -865,10 +862,9 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
 .name-use:hover:not(:disabled) { background: #fff; border-color: var(--accent); }
 .name-delete { width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 18px; flex-shrink: 0; }
 .name-delete:hover:not(:disabled) { background: var(--danger); border-color: var(--danger); color: #fff; }
-#names-status { color: var(--text-muted); font-size: 13px; padding: 6px 2px; }
-#names-add { display: flex; gap: 8px; margin-top: 12px; }
-#names-add[hidden] { display: none; }
-#names-add input { flex: 1; min-width: 0; font: inherit; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); }
+#names-pop-add { display: flex; gap: 8px; }
+#names-pop-add[hidden] { display: none; }
+#names-pop-add input { flex: 1; min-width: 0; font: inherit; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); }
 
 /* ---------- Phone app layout (≤640px; behaviour in js/mobile.js) ----------
    An app bar on top, a tab bar at the bottom, tools and dialogs in bottom
