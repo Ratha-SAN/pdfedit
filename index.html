@@ -312,7 +312,7 @@
 
 <!-- Opened from a text box's calendar button: today's date in one tap, or
      any date from the native picker, in a remembered format. -->
-<div id="date-popover" role="dialog" aria-labelledby="date-popover-title" hidden>
+<div id="date-popover" class="text-popover" role="dialog" aria-labelledby="date-popover-title" hidden>
   <div id="date-popover-title" class="date-pop-title" data-i18n="itemDateTitle">Insert a date</div>
   <button type="button" id="date-today" class="primary"><span data-i18n="dateToday">Today</span> · <span id="date-today-preview"></span></button>
   <div class="date-pick-row">
@@ -320,6 +320,18 @@
     <button type="button" id="date-insert" data-i18n="dateInsert">Insert</button>
   </div>
   <label class="date-format-row"><span data-i18n="dateFormat">Format</span><select id="date-format"></select></label>
+</div>
+
+<!-- Opened from a text box's names button: tap a saved name to put it in
+     the box (taking on its font/colour/size if the box was empty). -->
+<div id="names-popover" class="text-popover" role="dialog" aria-labelledby="names-pop-title" hidden>
+  <div id="names-pop-title" class="date-pop-title" data-i18n="itemNamesTitle">Insert a saved name</div>
+  <div id="names-pop-signin" hidden>
+    <span data-i18n="namesSignInPrompt">Sign in to save names and reuse them on any device.</span>
+    <button type="button" id="names-pop-signin-btn" data-i18n="btnSignIn">Sign in</button>
+  </div>
+  <div id="names-pop-list"></div>
+  <div id="names-pop-status" hidden></div>
 </div>
 
 <div id="ocr-modal" class="modal" hidden>
