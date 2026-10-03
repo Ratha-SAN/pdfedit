@@ -276,7 +276,7 @@ $('#image-input').addEventListener('change', async (e) => {
 $('#btn-add-signature').addEventListener('click', openSignatureModal);
 initSignatureModal((sig) => {
   armTool(
-    { type: 'stamp', kind: 'signature', dataUrl: sig.dataUrl, natW: sig.natW, natH: sig.natH, color: sig.color },
+    { type: 'stamp', kind: 'signature', dataUrl: sig.dataUrl, natW: sig.natW, natH: sig.natH, color: sig.color, placeScale: sig.placeScale },
     t('signatureToolHint')
   );
 });
