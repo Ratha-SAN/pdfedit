@@ -130,7 +130,6 @@
     <button class="side-head" aria-expanded="true" data-i18n="secInsert">Insert</button>
     <div class="side-body">
       <button id="btn-add-text" data-i18n="btnAddText" data-i18n-title="btnAddTextTitle" title="Add a text box (click a page to place)">+ Text</button>
-      <button id="btn-add-saved-name" data-i18n="btnAddSavedName" data-i18n-title="btnAddSavedNameTitle" title="Place a name you saved earlier">+ Saved name</button>
       <button id="btn-add-image" data-i18n="btnAddImage" data-i18n-title="btnAddImageTitle" title="Insert an image (click a page to place)">+ Image</button>
       <button id="btn-add-signature" data-i18n="btnAddSignature" data-i18n-title="btnAddSignatureTitle" title="Draw or upload a signature">+ Signature</button>
       <button id="btn-add-highlight" data-i18n="btnAddHighlight" data-i18n-title="btnAddHighlightTitle" title="Highlight part of a page (drag to draw)">+ Highlight</button>
@@ -291,25 +290,6 @@
   </div>
 </div>
 
-<div id="names-modal" class="modal" hidden>
-  <div class="modal-box">
-    <div class="modal-head">
-      <span data-i18n="namesModalTitle">My names</span>
-      <button class="modal-close" data-close="names-modal">&times;</button>
-    </div>
-    <div id="names-signin" hidden>
-      <span data-i18n="namesSignInPrompt">Sign in to save names and reuse them on any device.</span>
-      <button id="names-signin-btn" data-i18n="btnSignIn">Sign in</button>
-    </div>
-    <div id="names-list"></div>
-    <div id="names-status" hidden></div>
-    <form id="names-add" hidden>
-      <input type="text" id="names-input" maxlength="200" autocomplete="name" data-i18n-placeholder="namesAddPlaceholder" placeholder="Type a name to save…">
-      <button type="submit" class="primary" data-i18n="namesSave">Save</button>
-    </form>
-  </div>
-</div>
-
 <!-- Opened from a text box's calendar button: today's date in one tap, or
      any date from the native picker, in a remembered format. -->
 <div id="date-popover" class="text-popover" role="dialog" aria-labelledby="date-popover-title" hidden>
@@ -322,16 +302,21 @@
   <label class="date-format-row"><span data-i18n="dateFormat">Format</span><select id="date-format"></select></label>
 </div>
 
-<!-- Opened from a text box's names button: tap a saved name to put it in
-     the box (taking on its font/colour/size if the box was empty). -->
+<!-- Opened from a text box's names button -- the one place saved names are
+     kept: tap one to put it in the box (taking on its font/colour/size if
+     the box was empty), × to delete it, or type a new one at the bottom. -->
 <div id="names-popover" class="text-popover" role="dialog" aria-labelledby="names-pop-title" hidden>
-  <div id="names-pop-title" class="date-pop-title" data-i18n="itemNamesTitle">Insert a saved name</div>
+  <div id="names-pop-title" class="date-pop-title" data-i18n="namesModalTitle">My names</div>
   <div id="names-pop-signin" hidden>
     <span data-i18n="namesSignInPrompt">Sign in to save names and reuse them on any device.</span>
     <button type="button" id="names-pop-signin-btn" data-i18n="btnSignIn">Sign in</button>
   </div>
   <div id="names-pop-list"></div>
   <div id="names-pop-status" hidden></div>
+  <form id="names-pop-add" hidden>
+    <input type="text" id="names-pop-input" maxlength="200" autocomplete="name" data-i18n-placeholder="namesAddPlaceholder" placeholder="Type a name to save…">
+    <button type="submit" class="primary" data-i18n="namesSave">Save</button>
+  </form>
 </div>
 
 <div id="ocr-modal" class="modal" hidden>

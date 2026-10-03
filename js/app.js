@@ -8,7 +8,6 @@ import { initTheme } from './theme.js';
 import { undo, redo, refreshButtons as refreshUndoRedoButtons } from './history.js';
 import { initAccount, accountReady, currentUser, signIn, signOut } from './account.js';
 import { initMobile, closeSheets } from './mobile.js';
-import { initNames } from './names.js';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('vendor/pdf.worker.min.js', location.href).href;
 
@@ -541,7 +540,6 @@ initPagesMode();
 initOcr();
 initViewControls();
 initMobile();
-initNames();
 initDatePopover();
 
 // Installable app (home-screen icon, full-screen, works offline): the
