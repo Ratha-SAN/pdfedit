@@ -337,7 +337,8 @@ function onPagePointerDown(e, page, wrap) {
     item = { id: newId(), type: 'text', x, y, text: '', fontSize: 16, color: '#000000', fontFamily: state.lastFont || DEFAULT_FONT };
   } else {
     const t = state.tool;
-    let w = Math.min(t.natW * 0.75, page.vw * 0.5);
+    // placeScale: a saved signature lands at a quarter of the usual size.
+    let w = Math.min(t.natW * 0.75, page.vw * 0.5) * (t.placeScale || 1);
     let h = w * (t.natH / t.natW);
     item = { id: newId(), type: t.kind, x: Math.min(x, page.vw - w), y: Math.min(y, page.vh - h), w, h, dataUrl: t.dataUrl, natW: t.natW, natH: t.natH };
     if (t.color) item.color = t.color; // a signature fresh off the pad: lets its toolbar show the current ink
@@ -2001,7 +2002,8 @@ export function initSignatureModal(onReady) {
   };
   const useSaved = (sig) => {
     modal.hidden = true;
-    onReady({ dataUrl: sig.png, natW: sig.w, natH: sig.h });
+    // Placed 75% smaller than a signature straight off the pad.
+    onReady({ dataUrl: sig.png, natW: sig.w, natH: sig.h, placeScale: 0.25 });
   };
   const renderSaved = (items) => {
     savedList.innerHTML = '';
@@ -2074,9 +2076,8 @@ export function initSignatureModal(onReady) {
     const btn = $('#sig-save');
     btn.textContent = t('sigSaving');
     try {
-      // natW/natH stay the drawn size so a saved signature lands on the
-      // page exactly as large as the same one used straight from the pad;
-      // only the stored bitmap is capped (see savedSignaturePng).
+      // natW/natH stay the drawn size (only the stored bitmap is capped, see
+      // savedSignaturePng); useSaved then places it at a quarter of that.
       await saveSignature({ png: savedSignaturePng(trimmed), w: trimmed.width, h: trimmed.height });
       await refreshSavedSignatures();
     } catch (err) {

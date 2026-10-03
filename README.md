@@ -98,7 +98,8 @@ device.
   progress survives signing in from there. Saved signatures live in your
   account (Firestore, `users/<uid>/signatures`), readable only by you; the
   stored copy is capped at 1200px on its long side, and lands on the page
-  at the same size as one drawn fresh. Only shown where the app is served
+  75% smaller than one drawn fresh (a quarter of the size; drag a corner
+  to resize). Only shown where the app is served
   by Firebase Hosting — see [Sign-in setup](#sign-in-setup); on GitHub
   Pages or a local server the app is unchanged and makes no sign-in
   requests at all.
