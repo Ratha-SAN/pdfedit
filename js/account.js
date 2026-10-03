@@ -105,14 +105,16 @@ export function signOut() {
   return auth.signOut();
 }
 
-async function signatureCollection() {
+async function userCollection(name) {
   if (!user) throw new Error('Not signed in');
   if (!db) {
     await loadScript(SDK_DIR + 'firebase-firestore-compat.js');
     db = firebase.firestore();
   }
-  return db.collection('users').doc(user.uid).collection('signatures');
+  return db.collection('users').doc(user.uid).collection(name);
 }
+const signatureCollection = () => userCollection('signatures');
+const nameCollection = () => userCollection('names');
 
 // Newest first. Each entry: { id, png (data URL), w, h }.
 export async function listSignatures() {
@@ -133,4 +135,29 @@ export async function saveSignature({ png, w, h }) {
 
 export async function deleteSignature(id) {
   await (await signatureCollection()).doc(id).delete();
+}
+
+/* Saved names: a typed name (or any short text) with the style it was set
+   in, reused like a saved signature. users/{uid}/names/{id} =
+   { text, fontFamily, color, fontSize, createdAt }; firestore.rules has the
+   matching validation. */
+
+export async function listNames() {
+  const snap = await (await nameCollection()).orderBy('createdAt', 'desc').get();
+  return snap.docs.map((d) => {
+    const { text, fontFamily, color, fontSize } = d.data();
+    return { id: d.id, text, fontFamily, color, fontSize };
+  });
+}
+
+export async function saveName({ text, fontFamily, color, fontSize }) {
+  const ref = await (await nameCollection()).add({
+    text, fontFamily, color, fontSize,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+  });
+  return ref.id;
+}
+
+export async function deleteName(id) {
+  await (await nameCollection()).doc(id).delete();
 }

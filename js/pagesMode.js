@@ -7,13 +7,42 @@ const selected = new Set();
 let dragIndex = null;
 let touchDragIndex = null;
 
+/* Phone layout: thumbnails sized to fill the screen width, two per row
+   (grid) or one (column), the choice remembered. Wider screens keep the
+   fixed-size wrapping grid. */
+const phone = window.matchMedia('(max-width: 640px)');
+const LAYOUT_KEY = 'pdfedit-thumb-layout';
+let phoneLayout = 'grid';
+try { if (localStorage.getItem(LAYOUT_KEY) === 'column') phoneLayout = 'column'; } catch {}
+
+function thumbWidth() {
+  if (!phone.matches) return THUMB_WIDTH;
+  const view = $('#pages-view');
+  const cs = getComputedStyle(view);
+  const inner = view.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const cols = phoneLayout === 'column' ? 1 : 2;
+  const cell = (inner - (parseFloat(cs.columnGap) || 0) * (cols - 1)) / cols;
+  return Math.max(60, Math.floor(cell - 16)); // less the thumb's own padding (2x6) + border (2x2)
+}
+
+function syncLayoutToggle() {
+  document.querySelectorAll('#pages-layout [data-layout]').forEach((b) => {
+    const on = b.dataset.layout === phoneLayout;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', String(on));
+  });
+}
+
 export async function renderPagesView() {
   const view = $('#pages-view');
   if (thumbObserver) thumbObserver.disconnect();
   view.innerHTML = '';
+  view.classList.toggle('layout-column', phone.matches && phoneLayout === 'column');
+  syncLayoutToggle();
   selected.clear();
   updateRemoveButton();
   updateSplitButtons();
+  const width = thumbWidth();
   state.pages.forEach((page, idx) => {
     const thumb = document.createElement('div');
     thumb.className = 'thumb';
@@ -22,6 +51,10 @@ export async function renderPagesView() {
     thumb.dataset.pageId = page.id;
 
     const canvas = document.createElement('canvas');
+    // Sized up front from the page's shape, so the grid has its final
+    // layout before any thumbnail is drawn (and lazy drawing never shifts it).
+    canvas.style.width = width + 'px';
+    canvas.style.height = Math.round(width * page.vh / page.vw) + 'px';
     thumb.appendChild(canvas);
 
     const check = document.createElement('input');
@@ -61,19 +94,41 @@ export async function renderPagesView() {
     // Touch/pen: HTML5 drag-and-drop isn't usable on touchscreens (iOS
     // Safari doesn't fire it at all for `draggable`), so reorder via
     // pointer events instead. Mouse is left to the native DnD above.
+    // Press and hold to pick a page up; a plain swipe scrolls, like any
+    // phone list -- with full-width thumbnails there's nowhere else to
+    // swipe, so starting a drag on touch-down made the list unscrollable.
+    let press = null;
     thumb.addEventListener('pointerdown', (e) => {
       if (e.pointerType === 'mouse' || e.target.closest('.thumb-check')) return;
-      touchDragIndex = idx;
-      thumb.classList.add('dragging');
-      try { thumb.setPointerCapture(e.pointerId); } catch {}
+      const { pointerId, clientX, clientY } = e;
+      press = {
+        x: clientX, y: clientY,
+        timer: setTimeout(() => {
+          press = null;
+          touchDragIndex = idx;
+          thumb.classList.add('dragging');
+          try { thumb.setPointerCapture(pointerId); } catch {}
+          if (navigator.vibrate) navigator.vibrate(10);
+        }, 350),
+      };
     });
+    const cancelPress = () => { if (press) { clearTimeout(press.timer); press = null; } };
+    thumb.addEventListener('pointercancel', () => {
+      cancelPress();
+      if (touchDragIndex !== null) { touchDragIndex = null; thumb.classList.remove('dragging'); }
+    });
+    // Once a page is picked up, the finger moves it rather than the list.
+    thumb.addEventListener('touchmove', (e) => { if (touchDragIndex !== null) e.preventDefault(); }, { passive: false });
+    thumb.addEventListener('contextmenu', (e) => { if (e.pointerType !== 'mouse') e.preventDefault(); });
     thumb.addEventListener('pointermove', (e) => {
+      if (press && Math.hypot(e.clientX - press.x, e.clientY - press.y) > 8) cancelPress();
       if (touchDragIndex === null || e.pointerType === 'mouse') return;
       document.querySelectorAll('.thumb.drag-over').forEach((t) => t.classList.remove('drag-over'));
       const target = document.elementFromPoint(e.clientX, e.clientY)?.closest('.thumb');
       if (target && target !== thumb) target.classList.add('drag-over');
     });
     thumb.addEventListener('pointerup', (e) => {
+      cancelPress();
       if (touchDragIndex === null || e.pointerType === 'mouse') return;
       thumb.classList.remove('dragging');
       document.querySelectorAll('.thumb.drag-over').forEach((t) => t.classList.remove('drag-over'));
@@ -91,6 +146,7 @@ export async function renderPagesView() {
     view.appendChild(thumb);
     ensureThumbObserver().observe(thumb);
   });
+  document.dispatchEvent(new CustomEvent('pagesrendered'));
 }
 
 /* Thumbnails are lazily rendered for the same reason pages are: a long
@@ -106,7 +162,8 @@ function ensureThumbObserver() {
         const thumb = entry.target;
         if (thumb._drawn) continue;
         thumb._drawn = true;
-        renderThumb(thumb._page, thumb.querySelector('canvas'));
+        const canvas = thumb.querySelector('canvas');
+        renderThumb(thumb._page, canvas, parseFloat(canvas.style.width));
         thumbObserver.unobserve(thumb);
       }
     }, { root: $('#pages-view'), rootMargin: '600px 0px' });
@@ -114,7 +171,7 @@ function ensureThumbObserver() {
   return thumbObserver;
 }
 
-async function renderThumb(page, canvas) {
+async function renderThumb(page, canvas, width) {
   const src = state.sources[page.srcIndex];
   const pdfPage = await src.pdfjs.getPage(page.srcPageNum);
   // Same dpr-aware rendering as the main edit view's pages, floored and
@@ -123,7 +180,7 @@ async function renderThumb(page, canvas) {
   // thumbnail is tiny to begin with and a 1:1 raster leaves no room for
   // antialiasing to work with.
   const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 2), 3);
-  const scale = (THUMB_WIDTH / page.vw) * dpr;
+  const scale = (width / page.vw) * dpr;
   const vp = pdfPage.getViewport({ scale });
   canvas.width = vp.width;
   canvas.height = vp.height;
@@ -207,6 +264,30 @@ export function refreshPagesI18n() {
 }
 
 export function initPagesMode() {
+  document.querySelectorAll('#pages-layout [data-layout]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.layout === phoneLayout) return;
+      phoneLayout = btn.dataset.layout;
+      try { localStorage.setItem(LAYOUT_KEY, phoneLayout); } catch {}
+      renderPagesView();
+    });
+  });
+  // Thumbnails are drawn at a width measured from the screen, so redraw
+  // when that changes (rotation, entering/leaving the phone layout).
+  // Width only: a phone also fires resize whenever its address bar slides
+  // in or out while scrolling, and redrawing then would drop the selection.
+  let resizeTimer = null;
+  let lastWidth = 0;
+  const relayout = () => {
+    const view = $('#pages-view');
+    if (state.mode !== 'pages' || view.hidden || view.clientWidth === lastWidth) return;
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(renderPagesView, 150);
+  };
+  document.addEventListener('pagesrendered', () => { lastWidth = $('#pages-view').clientWidth; });
+  phone.addEventListener('change', relayout);
+  window.addEventListener('resize', relayout);
+
   $('#btn-remove-pages').addEventListener('click', () => {
     if (selected.size >= state.pages.length) return;
     state.pages = state.pages.filter((p) => !selected.has(p.id));

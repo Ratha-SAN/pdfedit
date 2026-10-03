@@ -1,5 +1,5 @@
 import { state, $, showBusy, hideBusy, setHint, addSource, addDoc, closeDoc, activeDoc, isImageFile, DRAW_TOOL_DEFAULT_COLOR, DRAW_TOOL_DEFAULT_SIZE } from './state.js';
-import { renderEditView, armTool, initSignatureModal, openSignatureModal, initViewControls, currentPage, fileToDataUrl, loadImage, deselectAll, refreshEditI18n, signatureUndo, signatureRedo, refreshPageItems } from './editor.js';
+import { renderEditView, armTool, initSignatureModal, initDatePopover, openSignatureModal, initViewControls, currentPage, fileToDataUrl, loadImage, deselectAll, refreshEditI18n, signatureUndo, signatureRedo, refreshPageItems } from './editor.js';
 import { renderPagesView, initPagesMode, refreshPagesI18n } from './pagesMode.js';
 import { exportPdf, exportPdfToFileHandle, printPdf, estimateExportSize, formatBytes, outputName } from './exporter.js';
 import { recognizePage, initOcr } from './ocr.js';
@@ -8,6 +8,7 @@ import { initTheme } from './theme.js';
 import { undo, redo, refreshButtons as refreshUndoRedoButtons } from './history.js';
 import { initAccount, accountReady, currentUser, signIn, signOut } from './account.js';
 import { initMobile, closeSheets } from './mobile.js';
+import { initNames } from './names.js';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('vendor/pdf.worker.min.js', location.href).href;
 
@@ -166,6 +167,7 @@ async function setMode(mode) {
   $('#edit-tools').hidden = mode !== 'edit';
   $('#ocr-tools').hidden = mode !== 'edit';
   $('#pages-tools').hidden = mode !== 'pages';
+  $('#pages-layout').hidden = mode !== 'pages';
   if (mode === 'edit') await renderEditView();
   else await renderPagesView();
   refreshUndoRedoButtons();
@@ -189,6 +191,8 @@ document.addEventListener('langchange', () => {
 
 function renderAccount(user) {
   $('#account').hidden = false;
+  // Saved names / the text box ☆ only exist where sign-in does (css keys off this).
+  document.documentElement.classList.add('account-on');
   $('#btn-sign-in').hidden = !!user;
   $('#btn-account').hidden = !user;
   if (!user) {
@@ -537,6 +541,8 @@ initPagesMode();
 initOcr();
 initViewControls();
 initMobile();
+initNames();
+initDatePopover();
 
 // Installable app (home-screen icon, full-screen, works offline): the
 // service worker caches what the app loads so it opens without a network.

@@ -72,9 +72,10 @@
     </span>
     <div class="topbar-view" id="topbar-view">
       <select id="view-mode" data-i18n-title="viewModeTitle" title="Page view">
-        <option value="continuous" data-i18n="viewContinuous">Continuous</option>
+        <option value="continuous" data-i18n="viewContinuous">Column</option>
         <option value="single" data-i18n="viewSingle">Single page</option>
         <option value="double" data-i18n="viewDouble">Double page</option>
+        <option value="grid" data-i18n="viewGrid">Grid (2 per row)</option>
       </select>
       <span class="zoom-group">
         <button id="zoom-out" data-i18n-title="zoomOutTitle" title="Zoom out">−</button>
@@ -129,6 +130,7 @@
     <button class="side-head" aria-expanded="true" data-i18n="secInsert">Insert</button>
     <div class="side-body">
       <button id="btn-add-text" data-i18n="btnAddText" data-i18n-title="btnAddTextTitle" title="Add a text box (click a page to place)">+ Text</button>
+      <button id="btn-add-saved-name" data-i18n="btnAddSavedName" data-i18n-title="btnAddSavedNameTitle" title="Place a name you saved earlier">+ Saved name</button>
       <button id="btn-add-image" data-i18n="btnAddImage" data-i18n-title="btnAddImageTitle" title="Insert an image (click a page to place)">+ Image</button>
       <button id="btn-add-signature" data-i18n="btnAddSignature" data-i18n-title="btnAddSignatureTitle" title="Draw or upload a signature">+ Signature</button>
       <button id="btn-add-highlight" data-i18n="btnAddHighlight" data-i18n-title="btnAddHighlightTitle" title="Highlight part of a page (drag to draw)">+ Highlight</button>
@@ -229,6 +231,11 @@
     </div>
     <div id="hint-bar" hidden></div>
     <div id="edit-view" hidden></div>
+    <!-- Phones only (css): thumbnails two per row or one, each filling the screen. -->
+    <div id="pages-layout" hidden>
+      <button type="button" class="tab" data-layout="grid"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><span data-i18n="pagesLayoutGrid">Grid</span></button>
+      <button type="button" class="tab" data-layout="column"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3.5" width="14" height="7.5" rx="1.5"/><rect x="5" y="13" width="14" height="7.5" rx="1.5"/></svg><span data-i18n="pagesLayoutColumn">Column</span></button>
+    </div>
     <div id="pages-view" hidden></div>
   </main>
 </div>
@@ -282,6 +289,37 @@
       <button id="sig-use" class="primary" data-i18n="sigUse">Use signature</button>
     </div>
   </div>
+</div>
+
+<div id="names-modal" class="modal" hidden>
+  <div class="modal-box">
+    <div class="modal-head">
+      <span data-i18n="namesModalTitle">My names</span>
+      <button class="modal-close" data-close="names-modal">&times;</button>
+    </div>
+    <div id="names-signin" hidden>
+      <span data-i18n="namesSignInPrompt">Sign in to save names and reuse them on any device.</span>
+      <button id="names-signin-btn" data-i18n="btnSignIn">Sign in</button>
+    </div>
+    <div id="names-list"></div>
+    <div id="names-status" hidden></div>
+    <form id="names-add" hidden>
+      <input type="text" id="names-input" maxlength="200" autocomplete="name" data-i18n-placeholder="namesAddPlaceholder" placeholder="Type a name to save…">
+      <button type="submit" class="primary" data-i18n="namesSave">Save</button>
+    </form>
+  </div>
+</div>
+
+<!-- Opened from a text box's calendar button: today's date in one tap, or
+     any date from the native picker, in a remembered format. -->
+<div id="date-popover" role="dialog" aria-labelledby="date-popover-title" hidden>
+  <div id="date-popover-title" class="date-pop-title" data-i18n="itemDateTitle">Insert a date</div>
+  <button type="button" id="date-today" class="primary"><span data-i18n="dateToday">Today</span> · <span id="date-today-preview"></span></button>
+  <div class="date-pick-row">
+    <input type="date" id="date-pick" data-i18n-title="datePick" title="Pick a date">
+    <button type="button" id="date-insert" data-i18n="dateInsert">Insert</button>
+  </div>
+  <label class="date-format-row"><span data-i18n="dateFormat">Format</span><select id="date-format"></select></label>
 </div>
 
 <div id="ocr-modal" class="modal" hidden>

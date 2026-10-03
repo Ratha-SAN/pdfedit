@@ -259,7 +259,7 @@ export function initMobile() {
     closeSheets();
   });
   // Actions that open a dialog or act straight away.
-  ['#btn-add-signature', '#mi-ocr-page', '#btn-print', '#btn-append-pdf', '#btn-remove-pages', '#btn-split-before', '#btn-split-after', '#btn-features']
+  ['#btn-add-signature', '#btn-add-saved-name', '#mi-ocr-page', '#btn-print', '#btn-append-pdf', '#btn-remove-pages', '#btn-split-before', '#btn-split-after', '#btn-features']
     .forEach((sel) => $(sel).addEventListener('click', () => { if (isPhone()) closeSheets(); }));
   document.addEventListener('modechange', updateNav);
 

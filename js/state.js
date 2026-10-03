@@ -200,7 +200,7 @@ export const state = {
   tool: null,    // { type: 'text' } | { type: 'stamp', kind, dataUrl, natW, natH } | { type: 'highlight', color }
                  // | { type: 'draw', tool } | { type: 'shape', shape } | { type: 'eraser' }
   nextId: 1,
-  viewMode: 'continuous', // 'continuous' | 'single' | 'double'
+  viewMode: 'continuous', // 'continuous' (one column) | 'grid' (2 per row, all pages) | 'single' | 'double'
   zoom: defaultZoom(),    // 1 = 100%
   lang: 'en',             // 'en' | 'km' -- interface language
   lastFont: null,
