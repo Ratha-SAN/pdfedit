@@ -2,7 +2,7 @@ import { state, newId, $, setHint, FONT_STACKS, FONT_FAMILY_NAME, KHMER_FONTS, L
 import { t } from './i18n.js';
 import { recognizeArea } from './ocr.js';
 import { pushHistory } from './history.js';
-import { accountReady, currentUser, signIn, listSignatures, saveSignature, deleteSignature, saveName } from './account.js';
+import { accountReady, currentUser, signIn, listSignatures, saveSignature, deleteSignature, saveName, listNames } from './account.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -886,48 +886,68 @@ export function formatDate(date, format = dateFormat()) {
   return DATE_FORMATS[format](date);
 }
 
-// An empty text box deletes itself when it loses focus; one waiting on the
-// date picker must survive that.
-const keepWhileEmpty = new WeakSet();
-let pendingDate = null; // set on the calendar button's pointerdown
-let dateTarget = null;  // the box the open popover inserts into
+/* Both text-box popovers -- the date picker and the saved-names list --
+   insert into the box whose button opened them, so they share the target
+   capture, positioning, insertion and clean-up below. */
 
-function openDatePopover(target, anchor) {
-  // Switching straight to another box's calendar: settle the first one.
-  if (dateTarget && dateTarget.item !== target.item) closeDatePopover();
+// An empty text box deletes itself when it loses focus; one waiting on a
+// popover must survive that.
+const keepWhileEmpty = new WeakSet();
+let pendingTarget = null; // captured on a toolbar button's pointerdown
+let popTarget = null;     // the box the open popover inserts into
+let openPop = null;       // '#date-popover' | '#names-popover'
+
+// pointerdown, not click: the text box loses focus on press, and an empty
+// one deletes itself on blur -- it must already be marked as waiting by
+// then. The caret is captured at the same moment, before focus moves.
+function captureTarget(item, page, el, tc, scale) {
+  keepWhileEmpty.add(item);
+  const sel = window.getSelection();
+  const range = tc.isContentEditable && sel.rangeCount && tc.contains(sel.anchorNode) ? sel.getRangeAt(0).cloneRange() : null;
+  pendingTarget = { item, page, el, tc, scale, range };
+}
+
+function showPopover(sel, target, anchor) {
+  // Switching straight to another box's popover: settle the first one.
+  if (popTarget && popTarget.item !== target.item) closePopover();
+  if (openPop && openPop !== sel) $(openPop).hidden = true;
   keepWhileEmpty.add(target.item);
-  dateTarget = target;
-  const pop = $('#date-popover');
-  const today = new Date();
-  $('#date-today-preview').textContent = formatDate(today);
-  $('#date-pick').value = DATE_FORMATS.iso(today);
-  const select = $('#date-format');
-  select.innerHTML = Object.keys(DATE_FORMATS).map((f) => `<option value="${f}">${DATE_FORMATS[f](today)}</option>`).join('');
-  select.value = dateFormat();
+  popTarget = target;
+  openPop = sel;
+  const pop = $(sel);
   pop.hidden = false;
-  // Below the button, or above it if that would run off the bottom; kept
-  // inside the screen sideways.
+  placePopover(pop, anchor);
+}
+
+// Below the button, or above it if that would run off the bottom; kept
+// inside the screen sideways.
+function placePopover(pop, anchor) {
   const r = anchor.getBoundingClientRect();
   const w = pop.offsetWidth, h = pop.offsetHeight;
   pop.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + 'px';
   pop.style.top = (r.bottom + 8 + h > window.innerHeight ? Math.max(8, r.top - 8 - h) : r.bottom + 8) + 'px';
 }
 
-function closeDatePopover() {
-  const target = dateTarget;
-  dateTarget = null;
-  pendingDate = null;
-  $('#date-popover').hidden = true;
+function closePopover() {
+  const target = popTarget;
+  popTarget = null;
+  pendingTarget = null;
+  if (openPop) $(openPop).hidden = true;
+  openPop = null;
   if (!target) return;
   keepWhileEmpty.delete(target.item);
   // Backed out without inserting anything into a box that was still empty.
   if (!target.item.text.trim() && document.activeElement !== target.tc) removeItem(target.item, target.page, target.el);
 }
 
-function insertDate(date) {
-  if (!dateTarget) return;
-  const { item, page, el, tc, scale, range } = dateTarget;
-  const text = formatDate(date);
+// Inserts at the captured caret if the box was being edited, else fills an
+// empty box or appends. `style` (a saved name's font/colour/size) is only
+// taken on when the box was empty -- a name dropped into existing text
+// shouldn't restyle the rest of it.
+function insertIntoBox(text, style) {
+  if (!popTarget) return;
+  const { item, page, el, tc, scale, range } = popTarget;
+  const wasEmpty = !item.text.trim();
   pushHistory(page);
   if (range && tc.isContentEditable && tc.contains(range.startContainer)) {
     range.deleteContents();
@@ -938,14 +958,71 @@ function insertDate(date) {
     const after = document.createRange();
     after.setStartAfter(node);
     sel.addRange(after);
-  } else if (!item.text.trim()) {
+  } else if (wasEmpty) {
     tc.innerText = text;
   } else {
     tc.innerText = item.text.replace(/\s+$/, '') + ' ' + text;
   }
   item.text = tc.innerText.replace(/\n$/, '');
+  if (style && wasEmpty) {
+    item.fontFamily = normalizeFontId(style.fontFamily);
+    item.color = style.color;
+    item.fontSize = style.fontSize;
+    tc.style.fontFamily = FONT_STACKS[item.fontFamily];
+    tc.style.color = item.color;
+    tc.style.fontSize = item.fontSize * scale + 'px';
+    const tb = el.querySelector(':scope > .item-toolbar');
+    tb.querySelector('select').value = item.fontFamily;
+    tb.querySelector('input[type=color]').value = item.color;
+    tb.querySelector('input[type=number]').value = item.fontSize;
+  }
   syncTextSize(item, el, scale);
-  closeDatePopover();
+  closePopover();
+}
+
+function openDatePopover(target, anchor) {
+  const today = new Date();
+  $('#date-today-preview').textContent = formatDate(today);
+  $('#date-pick').value = DATE_FORMATS.iso(today);
+  const select = $('#date-format');
+  select.innerHTML = Object.keys(DATE_FORMATS).map((f) => `<option value="${f}">${DATE_FORMATS[f](today)}</option>`).join('');
+  select.value = dateFormat();
+  showPopover('#date-popover', target, anchor);
+}
+
+const insertDate = (date) => insertIntoBox(formatDate(date));
+
+// The saved-names list, filled after it opens (the names live in the account).
+let namesToken = 0;
+async function openNamesPopover(target, anchor) {
+  const list = $('#names-pop-list');
+  const status = $('#names-pop-status');
+  const setStatus = (text) => { status.hidden = !text; status.textContent = text || ''; };
+  const mine = ++namesToken;
+  list.innerHTML = '';
+  const signedIn = !!currentUser();
+  $('#names-pop-signin').hidden = signedIn;
+  setStatus(signedIn ? t('sigSavedLoading') : '');
+  showPopover('#names-popover', target, anchor);
+  if (!signedIn) return;
+  try {
+    const names = await listNames();
+    if (mine !== namesToken || openPop !== '#names-popover') return;
+    for (const n of names) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'name-use';
+      btn.textContent = n.text;
+      btn.style.fontFamily = FONT_STACKS[normalizeFontId(n.fontFamily)];
+      btn.style.color = n.color;
+      btn.addEventListener('click', () => insertIntoBox(n.text, n));
+      list.appendChild(btn);
+    }
+    setStatus(names.length ? '' : t('namesPopEmpty'));
+  } catch (err) {
+    if (mine === namesToken) setStatus(t('namesLoadFailed', { err: err.message || err }));
+  }
+  placePopover($('#names-popover'), anchor); // its height changed once filled
 }
 
 export function initDatePopover() {
@@ -958,11 +1035,17 @@ export function initDatePopover() {
     try { localStorage.setItem(DATE_FORMAT_KEY, e.target.value); } catch {}
     $('#date-today-preview').textContent = formatDate(new Date());
   });
+  $('#names-pop-signin-btn').addEventListener('click', async () => {
+    const target = popTarget;
+    const anchor = target && target.el.querySelector('.item-names');
+    await signIn();
+    if (currentUser() && target && anchor) openNamesPopover(target, anchor);
+  });
   document.addEventListener('pointerdown', (e) => {
-    if (!dateTarget || e.target.closest('#date-popover, .item-date')) return;
-    closeDatePopover();
+    if (!popTarget || e.target.closest('#date-popover, #names-popover, .item-date, .item-names')) return;
+    closePopover();
   }, true);
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && dateTarget) closeDatePopover(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && popTarget) closePopover(); });
 }
 
 /* ---------- item DOM ---------- */
@@ -1007,6 +1090,7 @@ function buildItemEl(item, page, wrap) {
       <select title="${t('itemFontTitle')}">${fontOptionsHtml()}</select>
       <input type="color" value="${item.color}" title="${t('itemTextColorTitle')}">
       <button type="button" class="icon-btn item-date" data-i18n-title="itemDateTitle" title="${t('itemDateTitle')}"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></button>
+      <button type="button" class="icon-btn item-names" data-i18n-title="itemNamesTitle" title="${t('itemNamesTitle')}"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M17 8h5M17 12h5M19 16h3"/></svg></button>
       <button type="button" class="icon-btn item-save-name" data-i18n-title="itemSaveNameTitle" title="${t('itemSaveNameTitle')}"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg></button>`;
     const sizeInput = tb.querySelector('input[type=number]');
     sizeInput.addEventListener('input', () => {
@@ -1052,18 +1136,16 @@ function buildItemEl(item, page, wrap) {
     });
 
     const dateBtn = tb.querySelector('.item-date');
-    // pointerdown, not click: the text box loses focus on press, and an
-    // empty one deletes itself on blur -- it must already be marked as
-    // waiting for its date by then. The caret is captured at the same moment.
-    dateBtn.addEventListener('pointerdown', () => {
-      keepWhileEmpty.add(item);
-      const sel = window.getSelection();
-      const range = tc.isContentEditable && sel.rangeCount && tc.contains(sel.anchorNode) ? sel.getRangeAt(0).cloneRange() : null;
-      pendingDate = { item, page, el, tc, scale, range };
-    });
+    dateBtn.addEventListener('pointerdown', () => captureTarget(item, page, el, tc, scale));
     dateBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (pendingDate && pendingDate.item === item) openDatePopover(pendingDate, dateBtn);
+      if (pendingTarget && pendingTarget.item === item) openDatePopover(pendingTarget, dateBtn);
+    });
+    const namesBtn = tb.querySelector('.item-names');
+    namesBtn.addEventListener('pointerdown', () => captureTarget(item, page, el, tc, scale));
+    namesBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (pendingTarget && pendingTarget.item === item) openNamesPopover(pendingTarget, namesBtn);
     });
 
     const saveNameBtn = tb.querySelector('.item-save-name');

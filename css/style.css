@@ -829,11 +829,11 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
 .item-toolbar .item-save-name.saved { color: var(--accent); }
 .item-toolbar .item-save-name.saved svg { fill: currentColor; }
 /* Saved names need sign-in, which only exists on Firebase Hosting. */
-.item-save-name, #btn-add-saved-name { display: none !important; }
-.account-on .item-save-name { display: inline-flex !important; }
+.item-save-name, .item-names, #btn-add-saved-name { display: none !important; }
+.account-on .item-save-name, .account-on .item-names { display: inline-flex !important; }
 .account-on #btn-add-saved-name { display: block !important; }
 
-#date-popover {
+.text-popover {
   position: fixed; z-index: 110;
   width: min(300px, calc(100vw - 16px));
   display: flex; flex-direction: column; gap: 10px;
@@ -841,7 +841,11 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   background: var(--surface); color: var(--text);
   border: 1px solid var(--border); box-shadow: 0 10px 30px var(--shadow);
 }
-#date-popover[hidden] { display: none; }
+.text-popover[hidden] { display: none; }
+#names-pop-list { display: flex; flex-direction: column; gap: 8px; max-height: min(50vh, 320px); overflow-y: auto; }
+#names-pop-list:empty { display: none; }
+#names-pop-signin { display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+#names-pop-status { font-size: 13px; color: var(--text-muted); }
 .date-pop-title { font-weight: 600; }
 #date-today { width: 100%; min-height: 40px; }
 .date-pick-row { display: flex; gap: 8px; }
