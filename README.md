@@ -10,7 +10,9 @@ device.
 
 - **Upload** a PDF by drag-and-drop or file picker.
 - **Top bar** — a single row, left to right: brand, language, theme, mode
-  tabs, and (in Edit mode) undo/redo and page view (continuous/single/double
+  tabs, and (in Edit mode) undo/redo and page view (column/single/double, or
+  grid: every page two per row, each half the width so the grid fits the
+  screen at the default zoom;
   + zoom, 25%–400%, opening at **200%** — or 100% on phone-width screens,
   where 100% already fills the screen and 200% would need sideways panning
   on every line; the zoom readout doubles as a reset back to that default).
@@ -55,6 +57,12 @@ device.
   and place a signature (drawn on a canvas or uploaded as PNG) anywhere on any
   page. Drag to move, corner handle to resize, × to delete, and an **Edit**
   button (or double-click / long-press) to type into a text box in place.
+  A text box's toolbar also has a **📅 date** button: **Today** in one tap,
+  or any date from the native date picker, inserted at the cursor (or
+  filling an empty box). The format is chosen once and remembered —
+  dd/mm/yyyy, mm/dd/yyyy, yyyy-mm-dd, "3 October 2026", or Khmer
+  (ថ្ងៃទី៣ ខែតុលា ឆ្នាំ២០២៦, or ០៣/១០/២០២៦ in Khmer numerals); Khmer by default
+  when the interface is in Khmer.
   Drawing a signature offers 4 brush styles (Pen, Ink, Stylus, Brush) —
   each a genuinely different look (width range, opacity, blend mode) —
   plus 4 preset ink colors (Black, Blue, Red, Green), independent of style,
@@ -94,6 +102,11 @@ device.
   by Firebase Hosting — see [Sign-in setup](#sign-in-setup); on GitHub
   Pages or a local server the app is unchanged and makes no sign-in
   requests at all.
+- **Saved names** (with sign-in) — a text box's **☆** saves its text with
+  its font, color and size to **My names** (Firestore, `users/<uid>/names`,
+  only yours); **Insert → + Saved name** lists them, each shown in its own
+  style, and placing one is a single tap, like a saved signature. Names can
+  also be typed straight into that dialog, and deleted there.
 - **Draw** — a sidebar section (tools arranged in a compact grid) with Pen,
   Pencil, Marker, Highlighter, Shapes (rectangle/ellipse/line/arrow, with
   optional fill), and an Eraser. Color, thickness, and line style
@@ -149,7 +162,10 @@ device.
   app code is always fetched fresh, so a new deploy shows up on the next
   launch. Installed on a desktop browser that supports it, it can also be
   the system's *Open with…* handler for PDFs and images.
-- **Pages mode** — thumbnail grid of all pages: select, drag to reorder,
+- **Pages mode** — thumbnail grid of all pages: select, drag to reorder
+  (on touch: press and hold, then drag — a plain swipe scrolls; on a phone,
+  a **Grid / Column** switch shows two thumbnails per row or one, each
+  sized to fill the screen),
   remove pages, and append pages from a second PDF. **Split** breaks the
   document into two tabs at a chosen page: select exactly one page, then
   *Split before* (that page starts the second document) or *Split after*
@@ -243,7 +259,8 @@ no keys live in this repository. It needs four one-time settings in the
    [`firestore.rules`](firestore.rules) — paste them into the console's
    *Rules* tab, or run `firebase deploy --only firestore:rules`. The CI
    workflow deploys hosting only, so rule changes aren't published
-   automatically.
+   automatically — re-publish whenever `firestore.rules` changes (it
+   gained saved names after saved signatures).
 
 If Authentication was never switched on (`auth/configuration-not-found`:
 open **Authentication** and click **Get started**), or step 2 or 3 is

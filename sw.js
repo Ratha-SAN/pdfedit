@@ -13,13 +13,13 @@
    The app shell is cached on install so the very first offline launch
    works; the heavy OCR pieces join the cache the first time they're used. */
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = 'pdfedit-' + VERSION;
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest',
   'css/style.css', 'vendor/katex/katex.min.css',
   'js/app.js', 'js/state.js', 'js/editor.js', 'js/i18n.js', 'js/theme.js', 'js/history.js',
-  'js/pagesMode.js', 'js/exporter.js', 'js/ocr.js', 'js/mathlatex.js', 'js/account.js', 'js/mobile.js',
+  'js/pagesMode.js', 'js/exporter.js', 'js/ocr.js', 'js/mathlatex.js', 'js/account.js', 'js/mobile.js', 'js/names.js',
   'vendor/pdf.min.js', 'vendor/pdf.worker.min.js', 'vendor/pdf-lib.min.js',
   'fonts/noto-sans-khmer-khmer-400-normal.woff2',
   'icons/icon-192.png', 'icons/apple-touch-icon.png',

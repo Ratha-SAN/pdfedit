@@ -293,6 +293,20 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   min-width: 100%;
 }
 #edit-view.view-double .page-wrap { margin: 0; }
+/* Grid: every page, two per row. Each page is half the pane wide (see
+   baseWidth in editor.js), so at the default zoom the grid fits the screen;
+   zoomed past that it's sized to its content and #main scrolls sideways,
+   like the spread above. */
+#edit-view.view-grid {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  justify-content: center;
+  align-items: start;
+  gap: 24px;
+  width: max-content;
+  min-width: 100%;
+}
+#edit-view.view-grid .page-wrap { margin: 0; }
 .page-wrap canvas.page-canvas { display: block; }
 .page-wrap.placing { cursor: crosshair; touch-action: none; }
 .page-num {
@@ -311,7 +325,8 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
 /* The left-margin position above assumes a single centered column; in
    double-page mode the left page has little to no left margin to sit in,
    which clips the label off-screen. Anchor it inside the page instead. */
-#edit-view.view-double .page-num {
+#edit-view.view-double .page-num,
+#edit-view.view-grid .page-num {
   left: 6px;
   background: var(--label-badge-bg);
   padding: 1px 6px;
@@ -809,11 +824,53 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
 }
 .side-bottom-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
 
+/* ---------- Dates and saved names on text boxes ---------- */
+.item-toolbar .icon-btn { width: 28px; height: 26px; padding: 0; border-radius: 6px; }
+.item-toolbar .item-save-name.saved { color: var(--accent); }
+.item-toolbar .item-save-name.saved svg { fill: currentColor; }
+/* Saved names need sign-in, which only exists on Firebase Hosting. */
+.item-save-name, #btn-add-saved-name { display: none !important; }
+.account-on .item-save-name { display: inline-flex !important; }
+.account-on #btn-add-saved-name { display: block !important; }
+
+#date-popover {
+  position: fixed; z-index: 110;
+  width: min(300px, calc(100vw - 16px));
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 12px; border-radius: 14px;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); box-shadow: 0 10px 30px var(--shadow);
+}
+#date-popover[hidden] { display: none; }
+.date-pop-title { font-weight: 600; }
+#date-today { width: 100%; min-height: 40px; }
+.date-pick-row { display: flex; gap: 8px; }
+.date-pick-row input { flex: 1; min-width: 0; font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); color-scheme: light dark; }
+.date-format-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--text-muted); }
+.date-format-row select { flex: 1; min-width: 0; font: inherit; color: var(--text); padding: 6px 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+
+#names-signin { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+#names-list { display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow-y: auto; }
+.name-item { display: flex; align-items: center; gap: 8px; }
+.name-use {
+  flex: 1; min-width: 0; min-height: 52px; padding: 8px 14px;
+  text-align: left; font-size: 22px; line-height: 1.3;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  background: #fff; border: 1px solid var(--border); border-radius: 12px; /* white like the page it lands on */
+}
+.name-use:hover:not(:disabled) { background: #fff; border-color: var(--accent); }
+.name-delete { width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 18px; flex-shrink: 0; }
+.name-delete:hover:not(:disabled) { background: var(--danger); border-color: var(--danger); color: #fff; }
+#names-status { color: var(--text-muted); font-size: 13px; padding: 6px 2px; }
+#names-add { display: flex; gap: 8px; margin-top: 12px; }
+#names-add[hidden] { display: none; }
+#names-add input { flex: 1; min-width: 0; font: inherit; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); }
+
 /* ---------- Phone app layout (≤640px; behaviour in js/mobile.js) ----------
    An app bar on top, a tab bar at the bottom, tools and dialogs in bottom
    sheets, and padding for the notch / home indicator (viewport-fit=cover).
    Wider screens never see any of it. */
-#mobile-nav, #more-sheet, #sheet-backdrop, #btn-mobile-more, .sheet-grabber, .sheet-done, .brand-short { display: none; }
+#mobile-nav, #more-sheet, #sheet-backdrop, #btn-mobile-more, .sheet-grabber, .sheet-done, .brand-short, #pages-layout { display: none; }
 
 @media (max-width: 640px) {
   @supports (height: 100dvh) { body { height: 100dvh; } }
@@ -932,6 +989,29 @@ button.tool-armed { background: var(--armed-bg); border-color: var(--armed-borde
   .more-actions { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); }
   .more-actions > button { width: 100%; min-height: 48px; margin: 0; font-size: 16px; border-radius: 14px; }
   #more-sheet.no-doc #btn-print { display: none; }
+
+  /* A selected item's toolbar can be wider than the screen (text boxes have
+     size, edit, font, colour, date and save); let it wrap, growing upward
+     from the item instead of covering it. */
+  .item-toolbar { top: auto; bottom: calc(100% + 6px); flex-wrap: wrap; white-space: normal; max-width: calc(100vw - 24px); width: max-content; }
+  .item-toolbar .icon-btn { width: 36px; height: 34px; }
+
+  /* Pages tab: thumbnails fill the width, two per row or one (pagesMode.js
+     sizes each canvas from the measured cell). Press-and-hold reorders, so
+     a plain swipe scrolls -- hence pan-y rather than the desktop's none. */
+  #pages-layout:not([hidden]) {
+    display: flex; justify-content: center; gap: 0;
+    position: sticky; top: 0; z-index: 5;
+    padding: 10px 16px; background: var(--bg);
+  }
+  #pages-layout .tab { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 6px 16px; border: 1px solid var(--border); background: var(--surface-alt); color: var(--text); }
+  #pages-layout .tab:first-child { border-radius: 999px 0 0 999px; }
+  #pages-layout .tab:last-child { border-radius: 0 999px 999px 0; border-left: none; }
+  #pages-layout .tab.active { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+  #pages-view { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 4px 16px calc(24px + env(safe-area-inset-bottom)); }
+  #pages-view.layout-column { grid-template-columns: minmax(0, 1fr); }
+  .thumb { touch-action: pan-y; -webkit-touch-callout: none; justify-self: center; }
+  .thumb .thumb-check { width: 22px; height: 22px; }
 
   /* Dialogs become bottom sheets too. */
   .modal { padding: env(safe-area-inset-top) 0 0; }

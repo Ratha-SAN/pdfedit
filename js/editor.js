@@ -2,7 +2,7 @@ import { state, newId, $, setHint, FONT_STACKS, FONT_FAMILY_NAME, KHMER_FONTS, L
 import { t } from './i18n.js';
 import { recognizeArea } from './ocr.js';
 import { pushHistory } from './history.js';
-import { accountReady, currentUser, signIn, listSignatures, saveSignature, deleteSignature } from './account.js';
+import { accountReady, currentUser, signIn, listSignatures, saveSignature, deleteSignature, saveName } from './account.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -16,7 +16,8 @@ function baseWidth() {
   // scrollbars, which is enough to make the two double-page columns wrap
   // onto separate rows instead of sitting side by side.
   const avail = $('#main').clientWidth - 32;
-  if (state.viewMode === 'double') return Math.min(DISPLAY_WIDTH, (avail - 24) / 2);
+  // Two pages per row (the double-page spread, or the grid) split the width.
+  if (state.viewMode === 'double' || state.viewMode === 'grid') return Math.min(DISPLAY_WIDTH, (avail - 24) / 2);
   return Math.min(DISPLAY_WIDTH, avail);
 }
 
@@ -30,7 +31,7 @@ function clampPageIndex() {
 }
 
 function pagesForView() {
-  if (state.viewMode === 'continuous') return state.pages;
+  if (state.viewMode === 'continuous' || state.viewMode === 'grid') return state.pages;
   clampPageIndex();
   if (state.viewMode === 'single') {
     return state.pages[state.pageIndex] ? [state.pages[state.pageIndex]] : [];
@@ -40,7 +41,7 @@ function pagesForView() {
 
 function updatePageNav() {
   const nav = $('#page-nav');
-  const paginated = state.viewMode !== 'continuous';
+  const paginated = state.viewMode === 'single' || state.viewMode === 'double';
   nav.hidden = !paginated;
   if (!paginated || !state.pages.length) return;
   clampPageIndex();
@@ -57,6 +58,7 @@ export async function renderEditView() {
   if (pageObserver) pageObserver.disconnect();
   view.innerHTML = '';
   view.classList.toggle('view-double', state.viewMode === 'double');
+  view.classList.toggle('view-grid', state.viewMode === 'grid');
   updatePageNav();
   const pages = pagesForView();
   for (const page of pages) {
@@ -271,7 +273,7 @@ export function armTool(tool, hint) {
   setHint(hint || null);
   document.querySelectorAll('#edit-tools button, #ocr-tools button, #draw-tools button').forEach((b) => b.classList.remove('tool-armed'));
   if (tool) {
-    if (tool.type === 'text') $('#btn-add-text').classList.add('tool-armed');
+    if (tool.type === 'text') $(tool.preset ? '#btn-add-saved-name' : '#btn-add-text').classList.add('tool-armed');
     if (tool.type === 'stamp' && tool.kind === 'image') $('#btn-add-image').classList.add('tool-armed');
     if (tool.type === 'stamp' && tool.kind === 'signature') $('#btn-add-signature').classList.add('tool-armed');
     if (tool.type === 'highlight') $('#btn-add-highlight').classList.add('tool-armed');
@@ -332,7 +334,11 @@ function onPagePointerDown(e, page, wrap) {
   const y = (e.clientY - rect.top) / scale;
   let item;
   if (state.tool.type === 'text') {
-    item = { id: newId(), type: 'text', x, y, text: '', fontSize: 16, color: '#000000', fontFamily: state.lastFont || DEFAULT_FONT };
+    // A saved name arrives as a preset: its text and the style it was saved in.
+    const p = state.tool.preset;
+    item = p
+      ? { id: newId(), type: 'text', x, y, text: p.text, fontSize: p.fontSize, color: p.color, fontFamily: p.fontFamily }
+      : { id: newId(), type: 'text', x, y, text: '', fontSize: 16, color: '#000000', fontFamily: state.lastFont || DEFAULT_FONT };
   } else {
     const t = state.tool;
     let w = Math.min(t.natW * 0.75, page.vw * 0.5);
@@ -345,7 +351,7 @@ function onPagePointerDown(e, page, wrap) {
   const el = buildItemEl(item, page, wrap);
   wrap.appendChild(el);
   selectItem(el);
-  if (item.type === 'text') {
+  if (item.type === 'text' && !item.text) {
     const tc = el.querySelector('.text-content');
     startTextEdit(tc);
   }
@@ -824,6 +830,14 @@ export function deselectAll() {
 function selectItem(el) {
   deselectAll();
   el.classList.add('selected');
+  // Keep its toolbar on screen: an item near the right edge would otherwise
+  // push a wide toolbar (a text box's especially) past it on a phone.
+  const tb = el.querySelector(':scope > .item-toolbar');
+  if (tb) {
+    tb.style.left = '';
+    const over = tb.getBoundingClientRect().right - (window.innerWidth - 8);
+    if (over > 0) tb.style.left = -Math.min(over, el.getBoundingClientRect().left - 8) + 'px';
+  }
 }
 
 function startTextEdit(tc) {
@@ -836,6 +850,119 @@ function stopTextEdit(tc) {
   tc.contentEditable = 'false';
   tc.style.cursor = '';
   tc.blur();
+}
+
+/* ---------- dates in text boxes ----------
+   A text box's calendar button inserts today's date in one tap, or any date
+   from the native date picker. The format is picked once and remembered;
+   the choices are the common Cambodian and international ones, including
+   Khmer month names and Khmer numerals. Inserted at the caret when the box
+   is being edited, otherwise appended (or filling an empty box). */
+
+const KM_DIGITS = '០១២៣៤៥៦៧៨៩';
+const KM_MONTHS = ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ'];
+const EN_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const pad2 = (n) => String(n).padStart(2, '0');
+const khmerDigits = (str) => String(str).replace(/\d/g, (d) => KM_DIGITS[d]);
+const DATE_FORMATS = {
+  dmy: (d) => `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}`,
+  mdy: (d) => `${pad2(d.getMonth() + 1)}/${pad2(d.getDate())}/${d.getFullYear()}`,
+  iso: (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`,
+  long: (d) => `${d.getDate()} ${EN_MONTHS[d.getMonth()]} ${d.getFullYear()}`,
+  kmLong: (d) => `ថ្ងៃទី${khmerDigits(d.getDate())} ខែ${KM_MONTHS[d.getMonth()]} ឆ្នាំ${khmerDigits(d.getFullYear())}`,
+  kmShort: (d) => khmerDigits(DATE_FORMATS.dmy(d)),
+};
+const DATE_FORMAT_KEY = 'pdfedit-date-format';
+
+function dateFormat() {
+  try {
+    const saved = localStorage.getItem(DATE_FORMAT_KEY);
+    if (DATE_FORMATS[saved]) return saved;
+  } catch {}
+  return state.lang === 'km' ? 'kmLong' : 'dmy';
+}
+
+export function formatDate(date, format = dateFormat()) {
+  return DATE_FORMATS[format](date);
+}
+
+// An empty text box deletes itself when it loses focus; one waiting on the
+// date picker must survive that.
+const keepWhileEmpty = new WeakSet();
+let pendingDate = null; // set on the calendar button's pointerdown
+let dateTarget = null;  // the box the open popover inserts into
+
+function openDatePopover(target, anchor) {
+  // Switching straight to another box's calendar: settle the first one.
+  if (dateTarget && dateTarget.item !== target.item) closeDatePopover();
+  keepWhileEmpty.add(target.item);
+  dateTarget = target;
+  const pop = $('#date-popover');
+  const today = new Date();
+  $('#date-today-preview').textContent = formatDate(today);
+  $('#date-pick').value = DATE_FORMATS.iso(today);
+  const select = $('#date-format');
+  select.innerHTML = Object.keys(DATE_FORMATS).map((f) => `<option value="${f}">${DATE_FORMATS[f](today)}</option>`).join('');
+  select.value = dateFormat();
+  pop.hidden = false;
+  // Below the button, or above it if that would run off the bottom; kept
+  // inside the screen sideways.
+  const r = anchor.getBoundingClientRect();
+  const w = pop.offsetWidth, h = pop.offsetHeight;
+  pop.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + 'px';
+  pop.style.top = (r.bottom + 8 + h > window.innerHeight ? Math.max(8, r.top - 8 - h) : r.bottom + 8) + 'px';
+}
+
+function closeDatePopover() {
+  const target = dateTarget;
+  dateTarget = null;
+  pendingDate = null;
+  $('#date-popover').hidden = true;
+  if (!target) return;
+  keepWhileEmpty.delete(target.item);
+  // Backed out without inserting anything into a box that was still empty.
+  if (!target.item.text.trim() && document.activeElement !== target.tc) removeItem(target.item, target.page, target.el);
+}
+
+function insertDate(date) {
+  if (!dateTarget) return;
+  const { item, page, el, tc, scale, range } = dateTarget;
+  const text = formatDate(date);
+  pushHistory(page);
+  if (range && tc.isContentEditable && tc.contains(range.startContainer)) {
+    range.deleteContents();
+    const node = document.createTextNode(text);
+    range.insertNode(node);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    const after = document.createRange();
+    after.setStartAfter(node);
+    sel.addRange(after);
+  } else if (!item.text.trim()) {
+    tc.innerText = text;
+  } else {
+    tc.innerText = item.text.replace(/\s+$/, '') + ' ' + text;
+  }
+  item.text = tc.innerText.replace(/\n$/, '');
+  syncTextSize(item, el, scale);
+  closeDatePopover();
+}
+
+export function initDatePopover() {
+  $('#date-today').addEventListener('click', () => insertDate(new Date()));
+  $('#date-insert').addEventListener('click', () => {
+    const [y, m, d] = ($('#date-pick').value || '').split('-').map(Number);
+    if (y && m && d) insertDate(new Date(y, m - 1, d));
+  });
+  $('#date-format').addEventListener('change', (e) => {
+    try { localStorage.setItem(DATE_FORMAT_KEY, e.target.value); } catch {}
+    $('#date-today-preview').textContent = formatDate(new Date());
+  });
+  document.addEventListener('pointerdown', (e) => {
+    if (!dateTarget || e.target.closest('#date-popover, .item-date')) return;
+    closeDatePopover();
+  }, true);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && dateTarget) closeDatePopover(); });
 }
 
 /* ---------- item DOM ---------- */
@@ -869,7 +996,7 @@ function buildItemEl(item, page, wrap) {
       syncTextSize(item, el, scale);
     });
     tc.addEventListener('blur', () => {
-      if (!item.text.trim()) removeItem(item, page, el);
+      if (!item.text.trim() && !keepWhileEmpty.has(item)) removeItem(item, page, el);
     });
     el.appendChild(tc);
 
@@ -878,7 +1005,9 @@ function buildItemEl(item, page, wrap) {
     tb.innerHTML = `<label>${t('itemSizeLabel')} <input type="number" min="6" max="120" step="1" value="${item.fontSize}"></label>
       <button class="item-edit" title="${t('itemEditTitle')}" aria-pressed="false">${t('itemEditLabel')}</button>
       <select title="${t('itemFontTitle')}">${fontOptionsHtml()}</select>
-      <input type="color" value="${item.color}" title="${t('itemTextColorTitle')}">`;
+      <input type="color" value="${item.color}" title="${t('itemTextColorTitle')}">
+      <button type="button" class="icon-btn item-date" data-i18n-title="itemDateTitle" title="${t('itemDateTitle')}"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></button>
+      <button type="button" class="icon-btn item-save-name" data-i18n-title="itemSaveNameTitle" title="${t('itemSaveNameTitle')}"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg></button>`;
     const sizeInput = tb.querySelector('input[type=number]');
     sizeInput.addEventListener('input', () => {
       item.fontSize = Math.max(6, Math.min(120, Number(sizeInput.value) || 16));
@@ -920,6 +1049,43 @@ function buildItemEl(item, page, wrap) {
     colorInput.addEventListener('input', () => {
       item.color = colorInput.value;
       tc.style.color = item.color;
+    });
+
+    const dateBtn = tb.querySelector('.item-date');
+    // pointerdown, not click: the text box loses focus on press, and an
+    // empty one deletes itself on blur -- it must already be marked as
+    // waiting for its date by then. The caret is captured at the same moment.
+    dateBtn.addEventListener('pointerdown', () => {
+      keepWhileEmpty.add(item);
+      const sel = window.getSelection();
+      const range = tc.isContentEditable && sel.rangeCount && tc.contains(sel.anchorNode) ? sel.getRangeAt(0).cloneRange() : null;
+      pendingDate = { item, page, el, tc, scale, range };
+    });
+    dateBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (pendingDate && pendingDate.item === item) openDatePopover(pendingDate, dateBtn);
+    });
+
+    const saveNameBtn = tb.querySelector('.item-save-name');
+    saveNameBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const text = item.text.trim();
+      if (!text || saveNameBtn.disabled) return;
+      if (!currentUser()) {
+        await signIn();
+        if (!currentUser()) return;
+      }
+      saveNameBtn.disabled = true;
+      try {
+        await saveName({ text, fontFamily: item.fontFamily, color: item.color, fontSize: item.fontSize });
+        saveNameBtn.classList.add('saved');
+        saveNameBtn.title = t('itemSaveNameDone');
+        setTimeout(() => { saveNameBtn.classList.remove('saved'); saveNameBtn.title = t('itemSaveNameTitle'); }, 1800);
+      } catch (err) {
+        alert(t('nameSaveFailed', { err: err.message || err }));
+      } finally {
+        saveNameBtn.disabled = false;
+      }
     });
     tb.addEventListener('pointerdown', (e) => e.stopPropagation());
     el.appendChild(tb);
