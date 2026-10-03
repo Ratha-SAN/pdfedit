@@ -12,7 +12,13 @@
     display: flex; align-items: center; gap: 16px; padding: 8px 16px;
     background: var(--surface); border-bottom: 1px solid var(--border-strong);
     position: sticky; top: 0; z-index: 50;
+    /* Same fix as the main editor's #topbar: on a narrow viewport (or this
+       modal's narrower iframe) brand + lang toggle + theme toggle + back
+       button don't fit one row -- wrapping would look broken with the
+       spacer, so this scrolls horizontally instead. */
+    flex-wrap: nowrap; overflow-x: auto;
   }
+  .feat-topbar .brand, .feat-topbar .feat-back { flex-shrink: 0; }
   .feat-topbar .topbar-spacer { flex: 1; }
   .feat-back {
     font: inherit; color: var(--text); text-decoration: none;
@@ -77,6 +83,18 @@
       <p>Add text boxes in Khmer or English, insert images, and place a signature — drawn on a canvas or uploaded as a PNG. Drag to move, use the corner handle to resize, and click <em>Edit</em> (or double-click) to type directly into a text box in place.</p>
     </div>
     <div class="feat-card">
+      <h3>📅 Dates and saved names</h3>
+      <p>A text box's calendar button inserts today's date in one tap, or any date from a picker — in the format you choose, including Khmer (ថ្ងៃទី៣ ខែតុលា ឆ្នាំ២០២៦). Signed in, the names button beside it keeps <em>My names</em> — tap one to drop it into the box, type a new one to save it, or delete one — and ☆ saves the box's text in the font and colour you set.</p>
+    </div>
+    <div class="feat-card">
+      <h3>📱 A real app on your phone</h3>
+      <p>On a phone the editor works like an app: tools in a bottom tab bar, panels that slide up from the bottom, and two-finger pinch to zoom that stays sharp. Add it to your home screen (Safari: <em>Share → Add to Home Screen</em>; Android: <em>Install app</em>) and it opens full-screen with its own icon — and keeps working offline.</p>
+    </div>
+    <div class="feat-card">
+      <h3>🔐 Save your signatures</h3>
+      <p>Optionally <em>Sign in</em> with Google (top bar, right) to keep the signatures you draw. They appear under <em>My signatures</em> in the signature dialog — one click places one on the page, on this device or any other. Signing in is never required, and your documents are never uploaded: only a signature you choose to save is stored in your account.</p>
+    </div>
+    <div class="feat-card">
       <h3>🖊️ Khmer text, rendered correctly</h3>
       <p>Khmer is a complex script — subscript consonants and reordering vowels need real OpenType shaping. This app lets the browser's own text engine do that shaping, so Khmer always renders correctly no matter which of the bundled fonts you pick.</p>
     </div>
@@ -129,6 +147,18 @@
     <div class="feat-card">
       <h3>✍️ របៀបកែសម្រួល</h3>
       <p>បន្ថែមប្រអប់អត្ថបទជាភាសាខ្មែរ ឬអង់គ្លេស បញ្ចូលរូបភាព និងដាក់ហត្ថលេខា — គូរនៅលើផ្ទាំង ឬផ្ទុកឡើងជា PNG។ អូសដើម្បីផ្លាស់ទី ប្រើចំណុចជ្រុងដើម្បីប្តូរទំហំ ហើយចុច <em>កែ</em> (ឬចុចពីរដង) ដើម្បីវាយអក្សរផ្ទាល់ក្នុងប្រអប់អត្ថបទ។</p>
+    </div>
+    <div class="feat-card">
+      <h3>📅 កាលបរិច្ឆេទ និងឈ្មោះដែលបានរក្សាទុក</h3>
+      <p>ប៊ូតុងប្រតិទិននៃប្រអប់អត្ថបទ បញ្ចូលកាលបរិច្ឆេទថ្ងៃនេះដោយចុចតែម្តង ឬកាលបរិច្ឆេទណាមួយពីផ្ទាំងជ្រើសរើស — តាមទម្រង់ដែលអ្នកជ្រើសរើស រួមទាំងទម្រង់ខ្មែរ (ថ្ងៃទី៣ ខែតុលា ឆ្នាំ២០២៦)។ ពេលចូលគណនី ប៊ូតុងឈ្មោះនៅក្បែរប្រតិទិន រក្សា <em>ឈ្មោះរបស់ខ្ញុំ</em> — ចុចឈ្មោះមួយដើម្បីបញ្ចូលក្នុងប្រអប់ វាយឈ្មោះថ្មីដើម្បីរក្សាទុក ឬលុបចោល — ហើយ ☆ រក្សាទុកអត្ថបទក្នុងប្រអប់ តាមពុម្ពអក្សរ និងពណ៌ដែលអ្នកកំណត់។</p>
+    </div>
+    <div class="feat-card">
+      <h3>📱 កម្មវិធីពិតប្រាកដលើទូរស័ព្ទ</h3>
+      <p>នៅលើទូរស័ព្ទ កម្មវិធីនេះដំណើរការដូចកម្មវិធីទូរស័ព្ទ៖ ឧបករណ៍នៅរបារខាងក្រោម ផ្ទាំងរុញឡើងពីខាងក្រោម និងការពង្រីកដោយម្រាមដៃពីរដែលនៅតែច្បាស់។ បន្ថែមវាទៅអេក្រង់ដើម (Safari៖ <em>Share → Add to Home Screen</em>; Android៖ <em>Install app</em>) នោះវានឹងបើកពេញអេក្រង់ជាមួយរូបតំណាងផ្ទាល់ខ្លួន — ហើយនៅតែប្រើបានដោយគ្មានអ៊ីនធឺណិត។</p>
+    </div>
+    <div class="feat-card">
+      <h3>🔐 រក្សាទុកហត្ថលេខារបស់អ្នក</h3>
+      <p>អ្នកអាច <em>ចូលគណនី</em> តាម Google (របារខាងលើ ខាងស្តាំ) ដើម្បីរក្សាទុកហត្ថលេខាដែលអ្នកគូរ។ ហត្ថលេខាទាំងនោះនឹងបង្ហាញនៅក្រោម <em>ហត្ថលេខារបស់ខ្ញុំ</em> ក្នុងផ្ទាំងហត្ថលេខា — ចុចម្តងដើម្បីដាក់វាលើទំព័រ ទាំងលើឧបករណ៍នេះ ឬឧបករណ៍ផ្សេងទៀត។ ការចូលគណនីមិនមែនជាការចាំបាច់ទេ ហើយឯកសាររបស់អ្នកមិនត្រូវបានផ្ទុកឡើងឡើយ៖ មានតែហត្ថលេខាដែលអ្នកជ្រើសរើសរក្សាទុកប៉ុណ្ណោះ ដែលត្រូវបានរក្សាទុកក្នុងគណនីរបស់អ្នក។</p>
     </div>
     <div class="feat-card">
       <h3>🖊️ អក្សរខ្មែរបង្ហាញត្រឹមត្រូវ</h3>
@@ -213,32 +243,19 @@
   document.getElementById('lang-km').addEventListener('click', function () { setLang('km'); });
   setLang(lang);
 
-  // Resume where this window was left, rather than always reopening fresh:
-  // restore scroll position now, and remember size/position/scroll as they
-  // change so the *next* open (a fresh window.open() from the sidebar
-  // button) can be sized/positioned/scrolled to match.
-  var savedScroll = null;
-  try { savedScroll = parseInt(localStorage.getItem('pdfedit-features-scroll'), 10); } catch (e) {}
-  if (savedScroll) window.scrollTo(0, savedScroll);
-
-  function saveGeometry() {
+  // This page now normally lives inside the editor's Features modal
+  // (an iframe), not a separate tab/window -- so "back" means close the
+  // modal rather than navigate. The iframe is same-origin, so the parent's
+  // DOM is reachable directly. Falls back to a real navigation to
+  // index.html if this page is ever opened standalone (e.g. a direct URL).
+  document.getElementById('feat-back').addEventListener('click', function (e) {
+    if (window.parent === window) return;
+    e.preventDefault();
     try {
-      localStorage.setItem('pdfedit-features-geom', JSON.stringify({
-        w: window.outerWidth, h: window.outerHeight,
-        x: window.screenX, y: window.screenY,
-      }));
-    } catch (e) {}
-  }
-  function saveScroll() {
-    try { localStorage.setItem('pdfedit-features-scroll', String(window.scrollY)); } catch (e) {}
-  }
-  var scrollSaveTimer = null;
-  window.addEventListener('resize', saveGeometry);
-  window.addEventListener('scroll', function () {
-    clearTimeout(scrollSaveTimer);
-    scrollSaveTimer = setTimeout(saveScroll, 200);
+      var modal = window.parent.document.getElementById('features-modal');
+      if (modal) modal.hidden = true;
+    } catch (err) {}
   });
-  window.addEventListener('beforeunload', function () { saveGeometry(); saveScroll(); });
 })();
 </script>
 

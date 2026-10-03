@@ -1,38 +1,174 @@
 # Khmer PDF Editor
 
 A fully client-side, browser-based PDF editor with first-class Khmer Unicode
-support. No backend, no accounts — documents never leave your machine.
+support. Documents never leave your machine. No account is needed for
+anything; signing in is optional and does exactly one thing — keeps the
+signatures you choose to save, so you can reuse them later or on another
+device.
 
 ## Features
 
 - **Upload** a PDF by drag-and-drop or file picker.
 - **Top bar** — a single row, left to right: brand, language, theme, mode
-  tabs, page view (continuous/single/double + zoom), and (in Edit mode) a
-  compression picker with a live estimated output size; only **Save PDF** and
-  **Print** sit on the right, grouped together. Flush against the sidebar
-  below it, with no gap. On narrow screens the whole bar scrolls horizontally
-  instead of wrapping onto extra lines.
+  tabs, and (in Edit mode) undo/redo and page view (column/single/double, or
+  grid: every page two per row, each half the width so the grid fits the
+  screen at the default zoom;
+  + zoom, 25%–400%, opening at **200%** — or 100% on phone-width screens,
+  where 100% already fills the screen and 200% would need sideways panning
+  on every line; the zoom readout doubles as a reset back to that default).
+  Past fit-width the page scrolls inside the document pane, leaving the
+  sidebar and top bar in place, and a two-page spread stays side by side
+  rather than falling onto separate rows; only **Save PDF** and **Print** sit on the right,
+  grouped together. Flush against the sidebar below it, with no gap. On
+  narrow screens the whole bar scrolls horizontally instead of wrapping onto
+  extra lines. Each page re-renders at the current zoom level times the display's
+  actual pixel density (floored at 2x even on a plain 1x monitor, capped at
+  3x) every time either factor changes, so pages stay crisp at any zoom
+  instead of just stretching a fixed-resolution bitmap — the floor exists
+  because a flat 1:1 raster reads as visibly softer than a native viewer
+  like Adobe Acrobat, which anti-aliases PDF text more aggressively than a
+  bitmap matching physical screen pixels one-for-one ever can. Past a
+  budget of ~40 megapixels the oversampling is trimmed back rather than the
+  page asking for a canvas the browser answers with a blank one — at high
+  zoom the scale alone already carries more detail than the screen shows,
+  so what's given up there is redundant. That
+  includes the browser's own page zoom (Ctrl +/- or
+  Ctrl+scroll), which raises the effective pixel density without touching
+  the app's zoom controls at all, so already-rendered pages are refreshed
+  automatically the moment it changes. Native pinch/double-tap browser zoom
+  is disabled over the document itself for the same reason — it would just
+  blur-magnify whatever's already on screen instead of asking the page to
+  re-render — while normal one-finger scrolling is unaffected. On a phone
+  the app supplies its own two-finger pinch instead: the page scales live
+  under your fingers, then re-renders sharp at the new zoom on release,
+  keeping the spot between your fingers in place.
+- **Undo/redo** (Edit mode) — Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z (or Ctrl+Y),
+  or the top bar's buttons. Covers adding, moving, resizing, and deleting
+  any item (text/image/signature/highlight/draw stroke/shape), erasing, and
+  each text-editing session — a drag or an erase gesture is one undo step
+  regardless of how many pointermove events or items it touched, and a
+  plain click-to-select costs nothing. History is per document tab, so
+  closing a tab or switching to another one doesn't mix up histories. It
+  doesn't cover per-field toolbar tweaks (color/thickness/style/font on an
+  already-placed item — except a signature's color, which is undoable) or
+  Pages-mode operations (reorder/remove/append/
+  split) — see Known limitations.
 - **Edit mode** — add text boxes (Khmer or English), insert PNG/JPEG images,
   and place a signature (drawn on a canvas or uploaded as PNG) anywhere on any
   page. Drag to move, corner handle to resize, × to delete, and an **Edit**
   button (or double-click / long-press) to type into a text box in place.
-  Drawing a signature offers 5 brush styles (Pen, Ink, Stylus, Marker,
-  Brush) — each a genuinely different look (width range, opacity, blend
-  mode), not just a color — and the stroke width responds to real pointer
-  pressure from a stylus or force-sensitive touch (mouse/plain touch falls
-  back to a fixed mid-range width, since there's no pressure signal to
-  read).
+  A text box's toolbar also has a **📅 date** button: **Today** in one tap,
+  or any date from the native date picker, inserted at the cursor (or
+  filling an empty box). The format is chosen once and remembered —
+  dd/mm/yyyy, mm/dd/yyyy, yyyy-mm-dd, "3 October 2026", or Khmer
+  (ថ្ងៃទី៣ ខែតុលា ឆ្នាំ២០២៦, or ០៣/១០/២០២៦ in Khmer numerals); Khmer by default
+  when the interface is in Khmer.
+  Drawing a signature offers 4 brush styles (Pen, Ink, Stylus, Brush) —
+  each a genuinely different look (width range, opacity, blend mode) —
+  plus 4 preset ink colors (Black, Blue, Red, Green), independent of style,
+  so picking Brush over Pen changes the texture without resetting a chosen
+  ink color. Stroke width responds to
+  real pointer pressure from a stylus. Touch and mouse, which almost never
+  report real pressure, instead get it simulated from how fast the pointer
+  is moving (slower = a harder press, faster = a lighter one, the way a
+  real ink pen behaves), so the signature still looks natural when signed
+  with a finger. Every stroke is drawn as a smoothed curve with extra
+  position/pressure damping tuned per input device (touch gets the calmest
+  settings, since a finger's contact point is naturally less steady than a
+  mouse or stylus), so it reads as a smooth, natural line rather than a
+  jittery one regardless of how coarsely the touchscreen samples the
+  gesture. The canvas renders at the display's actual pixel density (not a
+  fixed low-res bitmap), so the signature stays crisp at any screen size,
+  drawing stays smooth on mobile since each frame only redraws the small
+  area a stroke actually touched rather than the whole canvas, and its own
+  undo/redo (buttons or Ctrl/Cmd+Z) removes or restores one stroke at a
+  time, separate from the main document's history. A placed signature's
+  color can be changed afterwards from its toolbar (select it): the pad's 4
+  ink presets or any custom color. Every pixel takes the new color and keeps
+  its own transparency, so smooth edges and the Ink/Brush translucency are
+  untouched; an uploaded PNG with no transparency (a scan on white paper)
+  has its paper cleared to transparent and its ink recolored. The change
+  carries into the saved PDF and is one undo step.
+- **Sign in & saved signatures** (optional) — a **Sign in** button at the
+  right end of the top bar signs in with Google; once signed in it shows
+  your name, with a menu to sign out. The signature dialog then gains a
+  **My signatures** row (click one to place it, × to delete it) and a
+  **Save to my signatures** button for whatever is on the pad. Signed out,
+  the dialog offers a sign-in link in the same place, and a drawing in
+  progress survives signing in from there. Saved signatures live in your
+  account (Firestore, `users/<uid>/signatures`), readable only by you; the
+  stored copy is capped at 1200px on its long side, and lands on the page
+  75% smaller than one drawn fresh (a quarter of the size; drag a corner
+  to resize). Only shown where the app is served
+  by Firebase Hosting — see [Sign-in setup](#sign-in-setup); on GitHub
+  Pages or a local server the app is unchanged and makes no sign-in
+  requests at all.
+- **Saved names** (with sign-in) — kept right in the text box: its
+  **names** button (next to 📅) opens **My names** (Firestore,
+  `users/<uid>/names`, only yours), each name shown in its own style. Tap
+  one to insert it at the cursor (an empty box also takes on the name's
+  font, color and size), **×** to delete it, or type a new one at the
+  bottom to save it in the box's current style. The box's **☆** saves
+  whatever it holds, with its font, color and size.
+- **Draw** — a sidebar section (tools arranged in a compact grid) with Pen,
+  Pencil, Marker, Highlighter, Shapes (rectangle/ellipse/line/arrow, with
+  optional fill), and an Eraser. Color, thickness, and line style
+  (solid/dashed/dotted) are all adjustable before drawing and again
+  afterward from each stroke's own toolbar once selected. Each of the 5
+  sizeable tools (the 4 freehand ones plus Shapes) remembers its own
+  thickness — switching from a thick marker to a thin pencil and back
+  restores each one's own last setting rather than sharing a single value.
+  Each freehand
+  tool keeps its own look (marker and highlighter darken where strokes
+  overlap, matching a real marker/highlighter) via opacity and blend mode,
+  not just width. The four freehand tools are pressure-sensitive: stroke
+  width responds to real pointer pressure from a stylus or force-sensitive
+  touch (mouse/plain touch falls back to a fixed mid-range width), and each
+  tool varies by a different amount — pencil swings widest (a soft point
+  goes from a hairline to a smudge), a highlighter's chisel tip stays
+  closest to one width regardless of pressure. The Highlighter also has 6
+  preset fluorescent-marker colors as one-click swatches, alongside the
+  free-form color picker.
+  Each frame only redraws the small area a stroke actually touched (not the
+  whole page), keeping drawing smooth on mobile. Unlike the one-shot Insert
+  tools, a Draw tool stays active across multiple strokes until you turn it
+  off. The Eraser deletes by touching a stroke or shape's actual drawn
+  shape (not just its bounding box) — dragging through the empty middle of
+  an unfilled rectangle leaves it alone, but touching its outline (or
+  anywhere inside a filled one) removes it.
 - **Left sidebar** — tools live in collapsible sections (File, Insert,
   Recognize text, Pages) rather than one long toolbar row, flush against the
-  top bar; document tabs sit above the page area, not the sidebar. In Pages
-  mode the compression picker moves down into the Pages section (the top
-  bar's view controls aren't relevant there). On phones the sidebar stacks
-  above the document instead of taking width. A **Features** button pinned to
+  top bar; document tabs sit above the page area, not the sidebar. (On
+  phones the sections open as bottom sheets instead — see below.) A **Features** button pinned to
   the bottom of the sidebar opens a bilingual (English/Khmer) page describing
-  everything the app can do, as a pop-up window that reopens at the same
-  size/position/scroll it was left at, so the current document is never
-  disturbed.
-- **Pages mode** — thumbnail grid of all pages: select, drag to reorder,
+  everything the app can do, as an in-page modal (an embedded iframe, not a
+  separate tab or window), so the current document is never disturbed.
+- **Phone app (iOS & Android)** — at phone width (≤640px) the layout
+  becomes an app's: a compact app bar (title, undo/redo, **Save PDF**, and
+  **⋯**), a bottom tab bar (**Open · Insert · Draw · Scan text · Pages**),
+  and tools in bottom sheets that slide up over the document and close by
+  tapping outside, swiping down, **Done**, or the Android Back button. Picking
+  something to place (text, image, highlight, eraser…) closes its sheet so
+  the page is free to tap; picking a drawing tool keeps the sheet open,
+  since that's what reveals its color/thickness/style. **⋯** holds language,
+  theme, page view and zoom, Print, sign-in and Features. Dialogs
+  (signature, save, OCR) open as bottom sheets too. The document gets ~76%
+  of the screen (it had ~44% when the sidebar stacked above it), and
+  padding keeps everything clear of the notch and home indicator. On wider
+  screens none of this appears — the same controls are moved back to their
+  desktop places, never duplicated.
+- **Installable & offline** — add it to the home screen (Safari: Share →
+  *Add to Home Screen*; Chrome/Android: *Install app*) and it opens
+  full-screen with its own icon, like a native app. A service worker caches
+  what the app loads, so it then opens and edits PDFs with no network
+  (OCR's language data joins the cache the first time OCR is used). Online,
+  app code is always fetched fresh, so a new deploy shows up on the next
+  launch. Installed on a desktop browser that supports it, it can also be
+  the system's *Open with…* handler for PDFs and images.
+- **Pages mode** — thumbnail grid of all pages: select, drag to reorder
+  (on touch: press and hold, then drag — a plain swipe scrolls; on a phone,
+  a **Grid / Column** switch shows two thumbnails per row or one, each
+  sized to fill the screen),
   remove pages, and append pages from a second PDF. **Split** breaks the
   document into two tabs at a chosen page: select exactly one page, then
   *Split before* (that page starts the second document) or *Split after*
@@ -42,11 +178,14 @@ support. No backend, no accounts — documents never leave your machine.
   new one no longer replaces what you were working on.
 - **Opens images too** — PNG/JPEG/WebP files open as a one-page document, so a
   photographed page can be annotated, OCR'd or exported like any PDF.
-- **Save PDF** — downloads the modified document, with an optional compression
-  level (original / high quality / balanced / smallest). Picking a level
-  samples a couple of representative pages at that level's resolution/quality
-  and extrapolates, so the top bar shows an estimated output size (e.g. `~7
-  MB`) before you commit to exporting.
+- **Save PDF** — opens a popup to edit the filename, pick an output size
+  (original / high quality / balanced / smallest — picking a level samples a
+  couple of representative pages at that level's resolution/quality and
+  extrapolates to a live estimate, e.g. `~7 MB`, before you commit), and
+  choose where it goes: **Save** downloads to the browser's default
+  downloads folder, while **Choose location…** opens the browser's native
+  Save-As dialog to pick the exact folder and filename (Chrome/Edge only —
+  browsers without that API just get **Save**, with a note explaining why).
 - **Khmer text** renders correctly (subscript consonants, vowel reordering)
   in both the editor and the exported PDF.
 - **Recognize text (OCR)** — one *Recognize text* menu picks both the scope
@@ -101,6 +240,35 @@ untouched and stays selectable.
 | OCR | [tesseract.js](https://tesseract.projectnaptha.com/) 5.1 + `khm`/`eng` traineddata (tessdata_fast) |
 | Fonts | 16 Khmer + 13 Latin families from [Fontsource](https://fontsource.org/) (OFL/Apache) |
 | Math rendering | [KaTeX](https://katex.org/) 0.16 (woff2 subset) |
+| Sign-in / saved signatures | [Firebase](https://firebase.google.com/) JS SDK 12.19 compat builds (Apache-2.0): app + auth loaded only on Firebase Hosting, Firestore only once a signed-in user opens the signature dialog |
+
+## Sign-in setup
+
+Sign-in switches itself on wherever the app is served by Firebase Hosting,
+which publishes the project's web config at `/__/firebase/init.json` — so
+no keys live in this repository. It needs four one-time settings in the
+[Firebase console](https://console.firebase.google.com/) for the project
+(`pdfedit-19051`). The console's menu layout changes between versions
+(there may be no *Build* section), so each step links straight to its page:
+
+1. **[Project settings → Your apps](https://console.firebase.google.com/project/pdfedit-19051/settings/general)**: a *Web app* must be registered
+   (Firebase Hosting serves its config; without one, sign-in stays hidden).
+2. **[Authentication](https://console.firebase.google.com/project/pdfedit-19051/authentication)**: click **Get started** (first time only), then on
+   **[Sign-in method](https://console.firebase.google.com/project/pdfedit-19051/authentication/providers)** enable **Google**.
+3. **[Authentication → Settings → Authorized domains](https://console.firebase.google.com/project/pdfedit-19051/authentication/settings)**: add the hosting
+   address, e.g. `pdfedit.web.app` (the project's own default domains are
+   listed automatically; a second hosting site's may not be).
+4. **[Firestore Database](https://console.firebase.google.com/project/pdfedit-19051/firestore)**: create the database, then publish the rules in
+   [`firestore.rules`](firestore.rules) — paste them into the console's
+   *Rules* tab, or run `firebase deploy --only firestore:rules`. The CI
+   workflow deploys hosting only, so rule changes aren't published
+   automatically — re-publish whenever `firestore.rules` changes (it
+   gained saved names after saved signatures).
+
+If Authentication was never switched on (`auth/configuration-not-found`:
+open **Authentication** and click **Get started**), or step 2 or 3 is
+missing, pressing **Sign in** says which setting to
+change rather than failing silently.
 
 ## Large documents
 
@@ -112,8 +280,23 @@ loads in ~0.4s. Thumbnails in Pages mode are lazy for the same reason.
 
 ## Known limitations
 
-- Added text becomes an image in the exported PDF (see above) — not
-  selectable or searchable.
+- On a phone, the two-finger pinch works while no tool is armed (with a
+  drawing tool armed, fingers draw); zoom is also in **⋯**. Sign-in uses a
+  pop-up window; in an app opened from the iOS home screen that pop-up path
+  is untested here and may not complete — if so, sign in once from Safari.
+
+- Sign-in is Google only, uses a pop-up window, and needs a network
+  connection (everything else works offline). Only signatures drawn on the
+  pad can be saved; an uploaded PNG is used directly, not saved.
+
+- Undo/redo covers item edits in Edit mode only. It does not cover per-field
+  edits from an already-placed item's own toolbar (changing its color,
+  thickness, dash style, or font after the fact — a signature's color is the
+  exception), nor Pages-mode operations
+  (reorder, remove, append, split) — those take effect immediately with no
+  undo step.
+- Added text, and any Draw-section stroke or shape, becomes an image in the
+  exported PDF (see above) — not selectable, searchable, or vector-editable.
 - Overlay placement on pages with `/Rotate` 90/270 is implemented but has
   only been exercised on unrotated and 180° pages.
 - OCR quality depends on scan quality; the fast traineddata occasionally

@@ -1,0 +1,41 @@
+rules_version = '2';
+
+// Saved signatures and saved names (js/account.js), under users/{uid}/. A
+// signed-in user can read, add and delete only their own; nothing else in
+// the database is reachable. Entries are never edited in place, so updates
+// are refused outright.
+//
+// Signatures: users/{uid}/signatures/{id} = { png: PNG data URL, w, h, createdAt }.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/signatures/{sigId} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['png', 'w', 'h', 'createdAt'])
+        && request.resource.data.png is string
+        && request.resource.data.png.size() < 1000000
+        && request.resource.data.png.matches('data:image/png;base64,.*')
+        && request.resource.data.w is number && request.resource.data.w > 0
+        && request.resource.data.h is number && request.resource.data.h > 0
+        && request.resource.data.createdAt == request.time;
+      allow update: if false;
+    }
+
+    // Saved names (js/account.js): { text, fontFamily, color, fontSize,
+    // createdAt } -- short styled text reused like a signature. Same
+    // ownership rules; content checked against what the app writes.
+    match /users/{uid}/names/{nameId} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['text', 'fontFamily', 'color', 'fontSize', 'createdAt'])
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 200
+        && request.resource.data.fontFamily is string && request.resource.data.fontFamily.size() <= 64
+        && request.resource.data.color is string && request.resource.data.color.matches('#[0-9a-fA-F]{6}')
+        && request.resource.data.fontSize is number
+        && request.resource.data.fontSize >= 6 && request.resource.data.fontSize <= 120
+        && request.resource.data.createdAt == request.time;
+      allow update: if false;
+    }
+  }
+}
